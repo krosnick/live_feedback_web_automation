@@ -1,0 +1,775 @@
+:root {
+  --video-height: 270px;
+  --video-width: 480px;
+  --video-margin: 20px;
+  --command-area: 260px;
+  --text-area-color: white;
+  /*--delete-button-width: 25px;*/
+  --padding: 10px;
+  --text-area: calc(100% - calc(var(--video-width) + 2*var(--video-margin) + 4*var(--padding) + var(--command-area)));
+  --top-area-height: 100px;
+  --prompting-padding: 20px;
+  /*--label-width: 70px;
+  --flag-width: 70px;*/
+  --label-width: 60px;
+  --flag-width: 60px;
+  /*--star-width: 10px;*/
+  --star-width: 24px;
+  --margin-width: 10px;
+  --edit-button-width: 37px;
+  --delete-button-width: 20px;
+  --label-x-pos: 30px;
+  --utterance-text-width: calc(100% - (var(--label-width) + var(--margin-width) + var(--flag-width) + var(--margin-width) + var(--star-width) + var(--margin-width) + var(--edit-button-width) + var(--margin-width) + var(--delete-button-width)));
+  --utterance-comment-indent: 20px;
+}
+
+body {
+  padding: 50px;
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+
+a {
+  color: #00B7FF;
+}
+
+.statusBar {
+  max-width: 100px;
+  min-width: 100px;
+  max-height: 10px;
+  min-height: 10px;
+}
+
+#loadingStatusBar {
+  background-color: yellow;
+}
+
+#readyStatusBar {
+  background-color: green;
+}
+
+.frontPageWidget {
+  margin: 0 auto;
+  width: max-content;
+  padding-bottom: 10px;
+}
+
+#annotationContent {
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  top: calc(var(--top-area-height) + 2 * var(--prompting-padding));
+}
+
+.annotation {
+  background-color: #d8d2d2;
+  padding: 20px;
+  margin: 20px;
+  position: relative;
+  min-height: var(--video-height);
+}
+
+.annotationCommentArea {
+  /* Full page width minus (video width + 20px margin) */
+  max-width: var(--text-area);
+  width: var(--text-area);
+  min-width: var(--text-area);
+  background-color: var(--text-area-color);
+  display: inline-block;
+  margin-top: 10px;
+  /*height: calc(var(--video-height) - 2*var(--padding));*/ /* Getting rid of this, so that full annotation increases height of more utterance rows get added*/
+  padding: var(--padding);
+  position: relative;
+  /*padding-left: 30px;*/
+}
+.annotationText {
+  /* Full page width minus (video width + 20px margin) */
+  max-width: var(--text-area);
+  width: var(--text-area);
+  min-width: var(--text-area);
+  background-color: var(--text-area-color);
+  display: inline-block;
+  /*height: calc(var(--video-height) - 2*var(--padding));*/ /* Getting rid of this, so that full annotation increases height of more utterance rows get added*/
+  padding: var(--padding);
+  position: relative;
+  /*padding-left: 30px;*/
+}
+.annotationVideo {
+  height: max-content;
+  width: max-content;
+  /*float: right;*/
+  margin-left: var(--video-margin);
+  margin-right: var(--video-margin);
+  margin-top: var(--video-margin);
+  /*position: relative;*/
+  position: absolute;
+  top: 0px;
+  right: calc(var(--command-area) + 2*var(--video-margin));
+}
+
+.editAnnotationButton {
+  /*float: right;*/
+  background-color: #1b7fcccc;
+  color: white;
+}
+
+.deleteAnnotationButton {
+  /* To put in top-left corner of annotation */
+  position: relative;
+  left: -30px;
+  top: -30px;  
+}
+
+button:hover {
+  cursor: pointer;
+}
+
+.utterance {
+  /*border-style: dotted;
+  border-width: thin;
+  border-color: var(--text-area-color);*/
+  display: block;
+  padding-top: 5px;
+  padding-bottom: 5px;
+  position: relative;
+}
+
+.utteranceDeleteX {
+  display: none;
+  position: fixed;
+  color: black;
+  font-weight: bold;
+  font-size: 14px;
+  text-align: center;
+  cursor: pointer;
+  width: 30px; /* Matches the -30px left-offset we have in textedits.js */
+  /*width: calc(var(--delete-button-width) - 5px);*/
+}
+
+/*.annotationEditableTextArea {
+  position: relative;
+  left: var(--delete-button-width);
+  max-width: calc(var(--text-area) - var(--delete-button-width));
+  width: calc(var(--text-area) - var(--delete-button-width));
+  min-width: calc(var(--text-area) - var(--delete-button-width));
+}*/
+
+.annotationEditableTextArea {
+  position: absolute;
+  left: 130px;
+}
+
+#top {
+  position: fixed;
+  width: 100%;
+  top: 0px;
+  left: 50px;
+  padding-top: 50px;
+  height: var(--top-area-height);
+  z-index: 1;
+  background-color: white;
+  border-color: black;
+  border-bottom: solid;
+  border-bottom-width: 1px;
+}
+
+/*#subtlePrompting {
+  border-color: black;
+  border-width: 1px;
+  border-style: solid;
+  position: absolute;
+  right: 136px;
+  height: 35%;
+  top: 50px;
+  width: 50%;
+  background-color: #bcc8d4;
+  padding: var(--prompting-padding);
+}*/
+
+.fuelBar {
+  height: 10px;
+  width: 0px; /* To begin with */
+  background-color: red;
+  display: block;
+}
+
+#timeSinceLastSpokeLabel {
+  font-size: 12px;
+}
+
+/******  Pie chart   ******/
+
+/*#pieChart {
+  position: relative;
+}
+
+#pieChart svg#pie {
+  width: 280px;
+  height: 280px;
+}
+
+#pieChart #redWedge {
+  fill: #E7F3DB;
+}
+
+#pieChart #blueWedge {
+  fill: #DDEEFB;
+}
+
+#pieChart #orangeWedge {
+  fill: #FBE9D5;
+}
+
+#pieChart #redWedge {
+  fill: #F8D4D4;
+}*/
+
+/* Foreground colors, for indicating fillup */
+
+/* Important circle, star */
+#importantCircle {
+  fill: white;
+}
+
+#star {
+  font-size: 30px;
+}
+
+.baseWedge, .innerWedge, #importantCircle, #star, .selectLine, .flagButton, .flagIcon, .wedgeIcon, .goalLine, .wedgePulsate, .pulsateButton {
+  cursor: pointer;
+}
+
+/*#pieChart #innerredWedge {
+  fill: #8CC758;
+}
+
+#pieChart #innerBlueWedge {
+  fill: #5EA7EF;
+}
+
+#pieChart #innerOrangeWedge {
+  fill: #F1983F;
+}
+
+#pieChart #innerRedWedge {
+  fill: #EB3C34;
+}*/
+
+#singleUtterance {
+  background-color: white;
+  position: relative;
+  width: 100%;
+  left: 0px;
+  overflow-x: auto;
+  height: 90px;
+  overflow-x: scroll;
+}
+
+#question {
+  background-color: white;
+  position: relative;
+  color: blue;
+  font-style: italic;
+  top: 60px;
+  width: 100%;
+  left: 0px;
+  overflow-x: auto;
+}
+
+#redLabel {
+  background-color: #F8D4D4;
+  float: left;
+}
+
+#greenLabel {
+  background-color: #E7F3DB;
+  float: right;
+}
+
+#orangeLabel {
+  background-color: #FBE9D5;
+  float: left;
+}
+
+#blueLabel {
+  background-color: #DDEEFB;
+  float: right;
+}
+
+.labelsAndStar{
+  position: absolute;
+}
+
+.utteranceLabel {
+  width: var(--label-width);
+  min-width: var(--label-width);
+  max-width: var(--label-width);
+  position: absolute;
+  top: 0px;
+  /*right: calc(var(--flag-width) + var(--star-width) + var(--edit-button-width) + var(--delete-button-width));*/
+  right: calc(var(--flag-width) + var(--star-width));
+  text-align: center;
+}
+
+.utteranceLabel:hover {
+  cursor: default;
+}
+
+.utteranceFlag {
+  width: var(--flag-width);
+  min-width: var(--flag-width);
+  max-width: var(--flag-width);
+  position: absolute;
+  top: 0px;
+  /*right: calc(var(--star-width) + var(--edit-button-width) + var(--delete-button-width) + var(--margin-width)*2);*/
+  /*right: calc(var(--star-width) + var(--margin-width));*/
+  right: calc(var(--star-width));
+  text-align: center;
+}
+
+.utteranceFlag:hover {
+  /*border-color: black;
+  border-width: 1px;
+  border-style: solid;*/
+  cursor: default;
+}
+
+.utteranceStar {
+  position: absolute;
+  top: 0px;
+  /*right: calc(var(--edit-button-width) + var(--delete-button-width) + var(--margin-width)*3);*/
+  /*right: calc(var(--margin-width));*/
+  right: 0px;
+  min-width: var(--star-width);
+  width: var(--star-width);
+  max-width: var(--star-width);
+}
+
+.utteranceStar:hover {
+  cursor: pointer;
+}
+
+.utteranceText {
+  display: inline-block;
+  /*border-style: dotted;
+  border-width: thin;
+  border-color: var(--text-area-color);
+  position: absolute;
+  margin-left: var(--margin-width);
+  left: calc(var(--label-x-pos) + var(--label-width) + var(--margin-width) + var(--star-width));
+  min-width: calc(100% - calc(var(--label-width) + var(--margin-width) + var(--star-width) + var(--margin-width) + var(--edit-button-width) + var(--margin-width) + var(--delete-button-width)));
+  width: calc(100% - calc(var(--label-width) + var(--margin-width) + var(--star-width) + var(--margin-width) + var(--edit-button-width) + var(--margin-width) + var(--delete-button-width)));
+  max-width: calc(100% - calc(var(--label-width) + var(--margin-width) + var(--star-width) + var(--margin-width) + var(--edit-button-width) + var(--margin-width) + var(--delete-button-width)));*/
+  border-style: dotted;
+  border-width: thin;
+  border-color: var(--text-area-color);
+  position: relative;
+  /*margin-left: var(--margin-width);*/
+  /*left: calc(var(--label-x-pos) + var(--label-width) + var(--margin-width) + var(--star-width));*/
+  
+  
+  /*min-width: calc(100% - calc(var(--label-width) + var(--margin-width) + var(--star-width) + var(--margin-width) + var(--edit-button-width) + var(--margin-width) + var(--delete-button-width)));
+  width: calc(100% - calc(var(--label-width) + var(--margin-width) + var(--star-width) + var(--margin-width) + var(--edit-button-width) + var(--margin-width) + var(--delete-button-width)));
+  max-width: calc(100% - calc(var(--label-width) + var(--margin-width) + var(--star-width) + var(--margin-width) + var(--edit-button-width) + var(--margin-width) + var(--delete-button-width)));*/
+  /*min-width: calc(100% - (var(--label-width) + var(--margin-width) + var(--star-width) + var(--margin-width) + var(--edit-button-width) + var(--margin-width) + var(--delete-button-width)));
+  width: calc(100% - (var(--label-width) + var(--margin-width) + var(--star-width) + var(--margin-width) + var(--edit-button-width) + var(--margin-width) + var(--delete-button-width)));
+  max-width: calc(100% - (var(--label-width) + var(--margin-width) + var(--star-width) + var(--margin-width) + var(--edit-button-width) + var(--margin-width) + var(--delete-button-width)));*/
+  min-width: var(--utterance-text-width);
+  width: var(--utterance-text-width);
+  max-width: var(--utterance-text-width);
+  /*min-width: calc(100% - 167px);*/
+  /*width: calc(100% - 167px);*/
+  /*max-width: calc(100% - 167px);*/
+}
+.utteranceHovered {
+  border-color: gray;
+  cursor: pointer;
+}
+
+.utteranceSelected {
+  background-color: lightyellow;
+}
+
+/*.editUtteranceButton {
+  display: inline;
+  position: absolute;
+  right: calc(var(--delete-button-width) + var(--margin-width));
+  margin-left: var(--margin-width);
+  min-width: var(--edit-button-width);
+  max-width: var(--edit-button-width);
+}
+
+.deleteUtteranceButton {
+  display: inline;
+  position: absolute;
+  right: 0px;
+  margin-left: var(--margin-width);
+  min-width: var(--delete-button-width);
+  max-width: var(--delete-button-width);
+}*/
+
+.editButton {
+  display: none;
+  position: absolute;
+  right: calc(var(--delete-button-width) + 7px + var(--flag-width) + var(--star-width) + var(--label-width));
+  margin-left: var(--margin-width);
+  min-width: var(--edit-button-width);
+  max-width: var(--edit-button-width);
+}
+
+.deleteButton {
+  display: none;
+  position: absolute;
+  right: calc(var(--flag-width) + var(--star-width) + var(--label-width));
+  margin-left: var(--margin-width);
+  /*min-width: var(--delete-button-width);
+  max-width: var(--delete-button-width);*/
+}
+
+.recordCommentButton {
+  display: none;
+  position: absolute;
+  left: calc(var(--utterance-text-width) + 5px);
+  top: 0px;
+  border-style: outset;
+  height: 18px;
+}
+
+.editAnnotationLevelCommentButton {
+  display: none;
+  position: absolute;
+  right: calc(var(--delete-button-width) + 7px);
+  margin-left: var(--margin-width);
+  min-width: var(--edit-button-width);
+  max-width: var(--edit-button-width);
+  top: 0px;
+}
+
+.deleteAnnotationLevelCommentButton {
+  display: none;
+  position: absolute;
+  right: 0px;
+  margin-left: var(--margin-width);
+  /*min-width: var(--delete-button-width);
+  max-width: var(--delete-button-width);*/
+  top: 0px;
+}
+
+.recordAnnotationLevelCommentButton {
+  display: none;
+  position: absolute;
+  /*left: calc(var(--utterance-text-width) + 5px);*/
+  right: calc(var(--edit-button-width) + var(--delete-button-width) + 7px + 7px);
+  top: 0px;
+  border-style: outset;
+  height: 18px;
+}
+
+#recordingStatus {
+  width: 150px;
+  height: 50px;
+  position: absolute;
+  top: 0px;
+  left: 10px;
+  background-color: white;
+}
+
+.commandData {
+  min-width: var(--command-area);
+  width: var(--command-area);
+  max-width: var(--command-area);
+  /*float: right;*/
+  background-color: white;
+  padding: var(--padding);
+  position: absolute;
+  right: 0px;
+  top: 0px;
+  margin-top: var(--video-margin);
+  margin-right: var(--video-margin);
+  overflow-y: scroll;
+  max-height: calc(var(--video-height) - var(--video-margin));
+}
+
+#todoFlag {
+  float: left;
+}
+
+#problemFlag {
+  float: right;
+}
+
+.unselectedIcon {
+  opacity: .2;
+}
+
+/*.icon:hover {
+  opacity: 1;
+  cursor: pointer;
+}*/
+
+.hoveredIcon {
+  opacity: 1;
+  cursor: pointer;
+}
+
+#pulsatingReason {
+  display: none;
+  position: relative;
+  left: 0px;
+  background-color: white;
+  margin-top: 15px;
+}
+
+/*#textAndCommands {
+  border-top-color: black;
+  border-top-style: solid;
+  border-top-width: 1px;
+}*/
+
+#flags {
+  margin-bottom: 40px;
+}
+
+/* From https://stackoverflow.com/questions/7492062/css-overflow-scroll-always-show-vertical-scroll-bar */
+::-webkit-scrollbar {
+  -webkit-appearance: none;
+  width: 7px;
+}
+::-webkit-scrollbar-thumb {
+  border-radius: 4px;
+  background-color: rgba(0,0,0,.5);
+  -webkit-box-shadow: 0 0 1px rgba(255,255,255,.5);
+}
+
+.addInfo {
+  display: none;
+  position: absolute;
+  left: calc(var(--utterance-text-width) + 5px);
+  top: 5px;
+}
+
+.utteranceComment {
+  position: relative;
+  left: var(--utterance-comment-indent);
+  background-color: #eff9fd;
+  font-style: italic;
+  min-width: calc(var(--utterance-text-width) - var(--utterance-comment-indent));
+  width: calc(var(--utterance-text-width) - var(--utterance-comment-indent));
+  max-width: calc(var(--utterance-text-width) - var(--utterance-comment-indent));
+}
+
+.utteranceCommentContainer {
+  position: relative;
+  margin-top: 3px;
+}
+
+.editUtteranceCommentButton {
+  top: 0px;
+}
+
+.deleteUtteranceCommentButton {
+  top: 0px;
+}
+
+.annotationLevelComment {
+  position: relative;
+  left: 0px;
+  background-color: #eff9fd;
+  font-style: italic;
+  /*min-width: calc(100% - (var(--margin-width) + var(--edit-button-width) + var(--margin-width) + var(--delete-button-width)));
+  width: calc(var(--utterance-text-width));
+  max-width: calc(var(--utterance-text-width));*/
+  min-width: calc(100% - (var(--margin-width) + var(--edit-button-width) + var(--margin-width) + var(--delete-button-width) + 25px));
+  width: calc(100% - (var(--margin-width) + var(--edit-button-width) + var(--margin-width) + var(--delete-button-width) + 25px));
+  max-width: calc(100% - (var(--margin-width) + var(--edit-button-width) + var(--margin-width) + var(--delete-button-width) + 25px));
+}
+
+.annotationLevelCommentContainer {
+  position: relative;
+  margin-top: 3px;
+}
+
+/*.addAnnotationLevelCommentButton {
+  margin-top: 20px;
+}*/
+
+/* ------------- From Justin's svg file ------------- */
+#mainIndicatorSVG .cls-1 {
+  fill: none;
+}
+#mainIndicatorSVG .cls-11 {
+  fill: none;
+}
+#mainIndicatorSVG .cls-12 {
+  fill: none;
+}
+#mainIndicatorSVG .cls-13 {
+  fill: none;
+}
+
+#mainIndicatorSVG .cls-2 {
+  isolation: isolate;
+}
+
+#mainIndicatorSVG .cls-3 {
+  opacity: 0.75;
+  mix-blend-mode: multiply;
+}
+
+#mainIndicatorSVG .cls-4 {
+  fill: #fff;
+}
+
+#mainIndicatorSVG .cls-5 {
+  fill: #e6e6e6;
+}
+
+#mainIndicatorSVG .cls-8 {
+  fill: #e6e6e6;
+}
+
+#mainIndicatorSVG .cls-6 {
+  fill: #ff5722;
+}
+
+#mainIndicatorSVG .cls-7 {
+  fill: #ffb300;
+}
+
+#mainIndicatorSVG .cls-8 {
+  stroke: #fff;
+  stroke-width: 10px;
+}
+
+#mainIndicatorSVG .outlineLine {
+  /*stroke: #fff;*/
+  stroke: black;
+  stroke-width: 10px;
+  display: none;
+}
+
+#mainIndicatorSVG .cls-11 {
+  stroke-miterlimit: 10;
+}
+#mainIndicatorSVG .cls-12 {
+  stroke-miterlimit: 10;
+}
+#mainIndicatorSVG .cls-13 {
+  stroke-miterlimit: 10;
+}
+#mainIndicatorSVG .cls-8 {
+  stroke-miterlimit: 10;
+}
+
+#mainIndicatorSVG .cls-9 {
+  /*fill: #0288d1;*/
+  fill: url(#pinstripe);
+}
+
+#mainIndicatorSVG .cls-10 {
+  /*fill: #ccc;*/
+  fill: black;
+}
+
+#mainIndicatorSVG .cls-11 {
+  stroke: #0d47a1;
+}
+
+#mainIndicatorSVG .cls-11 {
+  stroke-width: 3px;
+  stroke-dasharray: 8 6;
+}
+#mainIndicatorSVG .cls-12 {
+  stroke-width: 3px;
+  stroke-dasharray: 8 6;
+}
+#mainIndicatorSVG .cls-13 {
+  stroke-width: 3px;
+  stroke-dasharray: 8 6;
+}
+
+#mainIndicatorSVG .cls-12 {
+  stroke: #ff5722;
+}
+
+#mainIndicatorSVG .cls-13 {
+  stroke: #f57f17;
+}
+
+#mainIndicatorSVG .cls-14 {
+  clip-path: url(#clip-path);
+}
+
+#mainIndicatorSVG .cls-15 {
+  /*fill: #ccc;*/
+  /*fill: black;*/
+  /*fill: none;*/ /* Initially no fill, but on hover/selection, programmatically this will get changed to black*/
+  /*fill: #fff;*/
+}
+
+#mainIndicatorSVG .wedgeHighlightOutline {
+  /*fill: #fff;*/
+  fill: none;
+  stroke-width: 7px;
+  stroke: none;
+}
+/* --------------------------------------- */
+
+#mainIndicatorSVG {
+  width: 100%;
+  height: 100%;
+}
+
+#outlinesSVG {
+  width: 100%;
+  height: 100%;
+}
+
+#yellowWedgePulsate {
+  fill: url(#yellowGradient);
+}
+
+#redWedgePulsate {
+  fill: url(#redGradient);
+}
+.wedgePulsate {
+  /*opacity: 0;*/
+  display: none;
+}
+
+#importantCirclePulsate, #problemButtonPulsate, #todoButtonPulsate {
+  fill: url(#grayGradient);
+}
+
+.pulsateButton {
+  display: none;
+}
+
+.recordCommentButtonMic {
+  height: 14px;
+}
+
+.recordAnnotationLevelCommentButtonMic {
+  height: 14px;
+}
+
+.trashCan {
+  height: 12px;
+}
+
+.addInfoSpeechBubble {
+  height: 12px;
+}
+
+#bottomLine {
+  height: 0px;
+  width: 60%;
+  position: absolute;
+  top: 450px;
+  border-top-style: solid;
+  border-top-color: black;
+  border-top-width: 1px;
+}
+
+.webviewWindow {
+  
+}
