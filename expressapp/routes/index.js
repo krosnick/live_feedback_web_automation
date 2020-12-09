@@ -14,4 +14,4 @@ router.get('/', function(req, res, next) {
   res.render('layouts/index');
 });
 
-module.exports = router;
+module.exports.router = router;

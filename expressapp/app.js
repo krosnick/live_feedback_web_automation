@@ -1,6 +1,28 @@
 const electron = require('electron');
 const { app, BrowserWindow, BrowserView } = electron;
 
+const fetch = require('node-fetch');
+const puppeteer = require('puppeteer');
+app.commandLine.appendSwitch('remote-debugging-port', '8315');
+
+async function setupPuppeteer() {
+  console.log("before response");
+  const response = await fetch(`http://localhost:8315/json/version/`)
+  console.log("after response");
+  //console.log("response", response);
+  const debugEndpoint = await response.json();
+  //console.log("debugEndpoints", debugEndpoint);
+
+  puppeteerBrowser = await puppeteer.connect({
+      browserWSEndpoint: debugEndpoint.webSocketDebuggerUrl,
+      defaultViewport: null
+  });
+  expressApp.locals.puppeteerBrowser = puppeteerBrowser;
+  console.log("puppeteerBrowser.targets()", puppeteerBrowser.targets());
+  
+  // use puppeteer APIs now!
+}
+
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
@@ -12,7 +34,8 @@ const fs = require('fs');
 //const MongoClient = require('mongodb').MongoClient;
 const assert = require('assert');
 
-var indexRouter = require('./routes/index');
+var indexRouter = require('./routes/index').router;
+var puppeteerRouter = require('./routes/puppeteer').router;
 
 let win; // the main content window
 
@@ -44,6 +67,7 @@ app.on('ready', function() {
   expressApp.use('/jquery', express.static(__dirname + '/../node_modules/jquery/dist/'));
 
   expressApp.use('/', indexRouter);
+  expressApp.use('/puppeteer', puppeteerRouter);
 
   // catch 404 and forward to error handler
   expressApp.use(function(req, res, next) {
@@ -219,23 +243,35 @@ function createWindow () {
       webviewTag: true
     }
   });
-  const view1 = new BrowserView()
-  win.addBrowserView(view1)
-  view1.setBounds({ x: 0, y: 0, width: 600, height: 600 })
-  view1.webContents.loadURL('https://electronjs.org')
+
+  const view1 = new BrowserView({webPreferences: {zoomFactor: 1.0 } });
+  console.log("view1 ID", view1.webContents.id);
+  //console.log("view1 ID", view1.webContents.getProcessId());
+  win.addBrowserView(view1);
+  view1.setBounds({ x: 0, y: 0, width: 600, height: 600 });
+  view1.webContents.loadURL('https://www.amazon.com');
   view1.webContents.openDevTools();
 
-  const view2 = new BrowserView()
-  win.addBrowserView(view2)
-  view2.setBounds({ x: 600, y: 0, width: 600, height: 600 })
-  view2.webContents.loadURL('http://localhost:3000/')
+  const view2 = new BrowserView({webPreferences: {zoomFactor: 1.0 } });
+  console.log("view2 ID", view2.webContents.id);
+  //console.log("view2 ID", view2.webContents.getProcessId());
+  win.addBrowserView(view2);
+  view2.setBounds({ x: 600, y: 0, width: 600, height: 600 });
+  view2.webContents.loadURL('http://localhost:3000/');
   view2.webContents.openDevTools();
 
+  setupPuppeteer();
   /*// and load the index.html of the app.
   win.loadURL('http://localhost:3000/');
 
   // Open the DevTools.
   win.webContents.openDevTools();*/
+
+  // wait for the window to open/load, then connect Puppeteer to it:
+  /*win.webContents.on("did-finish-load", () => { 
+    console.log("did-finish-load");
+    setupPuppeteer();
+  });*/
 
   // Emitted when the window is closed.
   win.on('closed', () => {
@@ -247,11 +283,15 @@ function createWindow () {
 
   // Capturing the window ID, so that later in router files we can send messages to a particular window
   expressApp.locals.browserWinIDs["win"] = win.id;
+  expressApp.locals.win = win;
+  expressApp.locals.view1 = view1;
+  expressApp.locals.view2 = view2;
   // This prints out "1" as long as win is the first window created
   //console.log("win.id");
   //console.log(win.id);
 
   win.focus();
+  win.webContents.debugger.attach();
 }
 
 module.exports = expressApp;

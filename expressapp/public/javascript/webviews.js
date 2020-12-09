@@ -20,4 +20,12 @@ $(function(){
     webview.addEventListener('dom-ready', () => {
         webview.openDevTools({});
     });*/
+
+    setTimeout(function(){
+        $.post("/puppeteer/runPuppeteerCode",
+            function(){
+                console.log("runPuppeteerCode done func called");
+            }
+        );
+    }, 5000);
 });
