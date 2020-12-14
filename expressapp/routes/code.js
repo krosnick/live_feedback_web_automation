@@ -13,7 +13,8 @@ router.put('/update/', function(req, res, next) {
         }, // query
         { 
             $set: {
-                fileContents: updatedCode
+                fileContents: updatedCode,
+                lastModified: Date.now()
             }
         },
         function(error, result){

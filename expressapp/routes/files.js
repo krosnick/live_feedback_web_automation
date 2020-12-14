@@ -13,7 +13,8 @@ router.post('/updateName/', function(req, res, next) {
         }, // query
         { 
             $set: {
-                fileName: updatedFileName
+                fileName: updatedFileName,
+                lastModified: Date.now()
             }
         },
         function(error, result){
@@ -40,7 +41,8 @@ router.post('/createNewFile', function(req, res, next) {
         { 
             $set: {
                 fileName: currentFileName,
-                fileContents: currentFileContents
+                fileContents: currentFileContents,
+                lastModified: Date.now()
             }
         },
         function(error, result){
