@@ -1,0 +1,9 @@
+<span>Current file:</span>
+<input type="text" id="currentFileName" value="{{currentFileName}}">
+<select id="fileSelectMenu">
+    <option value="">--Choose a different file--</option>
+    {{#each fileIDNamePairs}}
+        <option value="{{fileID}}">{{fileName}}</option>
+    {{/each}}
+</select>
+<button>New File</button>

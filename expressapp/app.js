@@ -31,11 +31,12 @@ var logger = require('morgan');
 const fs = require('fs');
 
 
-//const MongoClient = require('mongodb').MongoClient;
+const MongoClient = require('mongodb').MongoClient;
 const assert = require('assert');
 
 var indexRouter = require('./routes/index').router;
 var puppeteerRouter = require('./routes/puppeteer').router;
+var filesRouter = require('./routes/files').router;
 
 let win; // the main content window
 
@@ -70,6 +71,7 @@ app.on('ready', function() {
 
   expressApp.use('/', indexRouter);
   expressApp.use('/puppeteer', puppeteerRouter);
+  expressApp.use('/files', filesRouter);
 
   // catch 404 and forward to error handler
   expressApp.use(function(req, res, next) {
@@ -87,18 +89,19 @@ app.on('ready', function() {
     res.render('layouts/error');
   });
 
-  /*// Connection URL
+  // Connection URL
   // process.argv[2] is the first arg, the shared directory
-  const mongoKeys = JSON.parse(fs.readFileSync(path.join(process.argv[2], 'atlas.keys.json'), 'utf8'));
+  /*const mongoKeys = JSON.parse(fs.readFileSync(path.join(process.argv[2], 'atlas.keys.json'), 'utf8'));
   const mongoUsername = mongoKeys.username;
-  const mongoPassword = mongoKeys.password;
-  const url = "mongodb+srv://" + mongoUsername + ":" + mongoPassword + "@cluster0-jct4v.mongodb.net/test?retryWrites=true&w=majority";
+  const mongoPassword = mongoKeys.password;*/
+  //const url = "mongodb+srv://" + mongoUsername + ":" + mongoPassword + "@cluster0-jct4v.mongodb.net/test?retryWrites=true&w=majority";
+  const url = 'mongodb://localhost:27017';
 
   // Database Name
-  const dbName = 'annotationData';
+  const dbName = 'liveWebAutomationData';
 
   let db;
-  let annotationsCollection;
+  let filesCollection;
 
   console.log("before MongoClient");
   const client = new MongoClient(url, { useNewUrlParser: true });
@@ -113,16 +116,13 @@ app.on('ready', function() {
 
     db = client.db(dbName);
 
-    annotationsCollection = db.collection('annotations');
-    commandsCollection = db.collection('commands');
-    annotationLevelComments = db.collection('annotationComments');
+    filesCollection = db.collection('files');
     // Set this locals property so that we can access the collections
       // from other parts of the app (e.g., within the req object in
       // in request callbacks)
-    expressApp.locals.annotationsCollection = annotationsCollection;
-    expressApp.locals.commandsCollection = commandsCollection;
-    expressApp.locals.annotationLevelComments = annotationLevelComments;*/
+    expressApp.locals.filesCollection = filesCollection;
     
+    expressApp.locals.title = "Live web automation";
     // ------------------------------
     var debug = require('debug')('expressapp:server');
     var http = require('http');
@@ -214,7 +214,7 @@ app.on('ready', function() {
     expressApp.locals.browserWinIDs = {};
 
     createWindow();
-  //});
+  });
   
 });
 

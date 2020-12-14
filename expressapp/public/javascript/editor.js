@@ -1,4 +1,6 @@
 $(function(){
+    let updateFileNameTimeout;
+
     setTimeout(function(){
         const monacoEditor = monaco.editor.create(document.getElementById("codeEditor"), {
             value: "",
@@ -18,5 +20,20 @@ $(function(){
                 arrowSize: 30
             }
         });
-    }, 1000);
+    }, 3000);
+
+    $('#currentFileName').on('input',function(e){
+        // Send update to DB if user hasn't edited in past few seconds
+        clearTimeout(updateFileNameTimeout);
+        updateFileNameTimeout = setTimeout(function(){
+            // Send update to DB
+            $.ajax({
+                method: "POST",
+                url: "/files/updateName",
+                data: {
+                    updatedFileName: $('#currentFileName').val()
+                }
+            });
+        }, 3000);
+    });
 });
