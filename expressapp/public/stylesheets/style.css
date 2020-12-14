@@ -1,4 +1,12 @@
 #codeEditor {
-  width: 800px;
-  height: 800px;
+  width: 750px;
+  height: 750px;
+}
+
+body {
+    border: 1px solid gray;
+}
+
+#fileSelection {
+    margin: 5px;
 }
