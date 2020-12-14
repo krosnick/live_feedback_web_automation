@@ -65,6 +65,8 @@ app.on('ready', function() {
   expressApp.use(cookieParser());
   expressApp.use(express.static(path.join(__dirname, 'public')));
   expressApp.use('/jquery', express.static(__dirname + '/../node_modules/jquery/dist/'));
+  expressApp.use('/monaco', express.static(__dirname + '/../node_modules/monaco-editor/min/vs/'));
+  expressApp.use('/path', express.static(__dirname + '/../node_modules/path/'));
 
   expressApp.use('/', indexRouter);
   expressApp.use('/puppeteer', puppeteerRouter);
@@ -240,25 +242,25 @@ function createWindow () {
     height: 900,
     webPreferences: {
       nodeIntegration: true,
-      webviewTag: true
+      webviewTag: true,
+      webSecurity: false
     }
   });
 
-  const view1 = new BrowserView({webPreferences: {zoomFactor: 1.0 } });
-  console.log("view1 ID", view1.webContents.id);
-  //console.log("view1 ID", view1.webContents.getProcessId());
-  win.addBrowserView(view1);
-  view1.setBounds({ x: 0, y: 0, width: 600, height: 600 });
-  view1.webContents.loadURL('https://www.amazon.com');
-  view1.webContents.openDevTools();
+  const editorBrowserView = new BrowserView({webPreferences: {zoomFactor: 1.0, nodeIntegration: true, webSecurity: false} });
+  console.log("editorBrowserView ID", editorBrowserView.webContents.id);
+  win.addBrowserView(editorBrowserView);
+  editorBrowserView.setBounds({ x: 0, y: 0, width: 600, height: 600 });
+  editorBrowserView.webContents.loadURL('http://localhost:3000/');
+  //editorBrowserView.webContents.openDevTools();
 
-  const view2 = new BrowserView({webPreferences: {zoomFactor: 1.0 } });
-  console.log("view2 ID", view2.webContents.id);
-  //console.log("view2 ID", view2.webContents.getProcessId());
-  win.addBrowserView(view2);
-  view2.setBounds({ x: 600, y: 0, width: 600, height: 600 });
-  view2.webContents.loadURL('http://localhost:3000/');
-  view2.webContents.openDevTools();
+  const pageView1 = new BrowserView({webPreferences: {zoomFactor: 1.0, nodeIntegration: true, webSecurity: false } });
+  console.log("pageView1 ID", pageView1.webContents.id);
+  //console.log("view1 ID", view1.webContents.getProcessId());
+  win.addBrowserView(pageView1);
+  pageView1.setBounds({ x: 600, y: 0, width: 600, height: 600 });
+  pageView1.webContents.loadURL('https://www.amazon.com');
+  pageView1.webContents.openDevTools();
 
   setupPuppeteer();
   /*// and load the index.html of the app.
@@ -284,8 +286,8 @@ function createWindow () {
   // Capturing the window ID, so that later in router files we can send messages to a particular window
   expressApp.locals.browserWinIDs["win"] = win.id;
   expressApp.locals.win = win;
-  expressApp.locals.view1 = view1;
-  expressApp.locals.view2 = view2;
+  /*expressApp.locals.view1 = view1;
+  expressApp.locals.view2 = view2;*/
   // This prints out "1" as long as win is the first window created
   //console.log("win.id");
   //console.log(win.id);

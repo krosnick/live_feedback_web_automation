@@ -6,12 +6,37 @@
     <script src="/jquery/jquery.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jqueryui/1.11.4/jquery-ui.min.js"></script>
-    <script src="/javascript/webviews.js"></script>
-    <script>
-        //var $ = require("jquery");
-    </script>
+    <!--<script src="/javascript/webviews.js"></script>-->
+    <script src="/javascript/editor.js"></script>
   </head>
   <body>
     {{{body}}}
   </body>
+  <link rel="stylesheet" data-name="vs/editor/editor.main" href="/monaco/editor/editor.main.css">
+  <script>
+	(function() {
+    const path = require('path');
+    const routesRoot = $("#routesRoot").attr("routesRoot");
+    const amdLoader = require(path.join(routesRoot, "../../node_modules/monaco-editor/min/vs/loader.js"));
+    const amdRequire = amdLoader.require;
+		const amdDefine = amdLoader.require.define;
+
+		function uriFromPath(_path) {
+			var pathName = path.resolve(_path).replace(/\\/g, '/');
+			if (pathName.length > 0 && pathName.charAt(0) !== '/') {
+				pathName = '/' + pathName;
+			}
+			return encodeURI('file://' + pathName);
+		}
+
+		amdRequire.config({
+			baseUrl: uriFromPath(path.join(routesRoot, "../../node_modules/monaco-editor/min"))
+		});
+
+		// workaround monaco-css not understanding the environment
+		self.module = undefined;
+
+    amdRequire(['vs/editor/editor.main'], function() {});
+	})();
+	</script>
 </html>

@@ -11,7 +11,9 @@ router.get('/', function(req, res, next) {
       "personalKeysDir": process.argv[3] // Render as divs using the template; client-side JS can then access them
     });
   });*/
-  res.render('layouts/index');
+  res.render('layouts/index', {
+    "routesRoot": __dirname // e.g., /Users/rkros/Desktop/desktop/PhD/web_automation/expressapp/routes
+  });
 });
 
 module.exports.router = router;
