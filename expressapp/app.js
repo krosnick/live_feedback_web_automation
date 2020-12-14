@@ -238,8 +238,8 @@ app.on('activate', () => {
 function createWindow () {
   // Create the browser window.
   win = new BrowserWindow({
-    width: 1500,
-    height: 900,
+    width: 1700,
+    height: 970,
     webPreferences: {
       nodeIntegration: true,
       webviewTag: true,
@@ -250,17 +250,24 @@ function createWindow () {
   const editorBrowserView = new BrowserView({webPreferences: {zoomFactor: 1.0, nodeIntegration: true, webSecurity: false} });
   console.log("editorBrowserView ID", editorBrowserView.webContents.id);
   win.addBrowserView(editorBrowserView);
-  editorBrowserView.setBounds({ x: 0, y: 0, width: 600, height: 600 });
+  editorBrowserView.setBounds({ x: 0, y: 0, width: 800, height: 800 });
   editorBrowserView.webContents.loadURL('http://localhost:3000/');
-  //editorBrowserView.webContents.openDevTools();
+  editorBrowserView.webContents.openDevTools({mode: "detach"});
 
-  const pageView1 = new BrowserView({webPreferences: {zoomFactor: 1.0, nodeIntegration: true, webSecurity: false } });
+  const pageView1 = new BrowserView({webPreferences: {zoomFactor: 0.5, nodeIntegration: true, webSecurity: false } });
   console.log("pageView1 ID", pageView1.webContents.id);
   //console.log("view1 ID", view1.webContents.getProcessId());
   win.addBrowserView(pageView1);
-  pageView1.setBounds({ x: 600, y: 0, width: 600, height: 600 });
+  pageView1.setBounds({ x: 800, y: 0, width: 900, height: 450 });
   pageView1.webContents.loadURL('https://www.amazon.com');
   pageView1.webContents.openDevTools();
+
+  const pageView2 = new BrowserView({webPreferences: {zoomFactor: 0.5, nodeIntegration: true, webSecurity: false } });
+  console.log("pageView2 ID", pageView2.webContents.id);
+  win.addBrowserView(pageView2);
+  pageView2.setBounds({ x: 800, y: 500, width: 900, height: 450 });
+  pageView2.webContents.loadURL('https://www.amazon.com');
+  pageView2.webContents.openDevTools();
 
   setupPuppeteer();
   /*// and load the index.html of the app.
