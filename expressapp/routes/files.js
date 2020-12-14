@@ -26,11 +26,40 @@ router.post('/updateName/', function(req, res, next) {
 /*router.post('/renderDifferentFile/:fileID', function(req, res, next) {
     const fileID = req.params.fileID;
 
-});
+});*/
 
 router.post('/createNewFile', function(req, res, next) {
+    // TODO - Make sure to save fileContents of current file
+    
+    // Maybe just re-render fileSelection template entirely and send
+        // back over to client to just replace
+    req.app.locals.filesCollection.find().toArray(function(error, docs){
+        let fileIDNamePairs = [];
+        // Add all pairs to the list
+        for(let i = 0; i < docs.length; i++){
+            fileIDNamePairs.push({
+                fileID: docs[i].fileID,
+                fileName: docs[i].fileName
+            });
+        }
 
-});*/
+        // Create new file obj
+        req.app.locals.fileID = uuidv1();
+        // Insert new entry into DB
+        fileObj = {
+            fileID: req.app.locals.fileID,
+            fileName: "untitled_" + req.app.locals.fileID + ".js",
+            fileContents: "",
+            lastModified: Date.now()
+        };
+        req.app.locals.filesCollection.insertOne(fileObj);
+
+        res.render('partials/fileSelection', {
+            currentFileName: fileObj.fileName,
+            fileIDNamePairs: fileIDNamePairs
+        });
+    });
+});
 
 module.exports.router = router;
 module.exports = {

@@ -36,4 +36,15 @@ $(function(){
             });
         }, 3000);
     });
+
+    $("#createNewFile").on("click", function(e){
+        $.ajax({
+            method: "POST",
+            url: "/files/createNewFile"
+        }).done(function(data) {
+            // "data" is the rendered html - replace the contents of #fileSelection with  this
+            $("#fileSelection").empty();
+            $("#fileSelection").append(data);
+        });
+    });
 });
