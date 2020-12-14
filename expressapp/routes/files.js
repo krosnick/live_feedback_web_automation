@@ -29,36 +29,51 @@ router.post('/updateName/', function(req, res, next) {
 });*/
 
 router.post('/createNewFile', function(req, res, next) {
-    // TODO - Make sure to save fileContents of current file
-    
-    // Maybe just re-render fileSelection template entirely and send
-        // back over to client to just replace
-    req.app.locals.filesCollection.find().toArray(function(error, docs){
-        let fileIDNamePairs = [];
-        // Add all pairs to the list
-        for(let i = 0; i < docs.length; i++){
-            fileIDNamePairs.push({
-                fileID: docs[i].fileID,
-                fileName: docs[i].fileName
+    // To be safe, make sure to update current file name and contents before
+        // creating (and rendering) new file
+    const currentFileName = req.body.currentFileName;
+    const currentFileContents = req.body.currentFileContents;
+    req.app.locals.filesCollection.updateOne(
+        {
+            fileID: req.app.locals.fileID
+        }, // query
+        { 
+            $set: {
+                fileName: currentFileName,
+                fileContents: currentFileContents
+            }
+        },
+        function(error, result){
+            // Maybe just re-render fileSelection template entirely and send
+                // back over to client to just replace
+            req.app.locals.filesCollection.find().toArray(function(error2, docs){
+                let fileIDNamePairs = [];
+                // Add all pairs to the list
+                for(let i = 0; i < docs.length; i++){
+                    fileIDNamePairs.push({
+                        fileID: docs[i].fileID,
+                        fileName: docs[i].fileName
+                    });
+                }
+
+                // Create new file obj
+                req.app.locals.fileID = uuidv1();
+                // Insert new entry into DB
+                fileObj = {
+                    fileID: req.app.locals.fileID,
+                    fileName: "untitled_" + req.app.locals.fileID + ".js",
+                    fileContents: "",
+                    lastModified: Date.now()
+                };
+                req.app.locals.filesCollection.insertOne(fileObj);
+
+                res.render('partials/fileSelection', {
+                    currentFileName: fileObj.fileName,
+                    fileIDNamePairs: fileIDNamePairs
+                });
             });
         }
-
-        // Create new file obj
-        req.app.locals.fileID = uuidv1();
-        // Insert new entry into DB
-        fileObj = {
-            fileID: req.app.locals.fileID,
-            fileName: "untitled_" + req.app.locals.fileID + ".js",
-            fileContents: "",
-            lastModified: Date.now()
-        };
-        req.app.locals.filesCollection.insertOne(fileObj);
-
-        res.render('partials/fileSelection', {
-            currentFileName: fileObj.fileName,
-            fileIDNamePairs: fileIDNamePairs
-        });
-    });
+    );
 });
 
 module.exports.router = router;

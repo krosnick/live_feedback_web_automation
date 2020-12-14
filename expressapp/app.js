@@ -37,6 +37,7 @@ const assert = require('assert');
 var indexRouter = require('./routes/index').router;
 var puppeteerRouter = require('./routes/puppeteer').router;
 var filesRouter = require('./routes/files').router;
+var codeRouter = require('./routes/code').router;
 
 let win; // the main content window
 
@@ -72,6 +73,7 @@ app.on('ready', function() {
   expressApp.use('/', indexRouter);
   expressApp.use('/puppeteer', puppeteerRouter);
   expressApp.use('/files', filesRouter);
+  expressApp.use('/code', codeRouter);
 
   // catch 404 and forward to error handler
   expressApp.use(function(req, res, next) {
