@@ -1,12 +1,20 @@
 #codeEditor {
-  width: 750px;
+  width: 730px;
   height: 750px;
+  margin: 10px;
 }
 
 body {
     border: 1px solid gray;
+    padding: 5px;
 }
 
 #fileSelection {
     margin: 5px;
+}
+
+.fileControls {
+    padding: 5px;
+    margin: 5px;
+    border: 1px solid rgb(223, 223, 223);
 }

@@ -252,7 +252,7 @@ function createWindow () {
   const editorBrowserView = new BrowserView({webPreferences: {zoomFactor: 1.0, nodeIntegration: true, webSecurity: false} });
   console.log("editorBrowserView ID", editorBrowserView.webContents.id);
   win.addBrowserView(editorBrowserView);
-  editorBrowserView.setBounds({ x: 0, y: 0, width: 780, height: 800 });
+  editorBrowserView.setBounds({ x: 0, y: 0, width: 780, height: 900 });
   editorBrowserView.webContents.loadURL('http://localhost:3000/');
   editorBrowserView.webContents.openDevTools({mode: "detach"});
 
