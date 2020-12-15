@@ -4,7 +4,7 @@ var router = express.Router();
 const { v1: uuidv1 } = require('uuid');
 
 // Update file name for current file
-router.post('/updateName/', function(req, res, next) {
+router.post('/updateName', function(req, res, next) {
     console.log("updateName started");
     const updatedFileName = req.body.updatedFileName;
     req.app.locals.filesCollection.updateOne(
@@ -132,6 +132,62 @@ router.post('/createNewFile', function(req, res, next) {
             });
         }
     );
+});
+
+// Delete currently open file
+router.delete('/delete', function(req, res, next) {
+    // Delete this file
+    req.app.locals.filesCollection.deleteOne({fileID: req.app.locals.fileID}, function(){
+        // If other files still exist, show the most recently modified one
+        // If no other files exist, create a new empty file
+
+        // Check DB for existing files
+        // If no existing files, create a new one
+        req.app.locals.filesCollection.find().sort( { lastModified: -1 } ).toArray(function(error, docs){
+            let fileObj;
+            if(docs.length > 0){
+                // There are existing files
+                // Choose the one that was most recently edited (i.e., the first one in this sorted list)
+                fileObj = docs[0];
+                req.app.locals.fileID = fileObj.fileID;
+                console.log("mostRecentlyModifiedFileObj", fileObj);
+            }else{
+                // No existing files, create a new one
+                req.app.locals.fileID = uuidv1();
+                // Insert new entry into DB
+                fileObj = {
+                    fileID: req.app.locals.fileID,
+                    fileName: "untitled_" + req.app.locals.fileID + ".js",
+                    fileContents: "",
+                    lastModified: Date.now()
+                };
+                req.app.locals.filesCollection.insertOne(fileObj);
+            }
+
+            // Create pairs of file IDs and names
+            let fileIDNamePairs = [];
+            // Add all pairs to the list (except for the first one which is actually being shown)
+            for(let i = 1; i < docs.length; i++){
+                fileIDNamePairs.push({
+                    fileID: docs[i].fileID,
+                    fileName: docs[i].fileName
+                });
+            }
+            console.log("fileIDNamePairs", fileIDNamePairs);
+
+            res.render('partials/fileSelection', {
+                currentFileName: fileObj.fileName,
+                fileIDNamePairs: fileIDNamePairs,
+                "layout": false
+            }, function (error4, fileSelectionHtml) {
+                res.json({
+                    fileSelectionHtml: fileSelectionHtml,
+                    fileContents: fileObj.fileContents
+                });
+            });
+
+        });
+    });
 });
 
 module.exports.router = router;

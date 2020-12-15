@@ -131,4 +131,22 @@ $(function(){
             });
         }
     });
+
+    // Delete currently shown file, and then show most recently modified file instead (or, if no other files, a new blank file)
+    $("body").on("click", "#deleteCurrentFile", function(e){
+        $.ajax({
+            method: "DELETE",
+            url: "/files/delete"
+        }).done(function(data) {
+            const fileSelectionHtml = data.fileSelectionHtml;
+            const fileContents = data.fileContents;
+
+            // Clear the file selection area and replace it with new rendering
+            $("#fileSelection").empty();
+            $("#fileSelection").append(fileSelectionHtml);
+
+            // Set code for this file
+            monacoEditor.getModel().setValue(fileContents);
+        });
+    });
 });
