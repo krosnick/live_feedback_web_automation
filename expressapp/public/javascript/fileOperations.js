@@ -1,8 +1,7 @@
+let updateFileNameTimeout;
+let codeChangeSetTimeout;
+let monacoEditor;
 $(function(){
-    let updateFileNameTimeout;
-    let codeChangeSetTimeout;
-    let monacoEditor;
-
     setTimeout(function(){
         monacoEditor = monaco.editor.create(document.getElementById("codeEditor"), {
             value: "",
@@ -30,22 +29,7 @@ $(function(){
             monacoEditor.getModel().setValue(data);
         });
 
-        monacoEditor.getModel().onDidChangeContent((event) => {
-            clearTimeout(codeChangeSetTimeout);
-            codeChangeSetTimeout = setTimeout((event) => {
-                const updatedCode = monacoEditor.getValue();
-                console.log("updatedCode", updatedCode);
-    
-                // Send the updated code value to the server
-                $.ajax({
-                    method: "PUT",
-                    url: "/code/update",
-                    data: {
-                        updatedFileContents: updatedCode
-                    }
-                });
-            }, 1000);
-        });
+        monacoEditor.getModel().onDidChangeContent((event) => editorOnDidChangeContent);
     }, 3000);
 
     $('body').on('input', "#currentFileName", function(e){
