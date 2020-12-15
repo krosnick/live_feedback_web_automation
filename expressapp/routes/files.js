@@ -24,10 +24,65 @@ router.post('/updateName/', function(req, res, next) {
     );
 });
 
-/*router.post('/renderDifferentFile/:fileID', function(req, res, next) {
-    const fileID = req.params.fileID;
+router.post('/showFile/:fileID', function(req, res, next) {
+    const newFileIDToShow = req.params.fileID;
 
-});*/
+    // To be safe, make sure to update current file name and contents before
+        // rendering this different file
+    const currentFileName = req.body.currentFileName;
+    const currentFileContents = req.body.currentFileContents;
+    req.app.locals.filesCollection.updateOne(
+        {
+            fileID: req.app.locals.fileID
+        }, // query
+        { 
+            $set: {
+                fileName: currentFileName,
+                fileContents: currentFileContents,
+                lastModified: Date.now()
+            }
+        },
+        function(error, result){
+            // Maybe just re-render fileSelection template entirely and send
+                // back over to client to just replace
+            req.app.locals.filesCollection.find().toArray(function(error2, docs){
+                let fileIDNamePairs = [];
+                // Add all pairs to the list
+                for(let i = 0; i < docs.length; i++){
+                    // Include all files in dropdown menu except for the one we're going to show
+                    if(docs[i].fileID !== newFileIDToShow){
+                        fileIDNamePairs.push({
+                            fileID: docs[i].fileID,
+                            fileName: docs[i].fileName
+                        });
+                    }
+                }
+
+                req.app.locals.fileID = newFileIDToShow;
+
+                req.app.locals.filesCollection.find({fileID: newFileIDToShow}).toArray(function(error3, fileDocs){
+                    const fileToShowObj = fileDocs[0];
+                    const fileName = fileToShowObj.fileName;
+                    const fileContents = fileToShowObj.fileContents;
+
+                    // Now need to send back
+                        // the new file selection rendering,
+                        // the current file code
+                    res.render('partials/fileSelection', {
+                        currentFileName: fileName,
+                        fileIDNamePairs: fileIDNamePairs,
+                        "layout": false
+                    }, function (error4, fileSelectionHtml) {
+                        res.json({
+                            fileSelectionHtml: fileSelectionHtml,
+                            fileContents: fileContents
+                        });
+                    });
+                });
+            });
+        }
+    );
+});
 
 router.post('/createNewFile', function(req, res, next) {
     // To be safe, make sure to update current file name and contents before
@@ -71,7 +126,8 @@ router.post('/createNewFile', function(req, res, next) {
 
                 res.render('partials/fileSelection', {
                     currentFileName: fileObj.fileName,
-                    fileIDNamePairs: fileIDNamePairs
+                    fileIDNamePairs: fileIDNamePairs,
+                    "layout": false
                 });
             });
         }
