@@ -29,7 +29,7 @@ $(function(){
             monacoEditor.getModel().setValue(data);
         });
 
-        monacoEditor.getModel().onDidChangeContent((event) => editorOnDidChangeContent);
+        monacoEditor.getModel().onDidChangeContent(editorOnDidChangeContent);
     }, 3000);
 
     $('body').on('input', "#currentFileName", function(e){

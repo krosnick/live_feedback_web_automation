@@ -77,10 +77,10 @@ router.post('/continueRunning', async function(req, res, next) {
     }
 });*/
 
-router.post('/runPuppeteerCode', async function(req, res, next) {
+/*router.post('/runPuppeteerCode', async function(req, res, next) {
     console.log("runPuppeteerCode");
     currentRes = res;
-    if(!webviewTargetPage /*|| updatePuppeteerPage*/){
+    if(!webviewTargetPage){
         resetWebviewTargetPage(req, function(){
             //updatePuppeteerPage = false;
             //eval(currentCodeString);
@@ -112,6 +112,56 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         }, 5000);
 
     }, 8000);
+});*/
+
+router.post('/runPuppeteerCode', async function(req, res, next) {
+    console.log("runPuppeteerCode");
+    const code = req.body.code;
+    let updatedCodeString = code.replace(/await page/gi, 'await webviewTargetPage');
+    //console.log("updatedRunFuncString", updatedRunFuncString);
+    
+    
+    // Update updatedRunFuncString to wrap contents with a try catch, so that we can send the error back to the client
+    /*const functionMatchingStringArray = updatedRunFuncString.match(/(function)\s+(funcToRun)/);
+    const functionMatchingString = functionMatchingStringArray[0];
+    const indexOfFunctionMatchingString = updatedRunFuncString.indexOf(functionMatchingString);
+    const indexOfOpeningCurlyBrace = updatedRunFuncString.indexOf("{", indexOfFunctionMatchingString);
+    
+    const funcToRunCallMatchingStringArray = updatedRunFuncString.match(/(funcToRun\(params\))/);
+    const funcToRunCallMatchingString = funcToRunCallMatchingStringArray[0];
+    const indexOfFuncToRunCallMatchingString = updatedRunFuncString.indexOf(funcToRunCallMatchingString);
+    const indexOfClosingCurlyBrace = updatedRunFuncString.lastIndexOf("}", indexOfFuncToRunCallMatchingString);*/
+
+    /*const beginningString = updatedRunFuncString.substring(0, indexOfOpeningCurlyBrace + 1);
+    const endingString = updatedRunFuncString.substring(indexOfClosingCurlyBrace);
+
+    const middleStringToWrap = updatedRunFuncString.substring(indexOfOpeningCurlyBrace + 1, indexOfClosingCurlyBrace);*/
+    updatedCodeString = `async function x() { try {`
+    //+ middleStringToWrap +
+    + updatedCodeString +
+    `} catch (error) {
+        let errorMessage = error.name + ": " + error.message;
+        console.error(error);
+        currentRes.send({type: 'groupFailure', errorMessage: errorMessage});
+        return;
+    } } x();`;
+    console.log("updatedCodeString", updatedCodeString);
+
+    currentRes = res;
+    if(!webviewTargetPage){
+        resetWebviewTargetPage(req, function(){
+            //updatePuppeteerPage = false;
+            eval(updatedCodeString);
+            console.log("Before eval");
+            //eval("async function x() { console.log('before'); await webviewTargetPage.type('#twotabsearchtextbox', 'toothpaste'); console.log('after'); } x();");
+            console.log("After eval");
+        });
+    }else{
+        eval(updatedCodeString);
+        console.log("Before eval");
+        //eval("async function x() { console.log('before'); await webviewTargetPage.type('#twotabsearchtextbox', 'toothpaste'); console.log('after'); } x();");
+        console.log("After eval");
+    }
 });
 
 const resetWebviewTargetPage = async function(req, callback){
@@ -123,6 +173,7 @@ const resetWebviewTargetPage = async function(req, callback){
         const target = targets[i];
         //if(target._targetInfo.type === "webview"){
         if(target._targetInfo.title === "https://www.amazon.com"){
+            // This is going to run code on only one of the pages (not multiple if they exist)
             webviewTarget = target;
             break;
         }
@@ -131,7 +182,7 @@ const resetWebviewTargetPage = async function(req, callback){
     //console.log("webviewTarget", webviewTarget);
 
     webviewTargetPage = await webviewTarget.page();
-    //console.log("webviewTargetPage", webviewTargetPage);
+    console.log("webviewTargetPage", webviewTargetPage);
 
     webviewTargetPage.setDefaultTimeout(10000); // it's 30000ms by default
 
