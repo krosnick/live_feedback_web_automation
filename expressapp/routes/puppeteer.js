@@ -4,7 +4,8 @@ var router = express.Router();
 //const unique = require('unique-selector');
 //const strip = require('strip-comments');
 
-let webviewTargetPage;
+//let webviewTargetPage;
+let targetPagesList = [];
 let currentRes = undefined;
 
 //let codeToRunAfterPause = undefined;
@@ -117,7 +118,7 @@ router.post('/continueRunning', async function(req, res, next) {
 router.post('/runPuppeteerCode', async function(req, res, next) {
     console.log("runPuppeteerCode");
     const code = req.body.code;
-    let updatedCodeString = code.replace(/await page/gi, 'await webviewTargetPage');
+    //let updatedCodeString = code.replace(/await page/gi, 'await webviewTargetPage');
     //console.log("updatedRunFuncString", updatedRunFuncString);
     
     
@@ -136,55 +137,64 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     const endingString = updatedRunFuncString.substring(indexOfClosingCurlyBrace);
 
     const middleStringToWrap = updatedRunFuncString.substring(indexOfOpeningCurlyBrace + 1, indexOfClosingCurlyBrace);*/
-    updatedCodeString = `async function x() { try {`
+    let wrappedCodeString = `async function x() { try {`
     //+ middleStringToWrap +
-    + updatedCodeString +
+    + code +
     `} catch (error) {
         let errorMessage = error.name + ": " + error.message;
         console.error(error);
         currentRes.send({type: 'groupFailure', errorMessage: errorMessage});
         return;
     } } x();`;
-    console.log("updatedCodeString", updatedCodeString);
+    console.log("wrappedCodeString", wrappedCodeString);
 
     currentRes = res;
-    if(!webviewTargetPage){
-        resetWebviewTargetPage(req, function(){
+    //if(!webviewTargetPage){
+    if(targetPagesList.length === 0){
+        resetTargetPages(req, function(){
+            evaluateCodeOnAllPages(wrappedCodeString);
             //updatePuppeteerPage = false;
-            eval(updatedCodeString);
-            console.log("Before eval");
+            //eval(updatedCodeString);
             //eval("async function x() { console.log('before'); await webviewTargetPage.type('#twotabsearchtextbox', 'toothpaste'); console.log('after'); } x();");
-            console.log("After eval");
         });
     }else{
-        eval(updatedCodeString);
-        console.log("Before eval");
+        evaluateCodeOnAllPages(wrappedCodeString);
+        //eval(updatedCodeString);
         //eval("async function x() { console.log('before'); await webviewTargetPage.type('#twotabsearchtextbox', 'toothpaste'); console.log('after'); } x();");
-        console.log("After eval");
     }
 });
 
-const resetWebviewTargetPage = async function(req, callback){
+const evaluateCodeOnAllPages = function(wrappedCodeString){
+    for(let i = 0; i < targetPagesList.length; i++){
+        let updatedCodeString = wrappedCodeString.replace(/await page/gi, 'await targetPagesList[' + i + ']');
+        eval(updatedCodeString);
+    }
+};
+
+const resetTargetPages = async function(req, callback){
     let targets = await req.app.locals.puppeteerBrowser.targets();
     console.log("targets", targets);
 
-    let webviewTarget;
+    //let webviewTarget;
     for(let i = 0; i < targets.length; i++){
         const target = targets[i];
         //if(target._targetInfo.type === "webview"){
         if(target._targetInfo.title === "https://www.amazon.com"){
             // This is going to run code on only one of the pages (not multiple if they exist)
-            webviewTarget = target;
-            break;
+            //webviewTarget = target;
+            const targetPage = await target.page();
+            targetPage.setDefaultTimeout(10000); // it's 30000ms by default
+            targetPagesList.push(targetPage);
+            //break;
         }
     }
 
     //console.log("webviewTarget", webviewTarget);
 
-    webviewTargetPage = await webviewTarget.page();
+    /*webviewTargetPage = await webviewTarget.page();
     console.log("webviewTargetPage", webviewTargetPage);
 
-    webviewTargetPage.setDefaultTimeout(10000); // it's 30000ms by default
+    webviewTargetPage.setDefaultTimeout(10000); // it's 30000ms by default*/
 
     //console.log('callback', callback);
     if(typeof callback === 'function'){
