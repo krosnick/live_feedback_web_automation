@@ -5,7 +5,7 @@
     border: 1px solid gray;
 }
 
-#nodeTerminal {
+#puppeteerTerminal {
     width: 720px;
     height: 100px;
     overflow-y: auto;
@@ -14,13 +14,13 @@
     padding: 5px;
 }
 
-#nodeTerminalClearButton {
+#puppeteerTerminalClearButton {
     position: absolute;
     right: 15px;
     margin: 5px;
 }
 
-#nodeTerminalArea {
+#puppeteerTerminalArea {
     position: relative;
 }
 

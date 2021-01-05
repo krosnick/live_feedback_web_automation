@@ -213,9 +213,9 @@ const updateClientSideTerminal = function(stdOutOrErr, isError){
         newPre.appendChild(newContent);
         newDiv.appendChild(newPre);
         newDiv.className = '${className}';
-        nodeTerminalElement = document.querySelector('#nodeTerminal');
-        nodeTerminalElement.appendChild(newDiv);
-        nodeTerminalElement.scrollIntoView(false);
+        puppeteerTerminalElement = document.querySelector('#puppeteerTerminal');
+        puppeteerTerminalElement.appendChild(newDiv);
+        puppeteerTerminalElement.scrollIntoView(false);
         0
         `;
         // Apparently the 0 (or a non-DOM object of some kind) at the end of the script is necessary so that this is the value

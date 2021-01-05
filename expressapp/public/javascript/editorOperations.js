@@ -30,8 +30,8 @@ $(function(){
         });
     });
 
-    $("body").on("click", "#nodeTerminalClearButton", function(e){
-        // Should empty #nodeTerminal of all children
-        $("#nodeTerminal").empty();
+    $("body").on("click", "#puppeteerTerminalClearButton", function(e){
+        // Should empty #puppeteerTerminal of all children
+        $("#puppeteerTerminal").empty();
     });
 });
