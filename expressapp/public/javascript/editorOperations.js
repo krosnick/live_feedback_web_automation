@@ -29,4 +29,9 @@ $(function(){
             }
         });
     });
+
+    $("body").on("click", "#nodeTerminalClearButton", function(e){
+        // Should empty #nodeTerminal of all children
+        $("#nodeTerminal").empty();
+    });
 });

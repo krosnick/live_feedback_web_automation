@@ -1,7 +1,10 @@
 <div id="fileSelection">
     {{> fileSelection this }}
 </div>
-<button id="runCode">Run</button>
+<button id="runCode" class="clickableButton">Run</button>
 <div id="codeEditor"></div>
-<div id="nodeTerminal"></div>
+<div id="nodeTerminalArea">
+    <button id="nodeTerminalClearButton" class="clickableButton">Clear</button>
+    <div id="nodeTerminal"></div>
+</div>
 <div id="routesRoot" routesRoot="{{routesRoot}}"></div>

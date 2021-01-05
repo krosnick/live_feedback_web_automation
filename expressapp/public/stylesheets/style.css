@@ -14,6 +14,20 @@
     padding: 5px;
 }
 
+#nodeTerminalClearButton {
+    position: absolute;
+    right: 15px;
+    margin: 5px;
+}
+
+#nodeTerminalArea {
+    position: relative;
+}
+
+.clickableButton {
+    cursor: pointer;
+}
+
 body {
     border: 1px solid gray;
     padding: 5px;
