@@ -1,8 +1,17 @@
 #codeEditor {
     width: 730px;
-    height: 750px;
+    height: 700px;
     margin: 10px;
     border: 1px solid gray;
+}
+
+#nodeTerminal {
+    width: 720px;
+    height: 100px;
+    overflow-y: auto;
+    border: 1px solid gray;
+    margin: 10px;
+    padding: 5px;
 }
 
 body {
@@ -28,3 +37,20 @@ body {
 #currentFileName {
     width: 200px;
 }
+
+.errorText {
+    color: red;
+}
+
+/* From https://stackoverflow.com/questions/7492062/css-overflow-scroll-always-show-vertical-scroll-bar */
+::-webkit-scrollbar {
+    -webkit-appearance: none;
+    width: 7px;
+}
+  
+::-webkit-scrollbar-thumb {
+    border-radius: 4px;
+    background-color: rgba(0, 0, 0, .5);
+    box-shadow: 0 0 1px rgba(255, 255, 255, .5);
+}
+/* End */

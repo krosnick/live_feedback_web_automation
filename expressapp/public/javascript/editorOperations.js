@@ -27,8 +27,6 @@ $(function(){
             data: {
                 code: code
             }
-        }).done(function(data) {
-            console.log("#runCode result", data);
         });
     });
 });

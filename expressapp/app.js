@@ -1,6 +1,5 @@
 const electron = require('electron');
 const { app, BrowserWindow, BrowserView } = electron;
-
 const fetch = require('node-fetch');
 const puppeteer = require('puppeteer');
 app.commandLine.appendSwitch('remote-debugging-port', '8315');
@@ -252,7 +251,7 @@ function createWindow () {
   const editorBrowserView = new BrowserView({webPreferences: {zoomFactor: 1.0, nodeIntegration: true, webSecurity: false} });
   console.log("editorBrowserView ID", editorBrowserView.webContents.id);
   win.addBrowserView(editorBrowserView);
-  editorBrowserView.setBounds({ x: 0, y: 0, width: 780, height: 900 });
+  editorBrowserView.setBounds({ x: 0, y: 0, width: 780, height: 950 });
   editorBrowserView.webContents.loadURL('http://localhost:3000/');
   editorBrowserView.webContents.openDevTools({mode: "detach"});
 
@@ -294,6 +293,8 @@ function createWindow () {
 
   // Capturing the window ID, so that later in router files we can send messages to a particular window
   expressApp.locals.browserWinIDs["win"] = win.id;
+  expressApp.locals.editorBrowserView = editorBrowserView;
+  expressApp.locals.numBrowserWindows = 2;
   expressApp.locals.win = win;
   /*expressApp.locals.view1 = view1;
   expressApp.locals.view2 = view2;*/

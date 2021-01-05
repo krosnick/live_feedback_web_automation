@@ -1,4 +1,5 @@
-var express = require('express');
+const express = require('express');
+const capcon = require('capture-console');
 var router = express.Router();
 //const remote = require('electron').remote;
 //const unique = require('unique-selector');
@@ -7,6 +8,8 @@ var router = express.Router();
 //let webviewTargetPage;
 let targetPagesList = [];
 let currentRes = undefined;
+let currentReq = undefined;
+let numBrowserWindowsFinishedCodeExecution = 0;
 
 //let codeToRunAfterPause = undefined;
 let currentCodeString = undefined;
@@ -143,12 +146,22 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     `} catch (error) {
         let errorMessage = error.name + ": " + error.message;
         console.error(error);
-        currentRes.send({type: 'groupFailure', errorMessage: errorMessage});
         return;
-    } } x();`;
+    } finally {
+        numBrowserWindowsFinishedCodeExecution += 1;
+        if(numBrowserWindowsFinishedCodeExecution === currentReq.app.locals.numBrowserWindows){
+            // All windows have finished executing now
+            numBrowserWindowsFinishedCodeExecution = 0; // reset
+            // Stop captures and send blank response 
+            capcon.stopCapture(process.stdout);
+            capcon.stopCapture(process.stderr);
+            currentRes.end();
+        }
+    }} x();`;
     console.log("wrappedCodeString", wrappedCodeString);
 
     currentRes = res;
+    currentReq = req;
     //if(!webviewTargetPage){
     if(targetPagesList.length === 0){
         resetTargetPages(req, function(){
@@ -165,10 +178,51 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
 });
 
 const evaluateCodeOnAllPages = function(wrappedCodeString){
+    console.log("evaluateCodeOnAllPages");
+    capcon.startCapture(process.stdout, function (stdout) {
+        updateClientSideTerminal(stdout, false);
+    });
+    capcon.startCapture(process.stderr, function (stderr) {
+        updateClientSideTerminal(stderr, true);
+    });
     for(let i = 0; i < targetPagesList.length; i++){
         let updatedCodeString = wrappedCodeString.replace(/await page/gi, 'await targetPagesList[' + i + ']');
         eval(updatedCodeString);
     }
+};
+
+const updateClientSideTerminal = function(stdOutOrErr, isError){
+    // Add new output/error to client-side terminal
+    const editorBrowserViewWebContents = currentReq.app.locals.editorBrowserView.webContents;
+
+    let className = "";
+    if(isError){
+        className = "errorText";
+    }
+
+    // Need to split stdOutOrErr by \n, so then we print each line individually
+    const itemsToPrint = stdOutOrErr.split('\n');
+    itemsToPrint.forEach(function(str){
+        const codeToRun = `
+        // create a new div element
+        newDiv = document.createElement('div');
+        newPre = document.createElement('pre');
+        // and give it some content
+        newContent = document.createTextNode('${str}');
+        // add the text node to the newly created div
+        newPre.appendChild(newContent);
+        newDiv.appendChild(newPre);
+        newDiv.className = '${className}';
+        nodeTerminalElement = document.querySelector('#nodeTerminal');
+        nodeTerminalElement.appendChild(newDiv);
+        nodeTerminalElement.scrollIntoView(false);
+        0
+        `;
+        // Apparently the 0 (or a non-DOM object of some kind) at the end of the script is necessary so that this is the value
+            // Electron "clones" rather than the DOM element in the previous line, which it
+            // actually can't clone correctly, see https://github.com/electron/electron/issues/23722
+        editorBrowserViewWebContents.executeJavaScript(codeToRun);
+    });
 };
 
 const resetTargetPages = async function(req, callback){
