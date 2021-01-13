@@ -10,6 +10,7 @@ let targetPagesList = [];
 let currentRes = undefined;
 let currentReq = undefined;
 let numBrowserWindowsFinishedCodeExecution = 0;
+let browserWindowErrors = {}; // {winID: { errorMessage, errorLineNumber }}
 
 //let codeToRunAfterPause = undefined;
 let currentCodeString = undefined;
@@ -121,6 +122,8 @@ router.post('/continueRunning', async function(req, res, next) {
 router.post('/runPuppeteerCode', async function(req, res, next) {
     console.log("runPuppeteerCode");
     const code = req.body.code;
+    browserWindowErrors = {}; // resetting, so that it contains errors only for the current run
+
     //let updatedCodeString = code.replace(/await page/gi, 'await webviewTargetPage');
     //console.log("updatedRunFuncString", updatedRunFuncString);
     
@@ -140,24 +143,36 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     const endingString = updatedRunFuncString.substring(indexOfClosingCurlyBrace);
 
     const middleStringToWrap = updatedRunFuncString.substring(indexOfOpeningCurlyBrace + 1, indexOfClosingCurlyBrace);*/
-    let wrappedCodeString = `async function x() { try {`
+    let wrappedCodeString = `let errorMessage; let errorLineNumber; async function x ( winID ) { try {`
     //+ middleStringToWrap +
     + code +
     `} catch (error) {
-        let errorMessage = error.name + ": " + error.message;
+        errorMessage = error.name + ": " + error.message;
         console.error(error);
+
+        // Find line number where error occurred
+        errorLineNumber = parseInt(findPuppeteerErrorLineNumber(error.stack));
+        
         return;
     } finally {
         numBrowserWindowsFinishedCodeExecution += 1;
+        if(errorMessage){
+            browserWindowErrors[winID] = { errorMessage: errorMessage,  errorLineNumber: errorLineNumber};
+        }
         if(numBrowserWindowsFinishedCodeExecution === currentReq.app.locals.numBrowserWindows){
             // All windows have finished executing now
             numBrowserWindowsFinishedCodeExecution = 0; // reset
             // Stop captures and send blank response 
             capcon.stopCapture(process.stdout);
             capcon.stopCapture(process.stderr);
-            currentRes.end();
+            if(Object.keys(browserWindowErrors).length > 0){
+                currentRes.send(browserWindowErrors);
+            }else{
+                currentRes.end();
+            }
         }
-    }} x();`;
+    }}`;
+    //}} x();`;
     console.log("wrappedCodeString", wrappedCodeString);
 
     currentRes = res;
@@ -177,6 +192,19 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     }
 });
 
+const findPuppeteerErrorLineNumber = function(errorStackString){
+    const lineStrings = errorStackString.split("\n");
+    for(let i = 0; i < lineStrings.length; i++){
+        const lineString = lineStrings[i].trim();
+        if(lineString.indexOf("at async x") > -1){
+            const lastColonIndex = lineString.lastIndexOf(":");
+            const secondToLastColonIndex =  lineString.lastIndexOf(":", lastColonIndex-1);
+            const lineNumber = lineString.substring(secondToLastColonIndex+1, lastColonIndex);
+            return lineNumber;
+        }
+    }
+};
+
 const evaluateCodeOnAllPages = function(wrappedCodeString){
     console.log("evaluateCodeOnAllPages");
     capcon.startCapture(process.stdout, function (stdout) {
@@ -187,6 +215,7 @@ const evaluateCodeOnAllPages = function(wrappedCodeString){
     });
     for(let i = 0; i < targetPagesList.length; i++){
         let updatedCodeString = wrappedCodeString.replace(/await page/gi, 'await targetPagesList[' + i + ']');
+        updatedCodeString += `x(${i+3});` // A bit hacky, but offset by 3 for now because at the moment that's what the first test case window's id is
         eval(updatedCodeString);
     }
 };
