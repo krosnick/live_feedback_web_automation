@@ -51,6 +51,10 @@ router.get('/', function(req, res, next) {
     });
 });
 
+router.get('/border', function(req, res, next) {
+    res.render('layouts/border');
+});
+
 module.exports.router = router;
 module.exports = {
     router

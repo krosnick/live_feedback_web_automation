@@ -1,10 +1,12 @@
-<div id="fileSelection">
-    {{> fileSelection this }}
+<div id="codePane">
+    <div id="fileSelection">
+        {{> fileSelection this }}
+    </div>
+    <button id="runCode" class="clickableButton">Run</button>
+    <div id="codeEditor"></div>
+    <div id="puppeteerTerminalArea">
+        <button id="puppeteerTerminalClearButton" class="clickableButton">Clear</button>
+        <div id="puppeteerTerminal"></div>
+    </div>
+    <div id="routesRoot" routesRoot="{{routesRoot}}"></div>
 </div>
-<button id="runCode" class="clickableButton">Run</button>
-<div id="codeEditor"></div>
-<div id="puppeteerTerminalArea">
-    <button id="puppeteerTerminalClearButton" class="clickableButton">Clear</button>
-    <div id="puppeteerTerminal"></div>
-</div>
-<div id="routesRoot" routesRoot="{{routesRoot}}"></div>

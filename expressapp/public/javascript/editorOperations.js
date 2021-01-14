@@ -1,3 +1,4 @@
+//const { ipcRenderer } = require('electron');
 function editorOnDidChangeContent(){
     clearTimeout(codeChangeSetTimeout);
     codeChangeSetTimeout = setTimeout((event) => {
@@ -37,11 +38,16 @@ $(function(){
                 const uniqueErrorObjList = createUniqueListOfErrorObjects(data);
 
                 const markerObjList = [];
+                const windowIDAndMessageList = [];
                 // For each error, render markers
                 for(const errorObj of uniqueErrorObjList) {
                     const message = errorObj.errorMessage;
                     const lineNumber = errorObj.errorLineNumber;
                     const windowIDs = errorObj.windowIDs;
+
+                    for(const windowID of windowIDs){
+                        windowIDAndMessageList.push({windowID: windowID, message: message});
+                    }
 
                     const markerObj = {
                         startLineNumber: lineNumber,
@@ -55,6 +61,13 @@ $(function(){
                 }
                 
                 monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', markerObjList);
+
+                for(const pair of windowIDAndMessageList){
+                    const windowID = parseInt(pair.windowID);
+                    console.log("windowID", windowID);
+                    const message = pair.message;
+                    //ipcRenderer.sendTo(windowID, "errorMessage", message);
+                }
             }
         });
     });

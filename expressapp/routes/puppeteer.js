@@ -159,7 +159,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         if(errorMessage){
             browserWindowErrors[winID] = { errorMessage: errorMessage,  errorLineNumber: errorLineNumber};
         }
-        if(numBrowserWindowsFinishedCodeExecution === currentReq.app.locals.numBrowserWindows){
+        if(numBrowserWindowsFinishedCodeExecution === Object.keys(currentReq.app.locals.windowMetadata).length){
             // All windows have finished executing now
             numBrowserWindowsFinishedCodeExecution = 0; // reset
             // Stop captures and send blank response 
@@ -215,9 +215,17 @@ const evaluateCodeOnAllPages = function(wrappedCodeString){
     });
     for(let i = 0; i < targetPagesList.length; i++){
         let updatedCodeString = wrappedCodeString.replace(/await page/gi, 'await targetPagesList[' + i + ']');
-        updatedCodeString += `x(${i+3});` // A bit hacky, but offset by 3 for now because at the moment that's what the first test case window's id is
+        const lowestTestCaseWinID = lowestTestCaseWindowID();
+        // Times 2 because we have 2 BrowserViews per test case; lowestTestCaseWindowID() for offset
+        updatedCodeString += ` x(${(i*2) + lowestTestCaseWinID});`;
         eval(updatedCodeString);
     }
+};
+
+const lowestTestCaseWindowID = function(){
+    const testCaseWinIDs = Object.keys(currentReq.app.locals.windowMetadata);
+    testCaseWinIDs.sort();
+    return parseInt(testCaseWinIDs[0]);
 };
 
 const updateClientSideTerminal = function(stdOutOrErr, isError){

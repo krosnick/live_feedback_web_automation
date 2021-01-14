@@ -28,7 +28,7 @@
     cursor: pointer;
 }
 
-body {
+body #codePane {
     border: 1px solid gray;
     padding: 5px;
 }
@@ -68,3 +68,11 @@ body {
     box-shadow: 0 0 1px rgba(255, 255, 255, .5);
 }
 /* End */
+
+#borderElement {
+    width: 914px;
+    height: 464px;
+    /*border: 3px solid red;*/
+    padding: 0px;
+    margin: 0px;
+}
