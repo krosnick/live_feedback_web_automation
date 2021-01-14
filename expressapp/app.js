@@ -36,6 +36,7 @@ var indexRouter = require('./routes/index').router;
 var puppeteerRouter = require('./routes/puppeteer').router;
 var filesRouter = require('./routes/files').router;
 var codeRouter = require('./routes/code').router;
+var windowDataRouter = require('./routes/windowData').router;
 
 let win; // the main content window
 
@@ -72,6 +73,7 @@ app.on('ready', function() {
     expressApp.use('/puppeteer', puppeteerRouter);
     expressApp.use('/files', filesRouter);
     expressApp.use('/code', codeRouter);
+    expressApp.use('/windowData', windowDataRouter);
 
     // catch 404 and forward to error handler
     expressApp.use(function(req, res, next) {
@@ -270,16 +272,30 @@ function createWindow () {
     for(let i = 0; i < parameterValueSets.length; i++){
         const paramSet = parameterValueSets[i]
         // Create a BrowserView to contain the actual website, and then create a background border BrowserView
-        const borderView = new BrowserView();
+        const borderView = new BrowserView({webPreferences: {nodeIntegration: true } });
         win.addBrowserView(borderView);
         //borderView.setBounds({ x: 780, y: 0, width: 940, height: 470 });
-        borderView.setBounds({ x: 780, y: i*500, width: 940, height: 470 });
+        borderView.setBounds({ x: 780, y: i*500, width: 920, height: 530 });
         borderView.webContents.loadURL('http://localhost:3000/border');
+        borderView.webContents.executeJavaScript(`
+            const { ipcRenderer } = require('electron');
+            ipcRenderer.on('errorMessage', function(event, message){
+                console.log('errorMessage occurred');
+                document.querySelector('#borderElement').classList.add('errorBorder');
+                document.querySelector('#errorMessage').textContent = message;
+            });
+            ipcRenderer.on('clear', function(event){
+                console.log('clear occurred');
+                document.querySelector('#borderElement').classList.remove('errorBorder');
+                document.querySelector('#errorMessage').textContent = "";
+            });
+        `);
+        borderView.webContents.openDevTools({mode: "detach"});
 
         const pageView = new BrowserView({webPreferences: {zoomFactor: 0.5, nodeIntegration: true, webSecurity: false } });
         win.addBrowserView(pageView);
         //pageView.setBounds({ x: 800, y: 0, width: 900, height: 450 });
-        pageView.setBounds({ x: 800, y: i*500, width: 900, height: 450 });
+        pageView.setBounds({ x: 800, y: (i*500 + 30), width: 860, height: 450 });
         pageView.webContents.loadURL('https://www.amazon.com');
         pageView.webContents.openDevTools();
 

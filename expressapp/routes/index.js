@@ -52,7 +52,7 @@ router.get('/', function(req, res, next) {
 });
 
 router.get('/border', function(req, res, next) {
-    res.render('layouts/border');
+    res.render('layouts/border', { layout: 'other' });
 });
 
 module.exports.router = router;

@@ -157,7 +157,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     } finally {
         numBrowserWindowsFinishedCodeExecution += 1;
         if(errorMessage){
-            browserWindowErrors[winID] = { errorMessage: errorMessage,  errorLineNumber: errorLineNumber};
+            browserWindowErrors[winID] = { errorMessage: errorMessage,  errorLineNumber: errorLineNumber, correspondingBorderWinID: currentReq.app.locals.windowMetadata[winID].correspondingBorderWinID};
         }
         if(numBrowserWindowsFinishedCodeExecution === Object.keys(currentReq.app.locals.windowMetadata).length){
             // All windows have finished executing now

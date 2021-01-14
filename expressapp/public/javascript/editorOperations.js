@@ -1,4 +1,4 @@
-//const { ipcRenderer } = require('electron');
+const { ipcRenderer } = require('electron');
 function editorOnDidChangeContent(){
     clearTimeout(codeChangeSetTimeout);
     codeChangeSetTimeout = setTimeout((event) => {
@@ -18,57 +18,67 @@ function editorOnDidChangeContent(){
 
 $(function(){
     $("body").on("click", "#runCode", function(e){
-        // Get the current code, send it to the server,
-        // and execute it in the Puppeteer context
+        // Clear all existing puppeteer error markers
+        monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', []);
 
-        const code = monacoEditor.getValue();
+        // Need to ask server for border BrowserView IDs
         $.ajax({
             method: "POST",
-            url: "/puppeteer/runPuppeteerCode",
-            data: {
-                code: code
+            url: "/windowData/getBorderWinIDs"
+        }).done(function(borderWinIDList) {
+
+            // Clear red border and error messages from the border BrowserViews
+            for(borderWinID of borderWinIDList){
+                ipcRenderer.sendTo(borderWinID, "clear");
             }
-        }).done(function(data) {
 
-            // Clear all existing puppeteer error markers
-            monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', []);
-            console.log("runPuppeteerCode data", data);
-            if(data){
-                // There are puppeteer errors; render markers appropriately
-                const uniqueErrorObjList = createUniqueListOfErrorObjects(data);
+            // Get the current code, send it to the server,
+            // and execute it in the Puppeteer context
+            const code = monacoEditor.getValue();
+            $.ajax({
+                method: "POST",
+                url: "/puppeteer/runPuppeteerCode",
+                data: {
+                    code: code
+                }
+            }).done(function(data) {
+                //console.log("runPuppeteerCode data", data);
+                if(data){
+                    // There are puppeteer errors; render markers appropriately
+                    const uniqueErrorObjList = createUniqueListOfErrorObjects(data);
 
-                const markerObjList = [];
-                const windowIDAndMessageList = [];
-                // For each error, render markers
-                for(const errorObj of uniqueErrorObjList) {
-                    const message = errorObj.errorMessage;
-                    const lineNumber = errorObj.errorLineNumber;
-                    const windowIDs = errorObj.windowIDs;
+                    const markerObjList = [];
+                    const borderWindowIDAndMessageList = [];
+                    // For each error, render markers
+                    for(const errorObj of uniqueErrorObjList) {
+                        const message = errorObj.errorMessage;
+                        const lineNumber = errorObj.errorLineNumber;
+                        const borderWinIDs = errorObj.borderWinIDs;
+                        for(const borderWinID of borderWinIDs){
+                            borderWindowIDAndMessageList.push({borderWinID: borderWinID, message: message});
+                        }
 
-                    for(const windowID of windowIDs){
-                        windowIDAndMessageList.push({windowID: windowID, message: message});
+                        const markerObj = {
+                            startLineNumber: lineNumber,
+                            startColumn: 0,
+                            endLineNumber: lineNumber,
+                            endColumn: 1000,
+                            message: "The following error occurred for windows " + borderWinIDs.toString() + ": " + message,
+                            severity: monaco.MarkerSeverity.Error
+                        };
+                        markerObjList.push(markerObj);
                     }
+                    
+                    monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', markerObjList);
 
-                    const markerObj = {
-                        startLineNumber: lineNumber,
-                        startColumn: 0,
-                        endLineNumber: lineNumber,
-                        endColumn: 1000,
-                        message: "The following error occurred for windows " + windowIDs.toString() + ": " + message,
-                        severity: monaco.MarkerSeverity.Error
-                    };
-                    markerObjList.push(markerObj);
+                    for(const pair of borderWindowIDAndMessageList){
+                        const borderWinID = parseInt(pair.borderWinID);
+                        console.log("borderWinID", borderWinID);
+                        const message = pair.message;
+                        ipcRenderer.sendTo(borderWinID, "errorMessage", message);
+                    }
                 }
-                
-                monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', markerObjList);
-
-                for(const pair of windowIDAndMessageList){
-                    const windowID = parseInt(pair.windowID);
-                    console.log("windowID", windowID);
-                    const message = pair.message;
-                    //ipcRenderer.sendTo(windowID, "errorMessage", message);
-                }
-            }
+            });
         });
     });
 
@@ -82,28 +92,33 @@ const createUniqueListOfErrorObjects = function(errorObjectMap){
     const errorObjEntries = Object.entries(errorObjectMap);
     const uniqueErrorObjList = [];
     const errorWinIDs = [];
+    const borderWinIDs = [];
     for (let [key, value] of errorObjEntries) {
         key = parseInt(key);
         let sameErrorAtIndex = undefined;
         for(let i = 0; i < uniqueErrorObjList.length; i++){
             const prevFoundValue = uniqueErrorObjList[i];
-            if(_.isEqual(value, prevFoundValue)){
+            if(value.errorMessage === prevFoundValue.errorMessage && value.errorLineNumber === prevFoundValue.errorLineNumber){
                 sameErrorAtIndex = i;
                 break;
             }
         }
         if(sameErrorAtIndex === undefined){
             // Add this new error
-            uniqueErrorObjList.push(value);
+            uniqueErrorObjList.push(_.cloneDeep(value));
             errorWinIDs.push([key]);
+            borderWinIDs.push([value.correspondingBorderWinID]);
         }else{
             // Add winID to list
             errorWinIDs[sameErrorAtIndex].push(key);
+            borderWinIDs[sameErrorAtIndex].push(value.correspondingBorderWinID);
         }
     }
     for(let i = 0; i < uniqueErrorObjList.length; i++){
         const obj = uniqueErrorObjList[i];
         obj['windowIDs'] = errorWinIDs[i];
+        obj['borderWinIDs'] = borderWinIDs[i];
+        delete obj['correspondingBorderWinID'];
     }
     console.log("uniqueErrorObjList", uniqueErrorObjList);
     return uniqueErrorObjList;
