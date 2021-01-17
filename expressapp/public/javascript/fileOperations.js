@@ -1,6 +1,8 @@
 let updateFileNameTimeout;
 let codeChangeSetTimeout;
+let paramChangeSetTimeout;
 let monacoEditor;
+let paramEditor;
 $(function(){
     setTimeout(function(){
         monacoEditor = monaco.editor.create(document.getElementById("codeEditor"), {
@@ -30,6 +32,35 @@ $(function(){
         });
 
         monacoEditor.getModel().onDidChangeContent(editorOnDidChangeContent);
+
+
+        paramEditor = monaco.editor.create(document.getElementById("paramEditor"), {
+            value: "",
+            language: "javascript",
+            wordWrap: "on",
+            wrappingIndent: "deepIndent",
+            scrollbar: {
+                // Render vertical arrows. Defaults to false.
+                verticalHasArrows: true,
+                
+                // Render vertical scrollbar.
+                // Accepted values: 'auto', 'visible', 'hidden'.
+                // Defaults to 'auto'
+                vertical: 'visible',
+                
+                verticalScrollbarSize: 17,
+                arrowSize: 30
+            }
+        });
+        // Send request to server for file's code
+        $.ajax({
+            method: "POST",
+            url: "/params/getCurrentParamCodeString"
+        }).done(function(data) {
+            paramEditor.getModel().setValue(data);
+        });
+
+        paramEditor.getModel().onDidChangeContent(paramsOnDidChangeContent);
     }, 3000);
 
     $('body').on('input', "#currentFileName", function(e){
@@ -51,10 +82,15 @@ $(function(){
         // To make sure that any incoming updates are canceled (because we're changing the current file)
         clearTimeout(updateFileNameTimeout);
         clearTimeout(codeChangeSetTimeout);
+        clearTimeout(paramChangeSetTimeout);
         
         let currentFileContents = "";
         if(monacoEditor){
             currentFileContents = monacoEditor.getValue();
+        }
+        let currentParamCodeString = "";
+        if(paramEditor){
+            currentParamCodeString = paramEditor.getValue();
         }
         // Should send current file name and file contents to server to make sure they're updated first
         $.ajax({
@@ -62,15 +98,21 @@ $(function(){
             url: "/files/createNewFile",
             data: {
                 currentFileName: $('#currentFileName').val(),
-                currentFileContents: currentFileContents
+                currentFileContents: currentFileContents,
+                currentParamCodeString: currentParamCodeString
             }
         }).done(function(data) {
-            // "data" is the rendered html - replace the contents of #fileSelection with  this
-            $("#fileSelection").empty();
-            $("#fileSelection").append(data);
+            const fileSelectionHtml = data.fileSelectionHtml;
+            const fileContents = data.fileContents;
+            const paramCodeString = data.paramCodeString;
 
-            // Also empty the monaco editor
-            monacoEditor.getModel().setValue("");
+            // Clear the file selection area and replace it with new rendering
+            $("#fileSelection").empty();
+            $("#fileSelection").append(fileSelectionHtml);
+
+            // Set code and params for this file
+            monacoEditor.getModel().setValue(fileContents);
+            paramEditor.getModel().setValue(paramCodeString);
         });
     });
 
@@ -83,10 +125,15 @@ $(function(){
             // To make sure that any incoming updates are canceled (because we're changing the current file)
             clearTimeout(updateFileNameTimeout);
             clearTimeout(codeChangeSetTimeout);
+            clearTimeout(paramChangeSetTimeout);
 
             let currentFileContents = "";
             if(monacoEditor){
                 currentFileContents = monacoEditor.getValue();
+            }
+            let currentParamCodeString = "";
+            if(paramEditor){
+                currentParamCodeString = paramEditor.getValue();
             }
 
             // Figure out the new fileID to change to
@@ -100,18 +147,21 @@ $(function(){
                 url: "/files/showFile/" + newFileID,
                 data: {
                     currentFileName: $('#currentFileName').val(),
-                    currentFileContents: currentFileContents
+                    currentFileContents: currentFileContents,
+                    currentParamCodeString: currentParamCodeString
                 }
             }).done(function(data) {
                 const fileSelectionHtml = data.fileSelectionHtml;
                 const fileContents = data.fileContents;
+                const paramCodeString = data.paramCodeString;
 
                 // Clear the file selection area and replace it with new rendering
                 $("#fileSelection").empty();
                 $("#fileSelection").append(fileSelectionHtml);
 
-                // Set code for this file
+                // Set code and params for this file
                 monacoEditor.getModel().setValue(fileContents);
+                paramEditor.getModel().setValue(paramCodeString);
             });
         }
     });
@@ -124,6 +174,7 @@ $(function(){
         }).done(function(data) {
             const fileSelectionHtml = data.fileSelectionHtml;
             const fileContents = data.fileContents;
+            const paramCodeString = data.paramCodeString;
 
             // Clear the file selection area and replace it with new rendering
             $("#fileSelection").empty();
@@ -131,6 +182,7 @@ $(function(){
 
             // Set code for this file
             monacoEditor.getModel().setValue(fileContents);
+            paramEditor.getModel().setValue(paramCodeString);
         });
     });
 });

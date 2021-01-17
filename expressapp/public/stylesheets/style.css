@@ -1,6 +1,13 @@
 #codeEditor {
     width: 730px;
-    height: 700px;
+    height: 550px;
+    margin: 10px;
+    border: 1px solid gray;
+}
+
+#paramEditor {
+    width: 730px;
+    height: 125px;
     margin: 10px;
     border: 1px solid gray;
 }

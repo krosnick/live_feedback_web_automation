@@ -31,6 +31,7 @@ router.post('/showFile/:fileID', function(req, res, next) {
         // rendering this different file
     const currentFileName = req.body.currentFileName;
     const currentFileContents = req.body.currentFileContents;
+    const currentParamCodeString = req.body.currentParamCodeString;
     req.app.locals.filesCollection.updateOne(
         {
             fileID: req.app.locals.fileID
@@ -39,6 +40,7 @@ router.post('/showFile/:fileID', function(req, res, next) {
             $set: {
                 fileName: currentFileName,
                 fileContents: currentFileContents,
+                paramCodeString: currentParamCodeString,
                 lastModified: Date.now()
             }
         },
@@ -64,6 +66,7 @@ router.post('/showFile/:fileID', function(req, res, next) {
                     const fileToShowObj = fileDocs[0];
                     const fileName = fileToShowObj.fileName;
                     const fileContents = fileToShowObj.fileContents;
+                    const paramCodeString = fileToShowObj.paramCodeString;
 
                     // Now need to send back
                         // the new file selection rendering,
@@ -75,7 +78,8 @@ router.post('/showFile/:fileID', function(req, res, next) {
                     }, function (error4, fileSelectionHtml) {
                         res.json({
                             fileSelectionHtml: fileSelectionHtml,
-                            fileContents: fileContents
+                            fileContents: fileContents,
+                            paramCodeString: paramCodeString
                         });
                     });
                 });
@@ -89,6 +93,7 @@ router.post('/createNewFile', function(req, res, next) {
         // creating (and rendering) new file
     const currentFileName = req.body.currentFileName;
     const currentFileContents = req.body.currentFileContents;
+    const currentParamCodeString = req.body.currentParamCodeString;
     req.app.locals.filesCollection.updateOne(
         {
             fileID: req.app.locals.fileID
@@ -97,6 +102,7 @@ router.post('/createNewFile', function(req, res, next) {
             $set: {
                 fileName: currentFileName,
                 fileContents: currentFileContents,
+                paramCodeString: currentParamCodeString,
                 lastModified: Date.now()
             }
         },
@@ -119,15 +125,32 @@ router.post('/createNewFile', function(req, res, next) {
                 fileObj = {
                     fileID: req.app.locals.fileID,
                     fileName: "untitled_" + req.app.locals.fileID + ".js",
-                    fileContents: "",
+                    fileContents: "// Write your script here\n",
+                    paramCodeString: `const listOfParamSets = [
+    /*{
+        <param1>: <valA>,
+        <param2>: <valB>
+    },
+    ...*/
+];`,
                     lastModified: Date.now()
                 };
                 req.app.locals.filesCollection.insertOne(fileObj);
 
+
+                // Now need to send back
+                    // the new file selection rendering,
+                    // the current file code
                 res.render('partials/fileSelection', {
                     currentFileName: fileObj.fileName,
                     fileIDNamePairs: fileIDNamePairs,
                     "layout": false
+                }, function (error4, fileSelectionHtml) {
+                    res.json({
+                        fileSelectionHtml: fileSelectionHtml,
+                        fileContents: fileObj.fileContents,
+                        paramCodeString: fileObj.paramCodeString
+                    });
                 });
             });
         }
@@ -158,7 +181,14 @@ router.delete('/delete', function(req, res, next) {
                 fileObj = {
                     fileID: req.app.locals.fileID,
                     fileName: "untitled_" + req.app.locals.fileID + ".js",
-                    fileContents: "",
+                    fileContents: "// Write your script here\n",
+                    paramCodeString: `const listOfParamSets = [
+    /*{
+        <param1>: <valA>,
+        <param2>: <valB>
+    },
+    ...*/
+];`,
                     lastModified: Date.now()
                 };
                 req.app.locals.filesCollection.insertOne(fileObj);
@@ -182,7 +212,8 @@ router.delete('/delete', function(req, res, next) {
             }, function (error4, fileSelectionHtml) {
                 res.json({
                     fileSelectionHtml: fileSelectionHtml,
-                    fileContents: fileObj.fileContents
+                    fileContents: fileObj.fileContents,
+                    paramCodeString: fileObj.paramCodeString
                 });
             });
 
