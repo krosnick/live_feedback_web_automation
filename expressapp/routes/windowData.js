@@ -11,7 +11,6 @@ router.post('/getBorderWinIDs', function(req, res, next) {
     res.send(borderWinIDList);
 });
 
-module.exports.router = router;
 module.exports = {
     router
 };

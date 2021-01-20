@@ -258,90 +258,11 @@ function createWindow () {
     editorBrowserView.webContents.loadURL('http://localhost:3000/');
     editorBrowserView.webContents.openDevTools({mode: "detach"});
 
-
-    // The different sets of parameter values we're testing;
-    // for now we'll hard-code here, so that we have some test cases and can create
-    // BrowserView windows for them. In the future we'll create BrowserView windows
-    // on-demand based on user or system provided test cases
-    // Format?: [{ <param1>: <val1>, <param2>: <val1> }, { <param1>: <val2>, <param2>: <val2> }]
-    const parameterValueSets = [ {1: "Home & Kitchen",  2: "can opener"}, {1: "Arts, Crafts & Sewing", 2: "colored pencils"} ];
-
     // Final format we want?: { <exampleWinID1>: { correspondingBorderWinID: , parameterValueSet: { <param1>: <val>, <param2>: <val> } } }
     // Create BrowserView windows and populate appropriately based on parameterValueSets
     expressApp.locals.windowMetadata = {};
 
-    //for(paramSet of parameterValueSets){
-    for(let i = 0; i < parameterValueSets.length; i++){
-        const paramSet = parameterValueSets[i]
-        // Create a BrowserView to contain the actual website, and then create a background border BrowserView
-        const borderView = new BrowserView({webPreferences: {nodeIntegration: true } });
-        win.addBrowserView(borderView);
-        //borderView.setBounds({ x: 780, y: 0, width: 940, height: 470 });
-        borderView.setBounds({ x: 780, y: i*500, width: 920, height: 530 });
-        borderView.webContents.loadURL('http://localhost:3000/border');
-        borderView.webContents.executeJavaScript(`
-            const { ipcRenderer } = require('electron');
-            ipcRenderer.on('errorMessage', function(event, message){
-                console.log('errorMessage occurred');
-                document.querySelector('#borderElement').classList.add('errorBorder');
-                document.querySelector('#errorMessage').textContent = message;
-            });
-            ipcRenderer.on('clear', function(event){
-                console.log('clear occurred');
-                document.querySelector('#borderElement').classList.remove('errorBorder');
-                document.querySelector('#errorMessage').textContent = "";
-            });
-        `);
-        borderView.webContents.openDevTools({mode: "detach"});
-
-        const pageView = new BrowserView({webPreferences: {zoomFactor: 0.5, nodeIntegration: true, webSecurity: false } });
-        win.addBrowserView(pageView);
-        //pageView.setBounds({ x: 800, y: 0, width: 900, height: 450 });
-        pageView.setBounds({ x: 800, y: (i*500 + 30), width: 860, height: 450 });
-        pageView.webContents.loadURL('https://www.amazon.com');
-        pageView.webContents.openDevTools();
-
-        // Store metadata in this global object
-        expressApp.locals.windowMetadata[pageView.webContents.id] = {
-            correspondingBorderWinID: borderView.webContents.id,
-            parameterValueSet: paramSet
-        };
-    }
-
-
-    /*const border1 = new BrowserView();
-    win.addBrowserView(border1);
-    border1.setBounds({ x: 780, y: 0, width: 940, height: 470 });
-    border1.webContents.loadURL('http://localhost:3000/border');
-
-    const pageView1 = new BrowserView({webPreferences: {zoomFactor: 0.5, nodeIntegration: true, webSecurity: false } });
-    console.log("pageView1 ID", pageView1.webContents.id);
-    //console.log("view1 ID", view1.webContents.getProcessId());
-    win.addBrowserView(pageView1);
-    pageView1.setBounds({ x: 800, y: 0, width: 900, height: 450 });
-    pageView1.webContents.loadURL('https://www.amazon.com');
-    pageView1.webContents.openDevTools();
-
-    const pageView2 = new BrowserView({webPreferences: {zoomFactor: 0.5, nodeIntegration: true, webSecurity: false } });
-    console.log("pageView2 ID", pageView2.webContents.id);
-    win.addBrowserView(pageView2);
-    pageView2.setBounds({ x: 800, y: 500, width: 900, height: 450 });
-    pageView2.webContents.loadURL('https://www.amazon.com');
-    pageView2.webContents.openDevTools();*/
-
-
     setupPuppeteer();
-    /*// and load the index.html of the app.
-    win.loadURL('http://localhost:3000/');
-
-    // Open the DevTools.
-    win.webContents.openDevTools();*/
-
-    // wait for the window to open/load, then connect Puppeteer to it:
-    /*win.webContents.on("did-finish-load", () => { 
-    console.log("did-finish-load");
-    setupPuppeteer();
-    });*/
 
     // Emitted when the window is closed.
     win.on('closed', () => {
@@ -354,6 +275,7 @@ function createWindow () {
     // Capturing the window ID, so that later in router files we can send messages to a particular window
     expressApp.locals.browserWinIDs["win"] = win.id;
     expressApp.locals.editorBrowserView = editorBrowserView;
+    expressApp.locals.editorBrowserViewID = editorBrowserView.webContents.id;
     //expressApp.locals.numBrowserWindows = 2;
     expressApp.locals.win = win;
     /*expressApp.locals.view1 = view1;

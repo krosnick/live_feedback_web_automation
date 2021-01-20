@@ -32,7 +32,6 @@ router.post('/getCurrentParamCodeString/', function(req, res, next) {
     });
 });
 
-module.exports.router = router;
 module.exports = {
     router
 };

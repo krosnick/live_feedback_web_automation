@@ -3,6 +3,9 @@ const { BrowserWindow } = require('electron');
 var router = express.Router();
 const { v1: uuidv1 } = require('uuid');
 
+const { extractStartingUrl } = require('./code');
+const { updateExampleWindows } = require('./index');
+
 // Update file name for current file
 router.post('/updateName', function(req, res, next) {
     console.log("updateName started");
@@ -41,6 +44,7 @@ router.post('/showFile/:fileID', function(req, res, next) {
                 fileName: currentFileName,
                 fileContents: currentFileContents,
                 paramCodeString: currentParamCodeString,
+                startingUrl: extractStartingUrl(currentFileContents),
                 lastModified: Date.now()
             }
         },
@@ -67,7 +71,10 @@ router.post('/showFile/:fileID', function(req, res, next) {
                     const fileName = fileToShowObj.fileName;
                     const fileContents = fileToShowObj.fileContents;
                     const paramCodeString = fileToShowObj.paramCodeString;
-
+                    const startingUrl = fileToShowObj.startingUrl;
+                    // Showing different file, so just completely reload example windows
+                    updateExampleWindows(req, startingUrl);
+                    
                     // Now need to send back
                         // the new file selection rendering,
                         // the current file code
@@ -103,6 +110,7 @@ router.post('/createNewFile', function(req, res, next) {
                 fileName: currentFileName,
                 fileContents: currentFileContents,
                 paramCodeString: currentParamCodeString,
+                startingUrl: extractStartingUrl(currentFileContents),
                 lastModified: Date.now()
             }
         },
@@ -133,10 +141,13 @@ router.post('/createNewFile', function(req, res, next) {
     },
     ...*/
 ];`,
+                    startingUrl: null,
                     lastModified: Date.now()
                 };
                 req.app.locals.filesCollection.insertOne(fileObj);
 
+                // This will remove current example windows (and won't replace them, since startingUrl is null)
+                updateExampleWindows(req, fileObj.startingUrl);
 
                 // Now need to send back
                     // the new file selection rendering,
@@ -189,10 +200,13 @@ router.delete('/delete', function(req, res, next) {
     },
     ...*/
 ];`,
+                    startingUrl: null,
                     lastModified: Date.now()
                 };
                 req.app.locals.filesCollection.insertOne(fileObj);
             }
+
+            updateExampleWindows(req, fileObj.startingUrl);
 
             // Create pairs of file IDs and names
             let fileIDNamePairs = [];
@@ -221,7 +235,6 @@ router.delete('/delete', function(req, res, next) {
     });
 });
 
-module.exports.router = router;
 module.exports = {
     router
 };

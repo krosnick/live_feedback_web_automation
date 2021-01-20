@@ -1,5 +1,5 @@
 var express = require('express');
-const { BrowserWindow } = require('electron');
+const { BrowserWindow, BrowserView } = require('electron');
 var router = express.Router();
 const { v1: uuidv1 } = require('uuid');
 
@@ -16,6 +16,10 @@ router.get('/', function(req, res, next) {
             fileObj = docs[0];
             req.app.locals.fileID = fileObj.fileID;
             console.log("mostRecentlyModifiedFileObj", fileObj);
+
+            const startingUrl = fileObj.startingUrl;
+            // Will show example windows if there is a non-null url
+            updateExampleWindows(req, startingUrl);
         }else{
             // No existing files, create a new one
             req.app.locals.fileID = uuidv1();
@@ -55,7 +59,68 @@ router.get('/border', function(req, res, next) {
     res.render('layouts/border', { layout: 'other' });
 });
 
-module.exports.router = router;
+const updateExampleWindows = function(req, startingUrl){
+    // First remove all existing BrowserViews (except for editor browser view)
+    const browserViews = req.app.locals.win.getBrowserViews();
+    for(let browserView of browserViews){
+        if(browserView.webContents.id !== req.app.locals.editorBrowserViewID){
+            req.app.locals.win.removeBrowserView(browserView);
+        }
+    }
+
+    // Only populate windows if there's a real url
+    if(startingUrl !== null){
+        // The different sets of parameter values we're testing;
+        // for now we'll hard-code here, so that we have some test cases and can create
+        // BrowserView windows for them. In the future we'll create BrowserView windows
+        // on-demand based on user or system provided test cases
+        // Format?: [{ <param1>: <val1>, <param2>: <val1> }, { <param1>: <val2>, <param2>: <val2> }]
+        //const parameterValueSets = [ {1: "Home & Kitchen",  2: "can opener"}, {1: "Arts, Crafts & Sewing", 2: "colored pencils"} ];
+        
+        // For now, make this just length 1; later on we'll dynamically show the correct number
+            // of windows based on the actual number of param sets created by the user
+        const parameterValueSets = [ {1: "Home & Kitchen",  2: "can opener"} ];
+
+        for(let i = 0; i < parameterValueSets.length; i++){
+            const paramSet = parameterValueSets[i]
+            // Create a BrowserView to contain the actual website, and then create a background border BrowserView
+            const borderView = new BrowserView({webPreferences: {nodeIntegration: true } });
+            req.app.locals.win.addBrowserView(borderView);
+            //borderView.setBounds({ x: 780, y: 0, width: 940, height: 470 });
+            borderView.setBounds({ x: 780, y: i*500, width: 920, height: 530 });
+            borderView.webContents.loadURL('http://localhost:3000/border');
+            borderView.webContents.executeJavaScript(`
+                const { ipcRenderer } = require('electron');
+                ipcRenderer.on('errorMessage', function(event, message){
+                    console.log('errorMessage occurred');
+                    document.querySelector('#borderElement').classList.add('errorBorder');
+                    document.querySelector('#errorMessage').textContent = message;
+                });
+                ipcRenderer.on('clear', function(event){
+                    console.log('clear occurred');
+                    document.querySelector('#borderElement').classList.remove('errorBorder');
+                    document.querySelector('#errorMessage').textContent = "";
+                });
+                0
+            `);
+            borderView.webContents.openDevTools({mode: "detach"});
+
+            const pageView = new BrowserView({webPreferences: {zoomFactor: 0.5, nodeIntegration: true, webSecurity: false } });
+            req.app.locals.win.addBrowserView(pageView);
+            pageView.setBounds({ x: 800, y: (i*500 + 30), width: 860, height: 450 });
+            pageView.webContents.loadURL(startingUrl);
+            pageView.webContents.openDevTools();
+
+            // Store metadata in this global object
+            req.app.locals.windowMetadata[pageView.webContents.id] = {
+                correspondingBorderWinID: borderView.webContents.id,
+                parameterValueSet: paramSet
+            };
+        }
+    }
+};
+
 module.exports = {
-    router
+    router,
+    updateExampleWindows
 };

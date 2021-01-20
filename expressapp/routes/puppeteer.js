@@ -307,4 +307,6 @@ const resetTargetPages = async function(req, callback){
     }
 };*/
 
-module.exports.router = router;
+module.exports = {
+    router
+};
