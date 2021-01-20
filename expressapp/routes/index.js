@@ -2,6 +2,7 @@ var express = require('express');
 const { BrowserWindow, BrowserView } = require('electron');
 var router = express.Router();
 const { v1: uuidv1 } = require('uuid');
+const { resetTargetPages } = require('./puppeteer');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -60,13 +61,21 @@ router.get('/border', function(req, res, next) {
 });
 
 const updateExampleWindows = function(req, startingUrl){
+    req.app.locals.targetPageListReady = false;
     // First remove all existing BrowserViews (except for editor browser view)
     const browserViews = req.app.locals.win.getBrowserViews();
     for(let browserView of browserViews){
         if(browserView.webContents.id !== req.app.locals.editorBrowserViewID){
+            // Since when choosing puppeteer targets later we identify based on the url,
+                // we want to ensure this BrowserView's url is cleared (in case it's actually the same/similar to future url)
+            browserView.webContents.loadURL("");
+            
+            // Essentially "hiding"; process still exists
             req.app.locals.win.removeBrowserView(browserView);
         }
     }
+
+    req.app.locals.windowMetadata = {};
 
     // Only populate windows if there's a real url
     if(startingUrl !== null){
@@ -108,7 +117,7 @@ const updateExampleWindows = function(req, startingUrl){
             const pageView = new BrowserView({webPreferences: {zoomFactor: 0.5, nodeIntegration: true, webSecurity: false } });
             req.app.locals.win.addBrowserView(pageView);
             pageView.setBounds({ x: 800, y: (i*500 + 30), width: 860, height: 450 });
-            pageView.webContents.loadURL(startingUrl);
+            pageView.webContents.loadURL(addHttpsIfNeeded(startingUrl));
             pageView.webContents.openDevTools();
 
             // Store metadata in this global object
@@ -117,7 +126,27 @@ const updateExampleWindows = function(req, startingUrl){
                 parameterValueSet: paramSet
             };
         }
+
+        setTimeout((req, startingUrl) => {
+            resetTargetPages(req, startingUrl);
+        }, 1000, req, startingUrl);
     }
+};
+
+// If no http or https prefix, add https prefix (only for purposes of calling webContents.loadURL)
+const addHttpsIfNeeded = function(startingUrl){
+    let trimmedNewURL = startingUrl.trim();
+    const httpIndex = trimmedNewURL.indexOf("http://");
+    const httpsIndex = trimmedNewURL.indexOf("https://");
+
+    if(httpIndex === 0){
+        // replace it with https instead
+        trimmedNewURL = trimmedNewURL.replace("http://", "https://");
+    }else if(httpsIndex === -1){
+        // neither https or http present; append https at front
+        trimmedNewURL = "https://" + trimmedNewURL;
+    }
+    return trimmedNewURL;
 };
 
 module.exports = {

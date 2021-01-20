@@ -7,6 +7,7 @@ var router = express.Router();
 
 //let webviewTargetPage;
 let targetPagesList = [];
+let prevUsedTargetIDs = {};
 let currentRes = undefined;
 let currentReq = undefined;
 let numBrowserWindowsFinishedCodeExecution = 0;
@@ -203,9 +204,12 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         fileID: req.app.locals.fileID
     }).toArray(function(error, docs){
         //console.log("docs[0].startingUrl", docs[0].startingUrl);
-        resetTargetPages(req, docs[0].startingUrl, function(){
-            evaluateCodeOnAllPages(wrappedCodeString);
-        });
+        let checkIfTargetPageListReady = setTimeout((wrappedCodeString) => {
+            if(req.app.locals.targetPageListReady){
+                clearTimeout(checkIfTargetPageListReady);
+                evaluateCodeOnAllPages(wrappedCodeString);
+            }
+        }, 200, wrappedCodeString);
     });
 });
 
@@ -230,6 +234,8 @@ const evaluateCodeOnAllPages = function(wrappedCodeString){
     capcon.startCapture(process.stderr, function (stderr) {
         updateClientSideTerminal(stderr, true);
     });
+    //console.log("targetPagesList.length", targetPagesList.length);
+    //console.log("targetPagesList", targetPagesList);
     for(let i = 0; i < targetPagesList.length; i++){
         let updatedCodeString = wrappedCodeString.replace(/await page/gi, 'await targetPagesList[' + i + ']');
         const lowestTestCaseWinID = lowestTestCaseWindowID();
@@ -279,10 +285,44 @@ const updateClientSideTerminal = function(stdOutOrErr, isError){
     });
 };
 
-const resetTargetPages = async function(req, startingUrl, callback){
+const stripPrefixAndCheckIfUrlsSame = function(url1, url2){
+    const strippedUrl1 = stripUrlPrefix(url1).trim();
+    const strippedUrl2 = stripUrlPrefix(url2).trim();
+    /*console.log("strippedUrl1", strippedUrl1);
+    console.log("strippedUrl2", strippedUrl2);*/
+
+    const same = (strippedUrl1.includes(strippedUrl2) || strippedUrl2.includes(strippedUrl1));
+    //console.log("same", same);
+    return same;
+};
+
+// Strip off http:// or https://
+const stripUrlPrefix = function(url){
+    let trimmedUrl = url.trim();
+    const httpIndex = trimmedUrl.indexOf("http://");
+    const httpsIndex = trimmedUrl.indexOf("https://");
+
+    if(httpIndex === -1 && httpsIndex === -1){
+        return trimmedUrl;
+    }else if(httpIndex === 0){
+        return trimmedUrl.substring(7);
+    }else{ // httpsIndex === 0
+        return trimmedUrl.substring(8);
+    }
+};
+
+const confirmNotDevTools = function(url){
+    //console.log("url", url);
+    const notDevTools = !(url.includes("devtools://"));
+    //console.log("notDevTools", notDevTools);
+    return notDevTools;
+};
+
+const resetTargetPages = async function(req, startingUrl/*, callback*/){
+    targetPagesList = [];
     let targets = await req.app.locals.puppeteerBrowser.targets();
-    console.log("targets", targets);
-    console.log("resetTargetPages startingUrl", startingUrl);
+    /*console.log("targets", targets);
+    console.log("resetTargetPages startingUrl", startingUrl);*/
 
     //let webviewTarget;
     for(let i = 0; i < targets.length; i++){
@@ -295,7 +335,11 @@ const resetTargetPages = async function(req, startingUrl, callback){
             // E.g., target._targetInfo.url might be "https://www.google.com", but user might've written "www.google.com";
             // Or, target._targetInfo.url might be "https://www.google.com" but user wrote "https://www.google.com/"
         //if(target._targetInfo.type === "page" && (target._targetInfo.title.includes(startingUrl) || startingUrl.includes(target._targetInfo.title))){
-        if(target._targetInfo.type === "page" && (target._targetInfo.url.includes(startingUrl) || startingUrl.includes(target._targetInfo.url))){
+        //if(target._targetInfo.type === "page" && (target._targetInfo.url.includes(startingUrl) || startingUrl.includes(target._targetInfo.url))){
+        if(target._targetInfo.type === "page" && stripPrefixAndCheckIfUrlsSame(target._targetInfo.url, startingUrl) && confirmNotDevTools(target._targetInfo.url) && !prevUsedTargetIDs.hasOwnProperty(target._targetInfo.targetId)){
+            
+            prevUsedTargetIDs[target._targetInfo.targetId] = 1;
+
             // This is going to run code on only one of the pages (not multiple if they exist)
             //webviewTarget = target;
             const targetPage = await target.page();
@@ -305,6 +349,8 @@ const resetTargetPages = async function(req, startingUrl, callback){
         }
     }
 
+    req.app.locals.targetPageListReady = true;
+
     //console.log("webviewTarget", webviewTarget);
 
     /*webviewTargetPage = await webviewTarget.page();
@@ -312,10 +358,10 @@ const resetTargetPages = async function(req, startingUrl, callback){
 
     webviewTargetPage.setDefaultTimeout(10000); // it's 30000ms by default*/
 
-    //console.log('callback', callback);
+    /*//console.log('callback', callback);
     if(typeof callback === 'function'){
         callback();
-    }
+    }*/
 };
 
 /*const selectorExists = async function(selector){
@@ -333,5 +379,6 @@ const resetTargetPages = async function(req, startingUrl, callback){
 };*/
 
 module.exports = {
-    router
+    router,
+    resetTargetPages
 };

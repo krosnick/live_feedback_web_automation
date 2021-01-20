@@ -278,6 +278,7 @@ function createWindow () {
     expressApp.locals.editorBrowserViewID = editorBrowserView.webContents.id;
     //expressApp.locals.numBrowserWindows = 2;
     expressApp.locals.win = win;
+    expressApp.locals.targetPageListReady = true;
     /*expressApp.locals.view1 = view1;
     expressApp.locals.view2 = view2;*/
     // This prints out "1" as long as win is the first window created

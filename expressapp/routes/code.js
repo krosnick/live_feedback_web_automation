@@ -8,7 +8,7 @@ const { updateExampleWindows } = require('./index');
 // Update code for current file
 router.put('/update/', function(req, res, next) {
     const updatedCode = req.body.updatedFileContents;
-    console.log("updatedCode", updatedCode);
+    //console.log("updatedCode", updatedCode);
 
     // Compare the file's current startingUrl vs what url
         // updatedCode now contains. If different, update windows.
@@ -23,7 +23,7 @@ router.put('/update/', function(req, res, next) {
         if(existingStartingUrl !== newStartingUrl){
             // Tell app to create BrowserViews (if no startingUrl existed before)
                 // or to update BrowserViews with new startingUrl
-            console.log("urls not equal, need to update BrowserViews");
+            //console.log("urls not equal, need to update BrowserViews");
             updateExampleWindows(req, newStartingUrl);
         }
 
