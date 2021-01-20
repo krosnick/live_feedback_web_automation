@@ -178,7 +178,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     currentRes = res;
     currentReq = req;
     //if(!webviewTargetPage){
-    if(targetPagesList.length === 0){
+    /*if(targetPagesList.length === 0){
         resetTargetPages(req, function(){
             evaluateCodeOnAllPages(wrappedCodeString);
             //updatePuppeteerPage = false;
@@ -189,7 +189,24 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         evaluateCodeOnAllPages(wrappedCodeString);
         //eval(updatedCodeString);
         //eval("async function x() { console.log('before'); await webviewTargetPage.type('#twotabsearchtextbox', 'toothpaste'); console.log('after'); } x();");
-    }
+    }*/
+
+    // For now checking the db for startingUrl and resetting the target pages
+        // each time "Run" is clicked. If this is too slow (which it probably will be, esp for live feedback),
+        // then we can adjust this to reset target pages less often, only when file changes,
+        // when user updates url, etc.
+        // Maybe a way to do it even less often is to keep a boolean of whether the windows need to be updated
+        // and have this boolean set to "true" anytime the file changes or user updates url.
+        // Then, we can set the target pages later only when we need to run the code (so ideally by this point
+        // the BrowserViews will all have been updated)
+    req.app.locals.filesCollection.find({
+        fileID: req.app.locals.fileID
+    }).toArray(function(error, docs){
+        //console.log("docs[0].startingUrl", docs[0].startingUrl);
+        resetTargetPages(req, docs[0].startingUrl, function(){
+            evaluateCodeOnAllPages(wrappedCodeString);
+        });
+    });
 });
 
 const findPuppeteerErrorLineNumber = function(errorStackString){
@@ -262,15 +279,23 @@ const updateClientSideTerminal = function(stdOutOrErr, isError){
     });
 };
 
-const resetTargetPages = async function(req, callback){
+const resetTargetPages = async function(req, startingUrl, callback){
     let targets = await req.app.locals.puppeteerBrowser.targets();
     console.log("targets", targets);
+    console.log("resetTargetPages startingUrl", startingUrl);
 
     //let webviewTarget;
     for(let i = 0; i < targets.length; i++){
         const target = targets[i];
         //if(target._targetInfo.type === "webview"){
-        if(target._targetInfo.title === "https://www.amazon.com"){
+        //if(target._targetInfo.title === "https://www.amazon.com"){
+        //if(target._targetInfo.title === "https://www.google.com"){
+        
+        // Using "includes" in both directions because the startingUrl might be different than the target._targetInfo.url attribute
+            // E.g., target._targetInfo.url might be "https://www.google.com", but user might've written "www.google.com";
+            // Or, target._targetInfo.url might be "https://www.google.com" but user wrote "https://www.google.com/"
+        //if(target._targetInfo.type === "page" && (target._targetInfo.title.includes(startingUrl) || startingUrl.includes(target._targetInfo.title))){
+        if(target._targetInfo.type === "page" && (target._targetInfo.url.includes(startingUrl) || startingUrl.includes(target._targetInfo.url))){
             // This is going to run code on only one of the pages (not multiple if they exist)
             //webviewTarget = target;
             const targetPage = await target.page();
