@@ -240,7 +240,20 @@ const evaluateCodeOnAllPages = function(wrappedCodeString){
         let updatedCodeString = wrappedCodeString.replace(/await page/gi, 'await targetPagesList[' + i + ']');
         const lowestTestCaseWinID = lowestTestCaseWindowID();
         // Times 2 because we have 2 BrowserViews per test case; lowestTestCaseWindowID() for offset
-        updatedCodeString += ` x(${(i*2) + lowestTestCaseWinID});`;
+        const pageWinID = (i*2) + lowestTestCaseWinID;
+        /*console.log("currentReq.app.locals.windowMetadata", currentReq.app.locals.windowMetadata);
+        console.log("pageWinID", pageWinID);*/
+        const paramSetObj = currentReq.app.locals.windowMetadata[pageWinID].parameterValueSet;
+        let allParamsVarCode = "";
+        for(const [paramName, paramValue] of Object.entries(paramSetObj)){
+            const singleParamCode = `const ${paramName} = ${JSON.stringify(paramValue)};`;
+            allParamsVarCode += singleParamCode;
+        }
+        //console.log("allParamsVarCode", allParamsVarCode);
+
+        // Append param code to front, and func x call to end
+        updatedCodeString = allParamsVarCode + updatedCodeString + ` x(${pageWinID});`;
+        //updatedCodeString += ` x(${borderWinID});`;
         eval(updatedCodeString);
     }
 };
