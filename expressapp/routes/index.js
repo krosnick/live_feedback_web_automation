@@ -1,8 +1,9 @@
 var express = require('express');
-const { BrowserWindow, BrowserView } = require('electron');
+const { BrowserWindow, BrowserView, webContents } = require('electron');
 var router = express.Router();
 const { v1: uuidv1 } = require('uuid');
-const { resetTargetPages } = require('./puppeteer');
+const _ = require('lodash');
+const { resetTargetPages, addTargetPages } = require('./puppeteer');
 
 /* GET home page. */
 router.get('/', function(req, res, next) {
@@ -20,7 +21,7 @@ router.get('/', function(req, res, next) {
 
             const startingUrl = fileObj.startingUrl;
             // Will show example windows if there is a non-null url
-            updateExampleWindows(req, startingUrl);
+            resetExampleWindows(req, startingUrl);
         }else{
             // No existing files, create a new one
             req.app.locals.fileID = uuidv1();
@@ -60,7 +61,28 @@ router.get('/border', function(req, res, next) {
     res.render('layouts/border', { layout: 'other' });
 });
 
-const updateExampleWindows = function(req, startingUrl){
+const addExampleWindows = function(req, paramSets){
+    req.app.locals.targetPageListReady = false;
+
+    req.app.locals.filesCollection.find({
+        fileID: req.app.locals.fileID
+    }).toArray(function(error, docs){
+        const startingUrl = docs[0].startingUrl;
+
+        // Add window per paramSet
+        for(let i = 0; i < paramSets.length; i++){
+            const paramSet = paramSets[i];
+            const windowIndexInApp = Object.keys(req.app.locals.windowMetadata).length;
+            createExampleWindow(req, windowIndexInApp, paramSet, startingUrl);
+        }
+
+        setTimeout((req, startingUrl) => {
+            addTargetPages(req, startingUrl);
+        }, 1000, req, startingUrl);
+    });
+};
+
+const resetExampleWindows = function(req, startingUrl){
     req.app.locals.targetPageListReady = false;
     // First remove all existing BrowserViews (except for editor browser view)
     const browserViews = req.app.locals.win.getBrowserViews();
@@ -88,49 +110,73 @@ const updateExampleWindows = function(req, startingUrl){
         
         // For now, make this just length 1; later on we'll dynamically show the correct number
             // of windows based on the actual number of param sets created by the user
-        const parameterValueSets = [ {1: "Home & Kitchen",  2: "can opener"} ];
+        //const parameterValueSets = [ {1: "Home & Kitchen",  2: "can opener"} ];
+        //const parameterValueSets = [ null ];
+        let parameterValueSets; // This needs to contain the equivalent of what's in paramCodeString
 
-        for(let i = 0; i < parameterValueSets.length; i++){
-            const paramSet = parameterValueSets[i]
-            // Create a BrowserView to contain the actual website, and then create a background border BrowserView
-            const borderView = new BrowserView({webPreferences: {nodeIntegration: true } });
-            req.app.locals.win.addBrowserView(borderView);
-            //borderView.setBounds({ x: 780, y: 0, width: 940, height: 470 });
-            borderView.setBounds({ x: 780, y: i*500, width: 920, height: 530 });
-            borderView.webContents.loadURL('http://localhost:3000/border');
-            borderView.webContents.executeJavaScript(`
-                const { ipcRenderer } = require('electron');
-                ipcRenderer.on('errorMessage', function(event, message){
-                    console.log('errorMessage occurred');
-                    document.querySelector('#borderElement').classList.add('errorBorder');
-                    document.querySelector('#errorMessage').textContent = message;
-                });
-                ipcRenderer.on('clear', function(event){
-                    console.log('clear occurred');
-                    document.querySelector('#borderElement').classList.remove('errorBorder');
-                    document.querySelector('#errorMessage').textContent = "";
-                });
-                0
-            `);
-            borderView.webContents.openDevTools({mode: "detach"});
+        req.app.locals.filesCollection.find({
+            fileID: req.app.locals.fileID
+        }).toArray(function(error, docs){
+            const paramCodeString = docs[0].paramCodeString;
+            parameterValueSets = _.uniqWith(JSON.parse(paramCodeString), _.isEqual);
+            console.log("parameterValueSets", parameterValueSets);
+            if(parameterValueSets.length === 0){
+                parameterValueSets = [ null ];
+            }
+            console.log("updated parameterValueSets", parameterValueSets);
 
-            const pageView = new BrowserView({webPreferences: {zoomFactor: 0.5, nodeIntegration: true, webSecurity: false } });
-            req.app.locals.win.addBrowserView(pageView);
-            pageView.setBounds({ x: 800, y: (i*500 + 30), width: 860, height: 450 });
-            pageView.webContents.loadURL(addHttpsIfNeeded(startingUrl));
-            pageView.webContents.openDevTools();
-
-            // Store metadata in this global object
-            req.app.locals.windowMetadata[pageView.webContents.id] = {
-                correspondingBorderWinID: borderView.webContents.id,
-                parameterValueSet: paramSet
-            };
-        }
-
-        setTimeout((req, startingUrl) => {
-            resetTargetPages(req, startingUrl);
-        }, 1000, req, startingUrl);
+            for(let i = 0; i < parameterValueSets.length; i++){
+                const paramSet = parameterValueSets[i];
+                createExampleWindow(req, i, paramSet, startingUrl);
+            }
+    
+            setTimeout((req, startingUrl) => {
+                resetTargetPages(req, startingUrl);
+            }, 1000, req, startingUrl);
+        });
     }
+};
+
+const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUrl){
+    // Create a BrowserView to contain the actual website, and then create a background border BrowserView
+    const borderView = new BrowserView({webPreferences: {nodeIntegration: true } });
+    req.app.locals.win.addBrowserView(borderView);
+    borderView.setBounds({ x: 780, y: windowIndexInApp*500, width: 920, height: 530 });
+    borderView.webContents.loadURL('http://localhost:3000/border');
+    borderView.webContents.executeJavaScript(`
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.on('errorMessage', function(event, message){
+            console.log('errorMessage occurred');
+            document.querySelector('#borderElement').classList.add('errorBorder');
+            document.querySelector('#errorMessage').textContent = message;
+        });
+        ipcRenderer.on('clear', function(event){
+            console.log('clear occurred');
+            document.querySelector('#borderElement').classList.remove('errorBorder');
+            document.querySelector('#errorMessage').textContent = "";
+        });
+        ipcRenderer.on('updateParameters', function(event, message){
+            console.log('updateParameters occurred');
+            document.querySelector('#parameters').textContent = message;
+        });
+        0
+    `);
+    borderView.webContents.openDevTools({mode: "detach"});
+    setTimeout(() => {
+        borderView.webContents.send("updateParameters", JSON.stringify(paramSet));
+    }, 1000);
+
+    const pageView = new BrowserView({webPreferences: {zoomFactor: 0.5, nodeIntegration: true, webSecurity: false } });
+    req.app.locals.win.addBrowserView(pageView);
+    pageView.setBounds({ x: 800, y: (windowIndexInApp*500 + 30), width: 860, height: 450 });
+    pageView.webContents.loadURL(addHttpsIfNeeded(startingUrl));
+    pageView.webContents.openDevTools();
+
+    // Store metadata in this global object
+    req.app.locals.windowMetadata[pageView.webContents.id] = {
+        correspondingBorderWinID: borderView.webContents.id,
+        parameterValueSet: paramSet
+    };
 };
 
 // If no http or https prefix, add https prefix (only for purposes of calling webContents.loadURL)
@@ -151,5 +197,6 @@ const addHttpsIfNeeded = function(startingUrl){
 
 module.exports = {
     router,
-    updateExampleWindows
+    resetExampleWindows,
+    addExampleWindows
 };

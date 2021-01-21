@@ -318,8 +318,7 @@ const confirmNotDevTools = function(url){
     return notDevTools;
 };
 
-const resetTargetPages = async function(req, startingUrl/*, callback*/){
-    targetPagesList = [];
+const addTargetPages = async function(req, startingUrl){
     let targets = await req.app.locals.puppeteerBrowser.targets();
     /*console.log("targets", targets);
     console.log("resetTargetPages startingUrl", startingUrl);*/
@@ -364,6 +363,11 @@ const resetTargetPages = async function(req, startingUrl/*, callback*/){
     }*/
 };
 
+const resetTargetPages = async function(req, startingUrl/*, callback*/){
+    targetPagesList = [];
+    addTargetPages(req, startingUrl);
+};
+
 /*const selectorExists = async function(selector){
     try {
         const strToEval = "document.querySelector('" + selector + "') !== null";
@@ -380,5 +384,6 @@ const resetTargetPages = async function(req, startingUrl/*, callback*/){
 
 module.exports = {
     router,
-    resetTargetPages
+    resetTargetPages,
+    addTargetPages
 };

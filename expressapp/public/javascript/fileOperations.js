@@ -36,7 +36,7 @@ $(function(){
 
         paramEditor = monaco.editor.create(document.getElementById("paramEditor"), {
             value: "",
-            language: "javascript",
+            language: "json",
             wordWrap: "on",
             wrappingIndent: "deepIndent",
             scrollbar: {

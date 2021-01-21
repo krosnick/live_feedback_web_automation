@@ -3,7 +3,7 @@ const { BrowserWindow } = require('electron');
 var router = express.Router();
 const { v1: uuidv1 } = require('uuid');
 
-const { updateExampleWindows } = require('./index');
+const { resetExampleWindows } = require('./index');
 
 // Update code for current file
 router.put('/update/', function(req, res, next) {
@@ -24,7 +24,7 @@ router.put('/update/', function(req, res, next) {
             // Tell app to create BrowserViews (if no startingUrl existed before)
                 // or to update BrowserViews with new startingUrl
             //console.log("urls not equal, need to update BrowserViews");
-            updateExampleWindows(req, newStartingUrl);
+            resetExampleWindows(req, newStartingUrl);
         }
 
         req.app.locals.filesCollection.updateOne(
