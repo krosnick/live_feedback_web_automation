@@ -71,7 +71,7 @@ router.put('/update/', function(req, res, next) {
                     // the remaining param sets in paramSetsAdded
                     addExampleWindows(req, paramSetsAdded.slice(i));
                 }
-
+                res.end();
             }else{
                 // paramSetsAdded.length < paramSetsRemoved.length
                 // We're going to have to remove windows, which unfortunately means we have to just
