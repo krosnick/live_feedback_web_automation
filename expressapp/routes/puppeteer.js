@@ -237,12 +237,13 @@ const evaluateCodeOnAllPages = function(wrappedCodeString){
     //console.log("targetPagesList.length", targetPagesList.length);
     //console.log("targetPagesList", targetPagesList);
     for(let i = 0; i < targetPagesList.length; i++){
-        let updatedCodeString = wrappedCodeString.replace(/await page/gi, 'await targetPagesList[' + i + ']');
+        let updatedCodeString = wrappedCodeString;
+        const pageVarCode = `const page = targetPagesList[${i}];`;
         const lowestTestCaseWinID = lowestTestCaseWindowID();
         // Times 2 because we have 2 BrowserViews per test case; lowestTestCaseWindowID() for offset
         const pageWinID = (i*2) + lowestTestCaseWinID;
-        /*console.log("currentReq.app.locals.windowMetadata", currentReq.app.locals.windowMetadata);
-        console.log("pageWinID", pageWinID);*/
+        //console.log("currentReq.app.locals.windowMetadata", currentReq.app.locals.windowMetadata);
+        //console.log("pageWinID", pageWinID);
         const paramSetObj = currentReq.app.locals.windowMetadata[pageWinID].parameterValueSet;
         let allParamsVarCode = "";
         for(const [paramName, paramValue] of Object.entries(paramSetObj)){
@@ -252,7 +253,7 @@ const evaluateCodeOnAllPages = function(wrappedCodeString){
         //console.log("allParamsVarCode", allParamsVarCode);
 
         // Append param code to front, and func x call to end
-        updatedCodeString = allParamsVarCode + updatedCodeString + ` x(${pageWinID});`;
+        updatedCodeString = pageVarCode + allParamsVarCode + updatedCodeString + ` x(${pageWinID});`;
         //updatedCodeString += ` x(${borderWinID});`;
         eval(updatedCodeString);
     }
@@ -349,7 +350,7 @@ const addTargetPages = async function(req, startingUrl){
         //if(target._targetInfo.type === "page" && (target._targetInfo.title.includes(startingUrl) || startingUrl.includes(target._targetInfo.title))){
         //if(target._targetInfo.type === "page" && (target._targetInfo.url.includes(startingUrl) || startingUrl.includes(target._targetInfo.url))){
         if(target._targetInfo.type === "page" && stripPrefixAndCheckIfUrlsSame(target._targetInfo.url, startingUrl) && confirmNotDevTools(target._targetInfo.url) && !prevUsedTargetIDs.hasOwnProperty(target._targetInfo.targetId)){
-            
+            //console.log("added target", target);
             prevUsedTargetIDs[target._targetInfo.targetId] = 1;
 
             // This is going to run code on only one of the pages (not multiple if they exist)
