@@ -58,7 +58,9 @@ router.post('/getCurrentFileCode/', function(req, res, next) {
 
 const extractStartingUrl = function(codeString){
     // Check and see if code contains "page.goto(", whitespace allowed between terms
-    const regex = /(page)\s*\.\s*(goto)\s*\(/;
+    //const regex = /(page)\s*\.\s*(goto)\s*\(/;
+    // Ensuring we're not matching page.goto occurrences that are commented out
+    const regex = /(?<!^[\p{Zs}\t]*\/\/.*)(?<!\/\*(?:(?!\*\/)[\s\S\r])*?)(page)\s*\.\s*(goto)\s*\(/;
     const indexMatch = codeString.search(regex);
     console.log("indexMatch", indexMatch);
     if(indexMatch === -1){
