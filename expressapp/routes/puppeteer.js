@@ -234,16 +234,14 @@ const evaluateCodeOnAllPages = function(wrappedCodeString){
     capcon.startCapture(process.stderr, function (stderr) {
         updateClientSideTerminal(stderr, true);
     });
-    //console.log("targetPagesList.length", targetPagesList.length);
-    //console.log("targetPagesList", targetPagesList);
+    const pageWinIDs = Object.keys(currentReq.app.locals.windowMetadata);
+    let numPageWinIDs = [];
+    pageWinIDs.forEach(element => numPageWinIDs.push(parseInt(element)));
+    numPageWinIDs = numPageWinIDs.sort();
     for(let i = 0; i < targetPagesList.length; i++){
         let updatedCodeString = wrappedCodeString;
         const pageVarCode = `const page = targetPagesList[${i}];`;
-        const lowestTestCaseWinID = lowestTestCaseWindowID();
-        // Times 2 because we have 2 BrowserViews per test case; lowestTestCaseWindowID() for offset
-        const pageWinID = (i*2) + lowestTestCaseWinID;
-        //console.log("currentReq.app.locals.windowMetadata", currentReq.app.locals.windowMetadata);
-        //console.log("pageWinID", pageWinID);
+        const pageWinID = numPageWinIDs[i]; // This should work, because targetPagesList and numPageWinIDs should both in order of their creation
         const paramSetObj = currentReq.app.locals.windowMetadata[pageWinID].parameterValueSet;
         let allParamsVarCode = "";
         for(const [paramName, paramValue] of Object.entries(paramSetObj)){
@@ -257,12 +255,6 @@ const evaluateCodeOnAllPages = function(wrappedCodeString){
         //updatedCodeString += ` x(${borderWinID});`;
         eval(updatedCodeString);
     }
-};
-
-const lowestTestCaseWindowID = function(){
-    const testCaseWinIDs = Object.keys(currentReq.app.locals.windowMetadata);
-    testCaseWinIDs.sort();
-    return parseInt(testCaseWinIDs[0]);
 };
 
 const updateClientSideTerminal = function(stdOutOrErr, isError){
