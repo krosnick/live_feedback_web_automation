@@ -240,6 +240,11 @@ app.on('activate', () => {
 });
 
 function createWindow () {
+    // Final format we want?: { <exampleWinID1>: { correspondingBorderWinID: , parameterValueSet: { <param1>: <val>, <param2>: <val> } } }
+    // Create BrowserView windows and populate appropriately based on parameterValueSets
+    expressApp.locals.windowMetadata = {};
+    expressApp.locals.targetPageListReady = true;
+
     // Create the browser window.
     win = new BrowserWindow({
         width: 1700,
@@ -250,6 +255,34 @@ function createWindow () {
             webSecurity: false
         }
     });
+    expressApp.locals.browserWinIDs["win"] = win.id;
+    expressApp.locals.win = win;
+    
+    const windowSelectionView = new BrowserView({webPreferences: {zoomFactor: 1.0, nodeIntegration: true, webSecurity: false} });
+    win.addBrowserView(windowSelectionView);
+    windowSelectionView.setBounds({ x: 780, y: 0, width: 780, height: 100 });
+    windowSelectionView.webContents.loadURL('http://localhost:3000/windowSelection');
+    windowSelectionView.webContents.executeJavaScript(`
+        const { ipcRenderer } = require('electron');
+        ipcRenderer.on('addWindow', function(event, pageWinID, paramString){
+            console.log('addWindow occurred');
+            let selectMenu = document.querySelector('#windowSelectMenu');
+            let optionNode = document.createElement("option");
+            optionNode.setAttribute("value", pageWinID);
+            optionNode.textContent = paramString;
+            selectMenu.append(optionNode);
+
+            // Set this variable to keep track of value
+            oldPageWinID = pageWinID;
+        });
+        ipcRenderer.on('clear', function(event){
+            document.querySelector('#windowSelectMenu').innerHTML = "";
+        });
+        0
+    `);
+    windowSelectionView.webContents.openDevTools({mode: "detach"});
+    expressApp.locals.windowSelectionView = windowSelectionView;
+    expressApp.locals.windowSelectionViewID = windowSelectionView.webContents.id;
 
     const editorBrowserView = new BrowserView({webPreferences: {zoomFactor: 1.0, nodeIntegration: true, webSecurity: false} });
     console.log("editorBrowserView ID", editorBrowserView.webContents.id);
@@ -257,10 +290,8 @@ function createWindow () {
     editorBrowserView.setBounds({ x: 0, y: 0, width: 780, height: 950 });
     editorBrowserView.webContents.loadURL('http://localhost:3000/');
     editorBrowserView.webContents.openDevTools({mode: "detach"});
-
-    // Final format we want?: { <exampleWinID1>: { correspondingBorderWinID: , parameterValueSet: { <param1>: <val>, <param2>: <val> } } }
-    // Create BrowserView windows and populate appropriately based on parameterValueSets
-    expressApp.locals.windowMetadata = {};
+    expressApp.locals.editorBrowserView = editorBrowserView;
+    expressApp.locals.editorBrowserViewID = editorBrowserView.webContents.id;
 
     setupPuppeteer();
 
@@ -273,12 +304,7 @@ function createWindow () {
     });
 
     // Capturing the window ID, so that later in router files we can send messages to a particular window
-    expressApp.locals.browserWinIDs["win"] = win.id;
-    expressApp.locals.editorBrowserView = editorBrowserView;
-    expressApp.locals.editorBrowserViewID = editorBrowserView.webContents.id;
     //expressApp.locals.numBrowserWindows = 2;
-    expressApp.locals.win = win;
-    expressApp.locals.targetPageListReady = true;
     /*expressApp.locals.view1 = view1;
     expressApp.locals.view2 = view2;*/
     // This prints out "1" as long as win is the first window created

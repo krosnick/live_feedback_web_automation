@@ -58,7 +58,39 @@ router.get('/', function(req, res, next) {
 });
 
 router.get('/border', function(req, res, next) {
-    res.render('layouts/border', { layout: 'other' });
+    res.render('layouts/border', { layout: 'borderLayout' });
+});
+
+router.get('/windowSelection', function(req, res, next) {
+    res.render('layouts/windowSelection', {
+        layout: 'windowSelectionLayout'
+    });
+});
+
+router.post('/hideShowWindows', function(req, res, next) {
+    const pageWinIDToHide = req.body.oldPageWinID;
+    const pageWinIDToShow = req.body.newPageWinID;
+    console.log("pageWinIDToHide", pageWinIDToHide);
+    console.log("pageWinIDToShow", pageWinIDToShow);
+
+    console.log("req.app.locals.windowMetadata", req.app.locals.windowMetadata);
+    // Hide the page and border BrowserViews corresponding to pageWinIDToHide
+    const toHideBrowserViewsObj = req.app.locals.windowMetadata[pageWinIDToHide].browserViews;
+    console.log("toHideBrowserViewsObj", toHideBrowserViewsObj);
+    /*req.app.locals.win.removeBrowserView(toHideBrowserViewsObj.pageView);
+    req.app.locals.win.removeBrowserView(toHideBrowserViewsObj.borderView);*/
+    movePageWindowOutOfView(toHideBrowserViewsObj.pageView);
+    moveBorderWindowOutOfView(toHideBrowserViewsObj.borderView);
+
+    // Show the page and border BrowserViews corresponding to pageWinIDToShow
+    const toShowBrowserViewObj = req.app.locals.windowMetadata[pageWinIDToShow].browserViews;
+    console.log("toShowBrowserViewObj", toShowBrowserViewObj);
+    /*req.app.locals.win.addBrowserView(toShowBrowserViewObj.pageView);
+    req.app.locals.win.addBrowserView(toShowBrowserViewObj.borderView);*/
+    movePageWindowIntoView(toShowBrowserViewObj.pageView);
+    moveBorderWindowIntoView(toShowBrowserViewObj.borderView);
+
+    res.end();
 });
 
 const addExampleWindows = function(req, paramSets){
@@ -84,10 +116,10 @@ const addExampleWindows = function(req, paramSets){
 
 const resetExampleWindows = function(req, startingUrl){
     req.app.locals.targetPageListReady = false;
-    // First remove all existing BrowserViews (except for editor browser view)
+    // First remove all existing BrowserViews (except for editor browser view and window selection view)
     const browserViews = req.app.locals.win.getBrowserViews();
     for(let browserView of browserViews){
-        if(browserView.webContents.id !== req.app.locals.editorBrowserViewID){
+        if((browserView.webContents.id !== req.app.locals.editorBrowserViewID) && (browserView.webContents.id !== req.app.locals.windowSelectionViewID)){
             // Since when choosing puppeteer targets later we identify based on the url,
                 // we want to ensure this BrowserView's url is cleared (in case it's actually the same/similar to future url)
             browserView.webContents.loadURL("");
@@ -137,12 +169,45 @@ const resetExampleWindows = function(req, startingUrl){
     }
 };
 
+const moveBorderWindowIntoView = function(borderView){
+    console.log("moveBorderWindowIntoView");
+    borderView.setBounds({ x: 780, y: 100, width: 920, height: 530 });
+};
+
+const moveBorderWindowOutOfView = function(borderView){
+    console.log("moveBorderWindowOutOfView");
+    borderView.setBounds({ x: 780, y: 1000, width: 920, height: 530 });
+};
+
+const movePageWindowIntoView = function(pageView){
+    console.log("movePageWindowIntoView");
+    pageView.setBounds({ x: 800, y: 130, width: 860, height: 450 });
+};
+
+const movePageWindowOutOfView = function(pageView){
+    console.log("movePageWindowOutOfView");
+    pageView.setBounds({ x: 800, y: 1000, width: 860, height: 450 });
+};
+
 const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUrl){
+    const paramString = JSON.stringify(paramSet);
+    
     // Create a BrowserView to contain the actual website, and then create a background border BrowserView
     const borderView = new BrowserView({webPreferences: {nodeIntegration: true } });
     req.app.locals.win.addBrowserView(borderView);
-    borderView.setBounds({ x: 780, y: windowIndexInApp*500, width: 920, height: 530 });
-    borderView.webContents.loadURL('http://localhost:3000/border');
+    /*// Then remove BrowserView if it's not the first param set (we only want to show 1 param set at a time)
+    if(Object.keys(req.app.locals.windowMetadata).length > 0){
+        req.app.locals.win.removeBrowserView(borderView);
+    }*/
+    //borderView.setBounds({ x: 780, y: (windowIndexInApp*500 + 100), width: 920, height: 530 });
+    //borderView.setBounds({ x: 780, y: 100, width: 920, height: 530 });
+    if(Object.keys(req.app.locals.windowMetadata).length === 0){
+        // First param set; show it
+        moveBorderWindowIntoView(borderView);
+    }else{
+        // Not the first param set; render it outside viewport
+        moveBorderWindowOutOfView(borderView);
+    }
     borderView.webContents.executeJavaScript(`
         const { ipcRenderer } = require('electron');
         ipcRenderer.on('errorMessage', function(event, message){
@@ -161,19 +226,85 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
         });
         0
     `);
+    //borderView.webContents.send("updateParameters", paramString);
+    /*borderView.webContents.once('did-frame-finish-load', () => {
+        borderView.webContents.send("updateParameters", paramString);
+
+        if(req.app.locals.windowMetadata[pageView.webContents.id].browserViews){
+            req.app.locals.windowMetadata[pageView.webContents.id].browserViews.borderView = borderView;
+        }else{
+            req.app.locals.windowMetadata[pageView.webContents.id].browserViews = {
+                borderView: borderView
+            };
+        }
+    });*/
+    borderView.webContents.loadURL('http://localhost:3000/border');
     borderView.webContents.openDevTools({mode: "detach"});
+    //borderView.webContents.send("updateParameters", paramString);
     setTimeout(() => {
-        borderView.webContents.send("updateParameters", JSON.stringify(paramSet));
-    }, 1000);
+        borderView.webContents.send("updateParameters", paramString);
+    }, 2000); // This is hacky, because if 2 seconds isn't enough, the param values will never be shown
+    /*borderView.webContents.once('did-frame-navigate', () => {
+        borderView.webContents.send("updateParameters", paramString);
+    });*/
 
     const pageView = new BrowserView({webPreferences: {zoomFactor: 0.5, nodeIntegration: true, webSecurity: false } });
     req.app.locals.win.addBrowserView(pageView);
-    pageView.setBounds({ x: 800, y: (windowIndexInApp*500 + 30), width: 860, height: 450 });
+    /*// Then remove BrowserView if it's not the first param set (we only want to show 1 param set at a time)
+    if(Object.keys(req.app.locals.windowMetadata).length > 0){
+        req.app.locals.win.removeBrowserView(pageView);
+    }*/
+    //pageView.setBounds({ x: 800, y: 130, width: 860, height: 450 });
+    if(Object.keys(req.app.locals.windowMetadata).length === 0){
+        // First param set; show it
+        movePageWindowIntoView(pageView);
+    }else{
+        // Not the first param set; render it outside viewport
+        movePageWindowOutOfView(pageView);
+    }
+    pageView.webContents.once('did-frame-finish-load', () => {
+        req.app.locals.windowSelectionView.webContents.send("addWindow", pageView.webContents.id, paramString);
+
+        /*if(req.app.locals.windowMetadata[pageView.webContents.id].browserViews){
+            req.app.locals.windowMetadata[pageView.webContents.id].browserViews.borderView = borderView;
+        }else{
+            req.app.locals.windowMetadata[pageView.webContents.id].browserViews = {
+                borderView: borderView
+            };
+        }
+
+        if(req.app.locals.windowMetadata[pageView.webContents.id].browserViews){
+            req.app.locals.windowMetadata[pageView.webContents.id].browserViews.pageView = pageView;
+        }else{
+            req.app.locals.windowMetadata[pageView.webContents.id].browserViews = {
+                pageView: pageView
+            };
+        }*/
+    });
     pageView.webContents.loadURL(addHttpsIfNeeded(startingUrl));
     pageView.webContents.openDevTools();
 
+    /*// Only show the BrowserViews if this is the first param set
+    if(Object.keys(req.app.locals.windowMetadata).length === 0){
+        req.app.locals.win.addBrowserView(borderView);
+        req.app.locals.win.addBrowserView(pageView);
+    }*/
+
+    // This is kind of hacky, waiting 3 seconds. Because if the computer is slow and 3 seconds isn't enough,
+     //then #windowSelectMenu won't be populated appropriately
+    /*setTimeout(() => {
+        req.app.locals.windowSelectionView.webContents.send("addWindow", req.app.locals.windowSelectionViewID, paramString);
+    }, 3000);*/
+    //pageView.webContents.on('dom-ready', () => {
+    //pageView.webContents.on('new-window', () => {
+    
+
     // Store metadata in this global object
     req.app.locals.windowMetadata[pageView.webContents.id] = {
+        browserViews: {
+            pageView: pageView,
+            borderView: borderView
+        },
         correspondingBorderWinID: borderView.webContents.id,
         parameterValueSet: paramSet
     };
