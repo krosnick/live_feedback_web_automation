@@ -201,7 +201,8 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
     }*/
     //borderView.setBounds({ x: 780, y: (windowIndexInApp*500 + 100), width: 920, height: 530 });
     //borderView.setBounds({ x: 780, y: 100, width: 920, height: 530 });
-    if(Object.keys(req.app.locals.windowMetadata).length === 0){
+    const isFirstWindow = Object.keys(req.app.locals.windowMetadata).length === 0;
+    if(isFirstWindow){
         // First param set; show it
         moveBorderWindowIntoView(borderView);
     }else{
@@ -255,7 +256,7 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
         req.app.locals.win.removeBrowserView(pageView);
     }*/
     //pageView.setBounds({ x: 800, y: 130, width: 860, height: 450 });
-    if(Object.keys(req.app.locals.windowMetadata).length === 0){
+    if(isFirstWindow){
         // First param set; show it
         movePageWindowIntoView(pageView);
     }else{
@@ -263,7 +264,7 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
         movePageWindowOutOfView(pageView);
     }
     pageView.webContents.once('did-frame-finish-load', () => {
-        req.app.locals.windowSelectionView.webContents.send("addWindow", pageView.webContents.id, paramString);
+        req.app.locals.windowSelectionView.webContents.send("addWindow", pageView.webContents.id, paramString, isFirstWindow);
 
         /*if(req.app.locals.windowMetadata[pageView.webContents.id].browserViews){
             req.app.locals.windowMetadata[pageView.webContents.id].browserViews.borderView = borderView;

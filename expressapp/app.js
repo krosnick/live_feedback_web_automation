@@ -264,11 +264,15 @@ function createWindow () {
     windowSelectionView.webContents.loadURL('http://localhost:3000/windowSelection');
     windowSelectionView.webContents.executeJavaScript(`
         const { ipcRenderer } = require('electron');
-        ipcRenderer.on('addWindow', function(event, pageWinID, paramString){
+        ipcRenderer.on('addWindow', function(event, pageWinID, paramString, isFirstWindow){
             console.log('addWindow occurred');
             let selectMenu = document.querySelector('#windowSelectMenu');
             let optionNode = document.createElement("option");
             optionNode.setAttribute("value", pageWinID);
+            // If the window for this paramset was the first one created, then it's being shown and so this <option> should be selected
+            if(isFirstWindow){
+                optionNode.setAttribute("selected", "");
+            }
             optionNode.textContent = paramString;
             selectMenu.append(optionNode);
 
