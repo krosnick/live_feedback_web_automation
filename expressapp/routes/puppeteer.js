@@ -237,7 +237,7 @@ const evaluateCodeOnAllPages = function(wrappedCodeString){
     const pageWinIDs = Object.keys(currentReq.app.locals.windowMetadata);
     let numPageWinIDs = [];
     pageWinIDs.forEach(element => numPageWinIDs.push(parseInt(element)));
-    numPageWinIDs = numPageWinIDs.sort();
+    numPageWinIDs.sort((a, b) => a - b);
     for(let i = 0; i < targetPagesList.length; i++){
         let updatedCodeString = wrappedCodeString;
         const pageVarCode = `const page = targetPagesList[${i}];`;
