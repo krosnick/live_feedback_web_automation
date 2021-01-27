@@ -58,8 +58,11 @@ router.put('/update/', function(req, res, next) {
                             const newParamSet = paramSetsAdded[i];
                             req.app.locals.windowMetadata[pageWinID].parameterValueSet = newParamSet;
 
+                            const paramString = JSON.stringify(newParamSet);
                             // Update page/border BrowserViews appropriately
-                            webContents.fromId(borderWinID).send("updateParameters", JSON.stringify(newParamSet));
+                            webContents.fromId(borderWinID).send("updateParameters", paramString);
+                            // Update paramsets listed in dropdown menu
+                            req.app.locals.windowSelectionView.webContents.send("updateParameters", pageWinID, paramString);
                         }
                     }
                 }

@@ -279,6 +279,11 @@ function createWindow () {
             // Set this variable to keep track of value
             oldPageWinID = pageWinID;
         });
+        ipcRenderer.on('updateParameters', function(event, pageWinID, paramString){
+            console.log('updateParameters occurred');
+            const selector = 'option[value="' + pageWinID + '"]';
+            document.querySelector(selector).textContent = paramString;
+        });
         ipcRenderer.on('clear', function(event){
             document.querySelector('#windowSelectMenu').innerHTML = "";
         });
