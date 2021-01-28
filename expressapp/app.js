@@ -276,6 +276,20 @@ function createWindow () {
             optionNode.textContent = paramString;
             selectMenu.append(optionNode);
 
+            const currentValue = $("#windowSelectMenu").val();
+            const currentOptionNode = $('option[value="' + currentValue + '"');
+            // Check and see if after this addition, if the currently selected <option> has prev and next siblings (set left/right buttons disabled as appropriate)
+            if(currentOptionNode.prev().length === 0){
+                $("#left").prop("disabled",true);
+            }else{
+                $("#left").prop("disabled",false);
+            }
+            if(currentOptionNode.next().length === 0){
+                $("#right").prop("disabled",true);
+            }else{
+                $("#right").prop("disabled",false);
+            }
+            
             // Set this variable to keep track of value
             oldPageWinID = pageWinID;
         });
