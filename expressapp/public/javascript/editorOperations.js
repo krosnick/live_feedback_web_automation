@@ -42,10 +42,13 @@ $(function(){
                     code: code
                 }
             }).done(function(data) {
-                //console.log("runPuppeteerCode data", data);
-                if(data){
+                console.log("browserWindowFinishAndErrorData", data);
+                const errorData = data.errors;
+                const ranToCompletionData = data.ranToCompletion;
+                let errorLineNumbers = [];
+                if(Object.keys(errorData).length > 0){
                     // There are puppeteer errors; render markers appropriately
-                    const uniqueErrorObjList = createUniqueListOfErrorObjects(data);
+                    const uniqueErrorObjList = createUniqueListOfErrorObjects(errorData);
 
                     const markerObjList = [];
                     const borderWindowIDAndMessageList = [];
@@ -78,6 +81,10 @@ $(function(){
                         const message = pair.message;
                         ipcRenderer.sendTo(borderWinID, "errorMessage", message);
                     }
+                }
+
+                if(Object.keys(ranToCompletionData).length > 0){
+                    
                 }
             });
         });

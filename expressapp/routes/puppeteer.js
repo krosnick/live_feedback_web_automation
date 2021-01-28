@@ -11,7 +11,10 @@ let prevUsedTargetIDs = {};
 let currentRes = undefined;
 let currentReq = undefined;
 let numBrowserWindowsFinishedCodeExecution = 0;
-let browserWindowErrors = {}; // {winID: { errorMessage, errorLineNumber }}
+let browserWindowFinishAndErrorData = {
+    errors: {},
+    ranToCompletion: {}
+};
 
 //let codeToRunAfterPause = undefined;
 let currentCodeString = undefined;
@@ -123,8 +126,10 @@ router.post('/continueRunning', async function(req, res, next) {
 router.post('/runPuppeteerCode', async function(req, res, next) {
     console.log("runPuppeteerCode");
     const code = req.body.code;
-    browserWindowErrors = {}; // resetting, so that it contains errors only for the current run
-
+    browserWindowFinishAndErrorData = {
+        errors: {},
+        ranToCompletion: {}
+    };
     //let updatedCodeString = code.replace(/await page/gi, 'await webviewTargetPage');
     //console.log("updatedRunFuncString", updatedRunFuncString);
     
@@ -158,7 +163,9 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     } finally {
         numBrowserWindowsFinishedCodeExecution += 1;
         if(errorMessage){
-            browserWindowErrors[winID] = { errorMessage: errorMessage,  errorLineNumber: errorLineNumber, correspondingBorderWinID: currentReq.app.locals.windowMetadata[winID].correspondingBorderWinID, parameterValueSet: currentReq.app.locals.windowMetadata[winID].parameterValueSet};
+            browserWindowFinishAndErrorData.errors[winID] = { errorMessage: errorMessage,  errorLineNumber: errorLineNumber, correspondingBorderWinID: currentReq.app.locals.windowMetadata[winID].correspondingBorderWinID, parameterValueSet: currentReq.app.locals.windowMetadata[winID].parameterValueSet};
+        }else{
+            browserWindowFinishAndErrorData.ranToCompletion[winID] = { correspondingBorderWinID: currentReq.app.locals.windowMetadata[winID].correspondingBorderWinID, parameterValueSet: currentReq.app.locals.windowMetadata[winID].parameterValueSet }
         }
         if(numBrowserWindowsFinishedCodeExecution === Object.keys(currentReq.app.locals.windowMetadata).length){
             // All windows have finished executing now
@@ -166,11 +173,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
             // Stop captures and send blank response 
             capcon.stopCapture(process.stdout);
             capcon.stopCapture(process.stderr);
-            if(Object.keys(browserWindowErrors).length > 0){
-                currentRes.send(browserWindowErrors);
-            }else{
-                currentRes.end();
-            }
+            currentRes.send(browserWindowFinishAndErrorData);
         }
     }}`;
     //}} x();`;
@@ -269,12 +272,13 @@ const updateClientSideTerminal = function(stdOutOrErr, isError){
     // Need to split stdOutOrErr by \n, so then we print each line individually
     const itemsToPrint = stdOutOrErr.split('\n');
     itemsToPrint.forEach(function(str){
+        const escapedString = str.replaceAll(/'/ig, "\\'");
         const codeToRun = `
         // create a new div element
         newDiv = document.createElement('div');
         newPre = document.createElement('pre');
         // and give it some content
-        newContent = document.createTextNode('${str}');
+        newContent = document.createTextNode('${escapedString}');
         // add the text node to the newly created div
         newPre.appendChild(newContent);
         newDiv.appendChild(newPre);
