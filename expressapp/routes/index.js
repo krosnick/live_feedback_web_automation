@@ -171,22 +171,22 @@ const resetExampleWindows = function(req, startingUrl){
 
 const moveBorderWindowIntoView = function(borderView){
     console.log("moveBorderWindowIntoView");
-    borderView.setBounds({ x: 780, y: 100, width: 920, height: 530 });
+    borderView.setBounds({ x: 780, y: 30, width: 920, height: 900 });
 };
 
 const moveBorderWindowOutOfView = function(borderView){
     console.log("moveBorderWindowOutOfView");
-    borderView.setBounds({ x: 780, y: 1000, width: 920, height: 530 });
+    borderView.setBounds({ x: 780, y: 1000, width: 920, height: 900 });
 };
 
 const movePageWindowIntoView = function(pageView){
     console.log("movePageWindowIntoView");
-    pageView.setBounds({ x: 800, y: 130, width: 860, height: 450 });
+    pageView.setBounds({ x: 800, y: 60, width: 860, height: 820 });
 };
 
 const movePageWindowOutOfView = function(pageView){
     console.log("movePageWindowOutOfView");
-    pageView.setBounds({ x: 800, y: 1000, width: 860, height: 450 });
+    pageView.setBounds({ x: 800, y: 1000, width: 860, height: 820 });
 };
 
 const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUrl){
@@ -249,7 +249,7 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
         borderView.webContents.send("updateParameters", paramString);
     });*/
 
-    const pageView = new BrowserView({webPreferences: {zoomFactor: 0.5, nodeIntegration: true, webSecurity: false } });
+    const pageView = new BrowserView({webPreferences: {nodeIntegration: true, webSecurity: false } });
     req.app.locals.win.addBrowserView(pageView);
     /*// Then remove BrowserView if it's not the first param set (we only want to show 1 param set at a time)
     if(Object.keys(req.app.locals.windowMetadata).length > 0){
@@ -283,7 +283,7 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
         }*/
     });
     pageView.webContents.loadURL(addHttpsIfNeeded(startingUrl));
-    pageView.webContents.openDevTools();
+    pageView.webContents.openDevTools({mode: "bottom"});
 
     /*// Only show the BrowserViews if this is the first param set
     if(Object.keys(req.app.locals.windowMetadata).length === 0){
