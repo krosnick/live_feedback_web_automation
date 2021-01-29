@@ -138,13 +138,12 @@ router.post('/createNewFile', function(req, res, next) {
                     fileID: req.app.locals.fileID,
                     fileName: "untitled_" + req.app.locals.fileID + ".js",
                     fileContents: "// Write your script here\n",
-                    paramCodeString: `const listOfParamSets = [
-    /*{
-        <param1>: <valA>,
-        <param2>: <valB>
-    },
-    ...*/
-];`,
+                    paramCodeString: `[
+    {
+        "paramName1": "val1",
+        "paramName2": "val2"
+    }
+]`,
                     startingUrl: null,
                     lastModified: Date.now()
                 };
@@ -197,13 +196,12 @@ router.delete('/delete', function(req, res, next) {
                     fileID: req.app.locals.fileID,
                     fileName: "untitled_" + req.app.locals.fileID + ".js",
                     fileContents: "// Write your script here\n",
-                    paramCodeString: `const listOfParamSets = [
-    /*{
-        <param1>: <valA>,
-        <param2>: <valB>
-    },
-    ...*/
-];`,
+                    paramCodeString: `[
+    {
+        "paramName1": "val1",
+        "paramName2": "val2"
+    }
+]`,
                     startingUrl: null,
                     lastModified: Date.now()
                 };
