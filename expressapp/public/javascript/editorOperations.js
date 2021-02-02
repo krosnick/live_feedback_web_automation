@@ -1,4 +1,7 @@
 const { ipcRenderer } = require('electron');
+
+let decorations = [];
+
 function editorOnDidChangeContent(){
     clearTimeout(codeChangeSetTimeout);
     codeChangeSetTimeout = setTimeout((event) => {
@@ -56,6 +59,7 @@ $(function(){
                     for(const errorObj of uniqueErrorObjList) {
                         const message = errorObj.errorMessage;
                         const lineNumber = errorObj.errorLineNumber;
+                        errorLineNumbers.push(lineNumber);
                         const borderWinIDs = errorObj.borderWinIDs;
                         const parameterValueSets = errorObj.parameterValueSets;
                         for(const borderWinID of borderWinIDs){
@@ -83,8 +87,38 @@ $(function(){
                     }
                 }
 
+                if(errorLineNumbers.length > 0){
+                    // There were errors. Let's put red decorations on these lines
+                    // First, sort
+                    errorLineNumbers.sort((a, b) => a - b);
+
+                    let rangeList = [];
+                    // Green decoration from beginning until first line with error
+                    rangeList.push({ range: new monaco.Range(1,1,errorLineNumbers[0]-1,1), options: { isWholeLine: true, linesDecorationsClassName: 'greenLineDecoration' }});
+
+                    for(let i = 0; i < errorLineNumbers.length; i++){
+                        const errorNum = errorLineNumbers[i];
+                        // Have gray decorations for all lines in between error lines
+                        if(i > 0){
+                            const prevErrorNum = errorLineNumbers[i-1];
+                            rangeList.push({ range: new monaco.Range(prevErrorNum+1,1,errorNum-1,1), options: { isWholeLine: true, linesDecorationsClassName: 'grayLineDecoration' }});
+                        }
+                        // Red decoration for line with error
+                        rangeList.push({ range: new monaco.Range(errorNum,1,errorNum,1), options: { isWholeLine: true, linesDecorationsClassName: 'redLineDecoration' }});
+                    }
+
+                    // Check if at least 1 example ran to completion; if so, show gray decoration until end of editor
+                    if(Object.keys(ranToCompletionData).length > 0){
+                        const lineCount = monacoEditor.getModel().getLineCount();
+                        rangeList.push({ range: new monaco.Range(errorLineNumbers[errorLineNumbers.length-1]+1,1,lineCount,1), options: { isWholeLine: true, linesDecorationsClassName: 'grayLineDecoration' }});
+                    }
+                    decorations = monacoEditor.deltaDecorations(decorations, rangeList);
+                }
+                
                 if(Object.keys(ranToCompletionData).length > 0){
-                    
+                    // Show green decoration for all lines
+                    const lineCount = monacoEditor.getModel().getLineCount();
+                    decorations = monacoEditor.deltaDecorations(decorations, [{ range: new monaco.Range(1,1,lineCount,1), options: { isWholeLine: true, linesDecorationsClassName: 'greenLineDecoration' }}]);
                 }
             });
         });

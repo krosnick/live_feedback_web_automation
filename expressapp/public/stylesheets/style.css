@@ -75,3 +75,21 @@ body #codePane {
     box-shadow: 0 0 1px rgba(255, 255, 255, .5);
 }
 /* End */
+
+.redLineDecoration {
+    background: rgb(255, 91, 91);
+	width: 5px !important;
+	margin-left: 3px;
+}
+
+.greenLineDecoration {
+    background: rgb(89, 197, 89);
+	width: 5px !important;
+	margin-left: 3px;
+}
+
+.grayLineDecoration {
+    background: rgb(172, 171, 171);
+	width: 5px !important;
+	margin-left: 3px;
+}

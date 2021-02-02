@@ -83,6 +83,7 @@ $(function(){
         clearTimeout(updateFileNameTimeout);
         clearTimeout(codeChangeSetTimeout);
         clearTimeout(paramChangeSetTimeout);
+        decorations = monacoEditor.deltaDecorations(decorations, []);
         
         let currentFileContents = "";
         if(monacoEditor){
@@ -126,6 +127,7 @@ $(function(){
             clearTimeout(updateFileNameTimeout);
             clearTimeout(codeChangeSetTimeout);
             clearTimeout(paramChangeSetTimeout);
+            decorations = monacoEditor.deltaDecorations(decorations, []);
 
             let currentFileContents = "";
             if(monacoEditor){
@@ -168,6 +170,7 @@ $(function(){
 
     // Delete currently shown file, and then show most recently modified file instead (or, if no other files, a new blank file)
     $("body").on("click", "#deleteCurrentFile", function(e){
+        decorations = monacoEditor.deltaDecorations(decorations, []);
         $.ajax({
             method: "DELETE",
             url: "/files/delete"
