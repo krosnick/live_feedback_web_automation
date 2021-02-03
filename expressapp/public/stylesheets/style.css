@@ -1,6 +1,6 @@
 #codeEditor {
     width: 730px;
-    height: 550px;
+    height: 540px;
     margin: 10px;
     border: 1px solid gray;
 }
@@ -42,6 +42,10 @@ body #codePane {
 
 #fileSelection {
     margin: 5px;
+}
+
+#fileSelectMenu {
+    max-width: 273px;
 }
 
 .fileControls {
