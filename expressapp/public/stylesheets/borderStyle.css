@@ -14,3 +14,7 @@
     color: red;
     margin-left: 10px;
 }
+
+.clickableButton {
+    cursor: pointer;
+}

@@ -58,8 +58,9 @@ router.get('/', function(req, res, next) {
     });
 });
 
-router.get('/border', function(req, res, next) {
-    res.render('layouts/border', { layout: 'borderLayout' });
+router.get('/border/:id', function(req, res, next) {
+    const borderViewID = req.params.id;
+    res.render('layouts/border', { layout: 'borderLayout', borderViewID: borderViewID });
 });
 
 router.get('/windowSelection', function(req, res, next) {
@@ -221,10 +222,14 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
             console.log('clear occurred');
             document.querySelector('#borderElement').classList.remove('errorBorder');
             document.querySelector('#errorMessage').textContent = "";
+            updateBackForwardButtons(false, false);
         });
         ipcRenderer.on('updateParameters', function(event, message){
             console.log('updateParameters occurred');
             document.querySelector('#parameters').textContent = message;
+        });
+        ipcRenderer.on('updateBackForwardButtons', function(event, canGoBack, canGoForward){
+            updateBackForwardButtons(canGoBack, canGoForward);
         });
         0
     `);
@@ -240,7 +245,7 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
             };
         }
     });*/
-    borderView.webContents.loadURL('http://localhost:3000/border');
+    borderView.webContents.loadURL('http://localhost:3000/border/' + borderView.webContents.id);
     if(req.app.locals.devMode){
         borderView.webContents.openDevTools({mode: "detach"});
     }
@@ -291,6 +296,12 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
                 pageView: pageView
             };
         }*/
+    });
+    pageView.webContents.on('did-finish-load', () => {
+        // Send message to the corresponding borderView to update its Back/Forward buttons
+        const canGoBack = pageView.webContents.canGoBack();
+        const canGoForward = pageView.webContents.canGoForward();
+        borderView.webContents.send("updateBackForwardButtons", canGoBack, canGoForward);
     });
     pageView.webContents.loadURL(addHttpsIfNeeded(startingUrl));
     pageView.webContents.openDevTools({mode: "bottom"});
