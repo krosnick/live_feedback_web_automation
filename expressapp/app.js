@@ -93,6 +93,16 @@ app.on('ready', function() {
         res.render('layouts/error');
     });
 
+    if(process.argv[2] === "dev"){
+        expressApp.locals.devMode = true;
+        // i.e., npm start -- dev
+        // dev mode - show all dev tools
+    }else{
+        // i.e., npm start
+        // user mode - don't show extraneous dev tools
+        expressApp.locals.devMode = false;
+    }
+
     // Connection URL
     // process.argv[2] is the first arg, the shared directory
     /*const mongoKeys = JSON.parse(fs.readFileSync(path.join(process.argv[2], 'atlas.keys.json'), 'utf8'));
@@ -303,7 +313,9 @@ function createWindow () {
         });
         0
     `);
-    windowSelectionView.webContents.openDevTools({mode: "detach"});
+    if(expressApp.locals.devMode){
+        windowSelectionView.webContents.openDevTools({mode: "detach"});
+    }
     expressApp.locals.windowSelectionView = windowSelectionView;
     expressApp.locals.windowSelectionViewID = windowSelectionView.webContents.id;
 
@@ -312,7 +324,9 @@ function createWindow () {
     win.addBrowserView(editorBrowserView);
     editorBrowserView.setBounds({ x: 0, y: 0, width: 780, height: 950 });
     editorBrowserView.webContents.loadURL('http://localhost:3000/');
-    editorBrowserView.webContents.openDevTools({mode: "detach"});
+    if(expressApp.locals.devMode){
+        editorBrowserView.webContents.openDevTools({mode: "detach"});
+    }
     expressApp.locals.editorBrowserView = editorBrowserView;
     expressApp.locals.editorBrowserViewID = editorBrowserView.webContents.id;
 

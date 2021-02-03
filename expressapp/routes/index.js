@@ -241,7 +241,9 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
         }
     });*/
     borderView.webContents.loadURL('http://localhost:3000/border');
-    borderView.webContents.openDevTools({mode: "detach"});
+    if(req.app.locals.devMode){
+        borderView.webContents.openDevTools({mode: "detach"});
+    }
     //borderView.webContents.send("updateParameters", paramString);
     setTimeout(() => {
         borderView.webContents.send("updateParameters", paramString);
