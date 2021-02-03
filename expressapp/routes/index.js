@@ -211,27 +211,6 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
         // Not the first param set; render it outside viewport
         moveBorderWindowOutOfView(borderView);
     }
-    borderView.webContents.executeJavaScript(`
-        const { ipcRenderer } = require('electron');
-        ipcRenderer.on('errorMessage', function(event, message){
-            console.log('errorMessage occurred');
-            document.querySelector('#borderElement').classList.add('errorBorder');
-            document.querySelector('#errorMessage').textContent = message;
-        });
-        ipcRenderer.on('clear', function(event){
-            console.log('clear occurred');
-            document.querySelector('#borderElement').classList.remove('errorBorder');
-            document.querySelector('#errorMessage').textContent = "";
-        });
-        ipcRenderer.on('updateParameters', function(event, message){
-            console.log('updateParameters occurred');
-            document.querySelector('#parameters').textContent = message;
-        });
-        ipcRenderer.on('updateBackForwardButtons', function(event, canGoBack, canGoForward){
-            updateBackForwardButtons(canGoBack, canGoForward);
-        });
-        0
-    `);
     //borderView.webContents.send("updateParameters", paramString);
     /*borderView.webContents.once('did-frame-finish-load', () => {
         borderView.webContents.send("updateParameters", paramString);

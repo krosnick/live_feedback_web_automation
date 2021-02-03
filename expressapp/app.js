@@ -272,47 +272,6 @@ function createWindow () {
     win.addBrowserView(windowSelectionView);
     windowSelectionView.setBounds({ x: 780, y: 0, width: 780, height: 100 });
     windowSelectionView.webContents.loadURL('http://localhost:3000/windowSelection');
-    windowSelectionView.webContents.executeJavaScript(`
-        const { ipcRenderer } = require('electron');
-        ipcRenderer.on('addWindow', function(event, pageWinID, paramString, isFirstWindow){
-            console.log('addWindow occurred');
-            let selectMenu = document.querySelector('#windowSelectMenu');
-            let optionNode = document.createElement("option");
-            optionNode.setAttribute("value", pageWinID);
-            // If the window for this paramset was the first one created, then it's being shown and so this <option> should be selected
-            if(isFirstWindow){
-                optionNode.setAttribute("selected", "");
-            }
-            optionNode.textContent = paramString;
-            selectMenu.append(optionNode);
-
-            const currentValue = $("#windowSelectMenu").val();
-            const currentOptionNode = $('option[value="' + currentValue + '"');
-            // Check and see if after this addition, if the currently selected <option> has prev and next siblings (set left/right buttons disabled as appropriate)
-            if(currentOptionNode.prev().length === 0){
-                $("#left").prop("disabled",true);
-            }else{
-                $("#left").prop("disabled",false);
-            }
-            if(currentOptionNode.next().length === 0){
-                $("#right").prop("disabled",true);
-            }else{
-                $("#right").prop("disabled",false);
-            }
-            
-            // Set this variable to keep track of value
-            oldPageWinID = pageWinID;
-        });
-        ipcRenderer.on('updateParameters', function(event, pageWinID, paramString){
-            console.log('updateParameters occurred');
-            const selector = 'option[value="' + pageWinID + '"]';
-            document.querySelector(selector).textContent = paramString;
-        });
-        ipcRenderer.on('clear', function(event){
-            document.querySelector('#windowSelectMenu').innerHTML = "";
-        });
-        0
-    `);
     if(expressApp.locals.devMode){
         windowSelectionView.webContents.openDevTools({mode: "detach"});
     }

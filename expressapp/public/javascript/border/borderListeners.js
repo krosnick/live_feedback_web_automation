@@ -1,3 +1,4 @@
+const { ipcRenderer } = require('electron');
 $(function(){
     $("body").on("click", "#backButton", function(){
         // Send message to server try to "go back"; it'll update pageView's webContents appropriately
@@ -52,3 +53,21 @@ const updateBackForwardButtons = function(canGoBack, canGoForward){
         $("#forwardButton").prop("disabled",true);
     }
 };
+
+ipcRenderer.on('errorMessage', function(event, message){
+    console.log('errorMessage occurred');
+    document.querySelector('#borderElement').classList.add('errorBorder');
+    document.querySelector('#errorMessage').textContent = message;
+});
+ipcRenderer.on('clear', function(event){
+    console.log('clear occurred');
+    document.querySelector('#borderElement').classList.remove('errorBorder');
+    document.querySelector('#errorMessage').textContent = "";
+});
+ipcRenderer.on('updateParameters', function(event, message){
+    console.log('updateParameters occurred');
+    document.querySelector('#parameters').textContent = message;
+});
+ipcRenderer.on('updateBackForwardButtons', function(event, canGoBack, canGoForward){
+    updateBackForwardButtons(canGoBack, canGoForward);
+});
