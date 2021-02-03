@@ -222,7 +222,6 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
             console.log('clear occurred');
             document.querySelector('#borderElement').classList.remove('errorBorder');
             document.querySelector('#errorMessage').textContent = "";
-            updateBackForwardButtons(false, false);
         });
         ipcRenderer.on('updateParameters', function(event, message){
             console.log('updateParameters occurred');
