@@ -3,6 +3,7 @@ const { BrowserWindow, BrowserView, webContents } = require('electron');
 var router = express.Router();
 const { v1: uuidv1 } = require('uuid');
 const _ = require('lodash');
+const path = require('path');
 const { resetTargetPages, addTargetPages } = require('./puppeteer');
 
 /* GET home page. */
@@ -249,7 +250,14 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
         borderView.webContents.send("updateParameters", paramString);
     });*/
 
-    const pageView = new BrowserView({webPreferences: {nodeIntegration: true, webSecurity: false } });
+    const pageView = new BrowserView({
+        webPreferences: {
+            nodeIntegration: true,
+            webSecurity: false,
+            enableRemoteModule: true,
+            preload: path.resolve(__dirname, '../public/javascript/pageViewPreload.js')
+        }
+    });
     req.app.locals.win.addBrowserView(pageView);
     /*// Then remove BrowserView if it's not the first param set (we only want to show 1 param set at a time)
     if(Object.keys(req.app.locals.windowMetadata).length > 0){
