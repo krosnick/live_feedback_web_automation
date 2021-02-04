@@ -18,3 +18,10 @@
 .clickableButton {
     cursor: pointer;
 }
+
+#websiteURLInput {
+    width: 500px;
+    height: 18px;
+    -webkit-app-region: no-drag !important;
+    -webkit-user-select: text !important;
+}

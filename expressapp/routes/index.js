@@ -195,7 +195,7 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
     const paramString = JSON.stringify(paramSet);
     
     // Create a BrowserView to contain the actual website, and then create a background border BrowserView
-    const borderView = new BrowserView({webPreferences: {nodeIntegration: true } });
+    const borderView = new BrowserView({webPreferences: {nodeIntegration: true, webSecurity: false} });
     req.app.locals.win.addBrowserView(borderView);
     /*// Then remove BrowserView if it's not the first param set (we only want to show 1 param set at a time)
     if(Object.keys(req.app.locals.windowMetadata).length > 0){
@@ -227,6 +227,14 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
     if(req.app.locals.devMode){
         borderView.webContents.openDevTools({mode: "detach"});
     }
+    /*borderView.webContents.on('before-input-event', (event, input) => {
+        console.log('before-input-event');
+    });*/
+    /*borderView.webContents.on('cursor-changed', (event, input) => {
+        console.log('cursor-changed');
+        //borderView.webContents.executeJavaScript(`$("#websiteURLInput").focus();0`);
+        //req.app.locals.win.focus();
+    });*/
     //borderView.webContents.send("updateParameters", paramString);
     setTimeout(() => {
         borderView.webContents.send("updateParameters", paramString);
@@ -279,7 +287,8 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
         // Send message to the corresponding borderView to update its Back/Forward buttons
         const canGoBack = pageView.webContents.canGoBack();
         const canGoForward = pageView.webContents.canGoForward();
-        borderView.webContents.send("updateBackForwardButtons", canGoBack, canGoForward);
+        const url = pageView.webContents.getURL();
+        borderView.webContents.send("updateBackForwardButtonsAndUrl", canGoBack, canGoForward, url);
     });
     pageView.webContents.loadURL(addHttpsIfNeeded(startingUrl));
     pageView.webContents.openDevTools({mode: "bottom"});
