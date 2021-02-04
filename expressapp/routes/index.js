@@ -195,7 +195,7 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
     const paramString = JSON.stringify(paramSet);
     
     // Create a BrowserView to contain the actual website, and then create a background border BrowserView
-    const borderView = new BrowserView({webPreferences: {nodeIntegration: true, webSecurity: false} });
+    const borderView = new BrowserView({webPreferences: {nodeIntegration: true} });
     req.app.locals.win.addBrowserView(borderView);
     /*// Then remove BrowserView if it's not the first param set (we only want to show 1 param set at a time)
     if(Object.keys(req.app.locals.windowMetadata).length > 0){
