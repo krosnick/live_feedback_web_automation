@@ -15,6 +15,11 @@ function editorOnDidChangeContent(){
             data: {
                 updatedFileContents: updatedCode
             }
+        }).done(function(data){
+            /*console.log("browserWindowFinishAndErrorData", data);
+            const errorData = data.errors;
+            //const ranToCompletionData = data.ranToCompletion;
+            createSquigglyErrorMarkers(errorData);*/
         });
     }, 1000);
 }
@@ -48,45 +53,7 @@ $(function(){
                 console.log("browserWindowFinishAndErrorData", data);
                 const errorData = data.errors;
                 const ranToCompletionData = data.ranToCompletion;
-                let errorLineNumbers = [];
-                if(Object.keys(errorData).length > 0){
-                    // There are puppeteer errors; render markers appropriately
-                    const uniqueErrorObjList = createUniqueListOfErrorObjects(errorData);
-
-                    const markerObjList = [];
-                    const borderWindowIDAndMessageList = [];
-                    // For each error, render markers
-                    for(const errorObj of uniqueErrorObjList) {
-                        const message = errorObj.errorMessage;
-                        const lineNumber = errorObj.errorLineNumber;
-                        errorLineNumbers.push(lineNumber);
-                        const borderWinIDs = errorObj.borderWinIDs;
-                        const parameterValueSets = errorObj.parameterValueSets;
-                        for(const borderWinID of borderWinIDs){
-                            borderWindowIDAndMessageList.push({borderWinID: borderWinID, message: message});
-                        }
-
-                        const markerObj = {
-                            startLineNumber: lineNumber,
-                            startColumn: 0,
-                            endLineNumber: lineNumber,
-                            endColumn: 1000,
-                            message: `The following error occurred for the ${parameterValueSets.length} param sets ${JSON.stringify(parameterValueSets)}:\n${message}`,
-                            severity: monaco.MarkerSeverity.Error
-                        };
-                        markerObjList.push(markerObj);
-                    }
-                    
-                    monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', markerObjList);
-
-                    for(const pair of borderWindowIDAndMessageList){
-                        const borderWinID = parseInt(pair.borderWinID);
-                        console.log("borderWinID", borderWinID);
-                        const message = pair.message;
-                        ipcRenderer.sendTo(borderWinID, "errorMessage", message);
-                    }
-                }
-
+                let errorLineNumbers = createSquigglyErrorMarkers(errorData);
                 if(errorLineNumbers.length > 0){
                     // There were errors. Let's put red decorations on these lines
                     // First, sort
@@ -129,6 +96,48 @@ $(function(){
         $("#puppeteerTerminal").empty();
     });
 });
+
+const createSquigglyErrorMarkers = function(errorData){
+    let errorLineNumbers = [];
+    if(Object.keys(errorData).length > 0){
+        // There are puppeteer errors; render markers appropriately
+        const uniqueErrorObjList = createUniqueListOfErrorObjects(errorData);
+
+        const markerObjList = [];
+        const borderWindowIDAndMessageList = [];
+        // For each error, render markers
+        for(const errorObj of uniqueErrorObjList) {
+            const message = errorObj.errorMessage;
+            const lineNumber = errorObj.errorLineNumber;
+            errorLineNumbers.push(lineNumber);
+            const borderWinIDs = errorObj.borderWinIDs;
+            const parameterValueSets = errorObj.parameterValueSets;
+            for(const borderWinID of borderWinIDs){
+                borderWindowIDAndMessageList.push({borderWinID: borderWinID, message: message});
+            }
+
+            const markerObj = {
+                startLineNumber: lineNumber,
+                startColumn: 0,
+                endLineNumber: lineNumber,
+                endColumn: 1000,
+                message: `The following error occurred for the ${parameterValueSets.length} param sets ${JSON.stringify(parameterValueSets)}:\n${message}`,
+                severity: monaco.MarkerSeverity.Error
+            };
+            markerObjList.push(markerObj);
+        }
+        
+        monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', markerObjList);
+
+        for(const pair of borderWindowIDAndMessageList){
+            const borderWinID = parseInt(pair.borderWinID);
+            console.log("borderWinID", borderWinID);
+            const message = pair.message;
+            ipcRenderer.sendTo(borderWinID, "errorMessage", message);
+        }
+    }
+    return errorLineNumbers;
+};
 
 const createUniqueListOfErrorObjects = function(errorObjectMap){
     const errorObjEntries = Object.entries(errorObjectMap);

@@ -395,5 +395,6 @@ const resetTargetPages = async function(req, startingUrl/*, callback*/){
 module.exports = {
     router,
     resetTargetPages,
-    addTargetPages
+    addTargetPages,
+    findPuppeteerErrorLineNumber
 };

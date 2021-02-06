@@ -15,9 +15,9 @@ setTimeout(() => {
         }
     });
 
-    document.querySelector("body").addEventListener("blur", function(){
+    /*document.querySelector("body").addEventListener("blur", function(){
         console.log("blur occurred");
-    });
+    });*/
 
     /*document.querySelector("body").addEventListener("focus", function(){
         console.log("focus event");
