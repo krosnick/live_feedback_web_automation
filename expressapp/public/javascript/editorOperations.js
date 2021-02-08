@@ -53,6 +53,7 @@ $(function(){
                 console.log("browserWindowFinishAndErrorData", data);
                 const errorData = data.errors;
                 const ranToCompletionData = data.ranToCompletion;
+                const snapshotsList = data.snapshotsList;
                 let errorLineNumbers = createSquigglyErrorMarkers(errorData);
                 if(errorLineNumbers.length > 0){
                     // There were errors. Let's put red decorations on these lines
@@ -86,6 +87,60 @@ $(function(){
                     // Show green decoration for all lines
                     const lineCount = monacoEditor.getModel().getLineCount();
                     decorations = monacoEditor.deltaDecorations(decorations, [{ range: new monaco.Range(1,1,lineCount,1), options: { isWholeLine: true, linesDecorationsClassName: 'greenLineDecoration' }}]);
+                }
+
+                //for(let snapshotIndex = 0; snapshotIndex < snapshotsList.length; snapshotIndex++){
+                for(let snapshotIndex = 0; snapshotIndex < 1; snapshotIndex++){
+                    // Contains might not be good, because multiple line numbers that include "1" in it
+                    // Might instead need to loop through to check for exact string.
+                    // Or, loop through the line number divs and insert tooltips based on what's in snapshotsList
+                    //const lineNumberElement = $("#codeEditor .line-numbers:contains(3)");
+                    const lineNumberElement = $("#codeEditor");
+                    const offset = lineNumberElement.offset();
+                    const left = offset.left;
+                    const top = offset.top;
+                    const newElement = $(`<div class="tooltip" role="tooltip" style="left: ${left}px; top: ${top}px;"><iframe></iframe></div>`).appendTo("body");
+                    newElement.find("iframe").attr("srcdoc", snapshotsList[snapshotIndex]);
+                    //const newElement = $(`<div class="tooltip" role="tooltip" style="left: ${left}px; top: ${top}px;"><iframe srcdoc=${snapshotsList[snapshotIndex]} sandbox></iframe></div>`).appendTo("body");
+                    //const newElement = $(`<div class="tooltip" role="tooltip" style="left: ${left}px; top: ${top}px;">${snapshotsList[snapshotIndex]}</div>`).appendTo("body");
+                    
+                    
+                    //const newElement = $(`<div class="tooltip" role="tooltip" style="left: ${left}px; top: ${top}px;">${snapshotsList[snapshotIndex]}</div>`).appendTo("#codeEditor");
+                    //const newElement = $(`<div class="tooltip" role="tooltip" style="position: absolute; left: 20px">${snapshotsList[snapshotIndex]}</div>`).appendTo(lineNumberElement);
+                    //const newElement = $(`<div class="tooltip" role="tooltip" style="position: absolute; left: 20px"><iframe srcdoc="${snapshotsList[snapshotIndex]}"></iframe></div>`).appendTo(lineNumberElement);
+                    //const newElement = $(`<div class="tooltip" role="tooltip" style="position: absolute; left: 20px">I'm a tooltip</div>`).appendTo(lineNumberElement);
+                    //lineNumberElement.append(`<div id="tooltip" role="tooltip" style="position: absolute;">I'm a tooltip</div>`);
+                    /*const button = document.querySelector('#button');
+                    const tooltip = document.querySelector('#tooltip');*/
+
+                    const element = lineNumberElement[0];
+                    const tooltip = newElement[0];
+
+                    function show() {
+                        tooltip.setAttribute('data-show', '');
+                    }
+                    
+                    function hide() {
+                        tooltip.removeAttribute('data-show');
+                    }
+                    
+                    const showEvents = ['mouseenter', 'focus'];
+                    const hideEvents = ['mouseleave', 'blur'];
+                    
+                    showEvents.forEach(event => {
+                        element.addEventListener(event, show);
+                    });
+                    
+                    hideEvents.forEach(event => {
+                        element.addEventListener(event, hide);
+                    });
+
+                    // Pass the button, the tooltip, and some options, and Popper will do the
+                    // magic positioning for you:
+                    Popper.createPopper(tooltip, element, {
+                        placement: 'right'
+                    });
+
                 }
             });
         });

@@ -19,110 +19,6 @@ let browserWindowFinishAndErrorData = {
 //let codeToRunAfterPause = undefined;
 let currentCodeString = undefined;
 
-
-/*// This is for running the macro code using the barebones input values
-    // (when the user explicitly clicks one of the "Run" buttons)
-router.post('/runGroup', async function(req, res, next) {
-    const runFuncString = req.body.runFuncString;
-    let updatedRunFuncString = runFuncString.replace(/await page/gi, 'await webviewTargetPage');
-    //console.log("updatedRunFuncString", updatedRunFuncString);
-    
-    
-    // Update updatedRunFuncString to wrap contents of funcToRun with a try catch, so that we can send the error back to the client
-    const functionMatchingStringArray = updatedRunFuncString.match(/(function)\s+(funcToRun)/);
-    const functionMatchingString = functionMatchingStringArray[0];
-    const indexOfFunctionMatchingString = updatedRunFuncString.indexOf(functionMatchingString);
-    const indexOfOpeningCurlyBrace = updatedRunFuncString.indexOf("{", indexOfFunctionMatchingString);
-    
-    const funcToRunCallMatchingStringArray = updatedRunFuncString.match(/(funcToRun\(params\))/);
-    const funcToRunCallMatchingString = funcToRunCallMatchingStringArray[0];
-    const indexOfFuncToRunCallMatchingString = updatedRunFuncString.indexOf(funcToRunCallMatchingString);
-    const indexOfClosingCurlyBrace = updatedRunFuncString.lastIndexOf("}", indexOfFuncToRunCallMatchingString);
-
-    const beginningString = updatedRunFuncString.substring(0, indexOfOpeningCurlyBrace + 1);
-    const endingString = updatedRunFuncString.substring(indexOfClosingCurlyBrace);
-
-    const middleStringToWrap = updatedRunFuncString.substring(indexOfOpeningCurlyBrace + 1, indexOfClosingCurlyBrace);
-    const wrappedBodyString = `try {`
-    + middleStringToWrap +
-    `} catch (error) {
-        let errorMessage = error.name + ": " + error.message;
-        console.error(error);
-        currentRes.send({type: 'groupFailure', errorMessage: errorMessage});
-        return;
-    }`;
-    
-    console.log("wrappedBodyString", wrappedBodyString);
-    
-    updatedRunFuncString = beginningString + wrappedBodyString + endingString;
-    console.log("updatedRunFuncString", updatedRunFuncString);
-
-    currentCodeString = updatedRunFuncString;
-
-    console.log("updatePuppeteerPage", updatePuppeteerPage);
-
-    currentRes = res;
-    if(!webviewTargetPage || updatePuppeteerPage){
-        resetWebviewTargetPage(req, function(){
-            updatePuppeteerPage = false;
-            eval(updatedRunFuncString);
-        });
-    }else{
-        eval(updatedRunFuncString);
-    }
-});
-
-router.post('/continueRunning', async function(req, res, next) {
-    console.log("continueRunning");
-    console.log("currentCodeString", currentCodeString);
-    currentRes = res;
-    if(!webviewTargetPage || updatePuppeteerPage){
-        resetWebviewTargetPage(req, function(){
-            updatePuppeteerPage = false;
-            eval(currentCodeString);
-        });
-    }else{
-        eval(currentCodeString);
-    }
-});*/
-
-/*router.post('/runPuppeteerCode', async function(req, res, next) {
-    console.log("runPuppeteerCode");
-    currentRes = res;
-    if(!webviewTargetPage){
-        resetWebviewTargetPage(req, function(){
-            //updatePuppeteerPage = false;
-            //eval(currentCodeString);
-            //console.log("webviewTargetPage", webviewTargetPage);
-            //console.log("Before eval");
-            eval("async function x() { console.log('before'); await webviewTargetPage.type('#twotabsearchtextbox', 'toothpaste'); console.log('after'); } x();");
-            //console.log("After eval");
-        });
-    }else{
-        //eval(currentCodeString);
-        //console.log("webviewTargetPage", webviewTargetPage);
-        //console.log("Before eval");
-        eval("async function x() { console.log('before'); await webviewTargetPage.type('#twotabsearchtextbox', 'toothpaste'); console.log('after'); } x();");
-        //console.log("After eval");
-    }
-
-    setTimeout(function(){
-        console.log("req.app.locals.win", req.app.locals.win);
-        console.log("req.app.locals.view1", req.app.locals.view1);
-        console.log("req.app.locals.view2", req.app.locals.view2);
-
-        // Testing removing the BrowserView
-        req.app.locals.win.removeBrowserView(req.app.locals.view1);
-        setTimeout(function(){
-            // Testing adding the BrowserView back, to see if the state is the same
-            req.app.locals.win.addBrowserView(req.app.locals.view1);
-            
-            // Yes the UI state is the same (e.g., Amazon search bar still shows the search text)
-        }, 5000);
-
-    }, 8000);
-});*/
-
 router.post('/runPuppeteerCode', async function(req, res, next) {
     console.log("runPuppeteerCode");
     const code = req.body.code;
@@ -149,9 +45,28 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     const endingString = updatedRunFuncString.substring(indexOfClosingCurlyBrace);
 
     const middleStringToWrap = updatedRunFuncString.substring(indexOfOpeningCurlyBrace + 1, indexOfClosingCurlyBrace);*/
-    let wrappedCodeString = `let errorMessage; let errorLineNumber; async function x ( winID ) { try {`
+    
+    // Let's split the code by semicolons(;)
+    // Right after each semicolon, let's insert "await page.waitFor(200);snapshotsList.push(await page.content());" to take
+        // a DOM snapshot at that point in the execution
+    const codeSegments = code.split(";");
+    let instrumentedCodeString = "";
+    for(let segmentIndex = 0; segmentIndex < codeSegments.length; segmentIndex++){
+        const codeSegment = codeSegments[segmentIndex];
+        if((segmentIndex+1 < codeSegments.length) && (codeSegments[segmentIndex+1].includes("waitFor"))){
+            // Don't try to capture page content at this point, because the user is intending to wait for the page to finish navigation or waiting for a timeout, selector, etc.
+            // So it makes sense to just wait until that has finished before we capture any snapshot.
+            instrumentedCodeString += codeSegment;
+        }else{
+            instrumentedCodeString += codeSegment + "; await page.waitFor(1000); pageContent = await page.content(); snapshotsList.push(pageContent);";
+        }
+        //instrumentedCodeString += codeSegment + "; await page.waitFor(500); pageContent = await page.content(); snapshotsList.push(pageContent);";
+    }
+    //console.log("instrumentedCodeString", instrumentedCodeString);
+    let wrappedCodeString = `let snapshotsList = []; let pageContent; let errorMessage; let errorLineNumber; async function runUserCode ( winID ) { try {`
     //+ middleStringToWrap +
-    + code +
+    //+ code +
+    + instrumentedCodeString +
     `} catch (error) {
         errorMessage = error.name + ": " + error.message;
         console.error(error);
@@ -161,6 +76,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         
         return;
     } finally {
+        //console.log("snapshotsList[0]", snapshotsList[0]);
         numBrowserWindowsFinishedCodeExecution += 1;
         if(errorMessage){
             browserWindowFinishAndErrorData.errors[winID] = { errorMessage: errorMessage,  errorLineNumber: errorLineNumber, correspondingBorderWinID: currentReq.app.locals.windowMetadata[winID].correspondingBorderWinID, parameterValueSet: currentReq.app.locals.windowMetadata[winID].parameterValueSet};
@@ -173,6 +89,8 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
             // Stop captures and send blank response 
             capcon.stopCapture(process.stdout);
             capcon.stopCapture(process.stderr);
+            console.log("snapshotsList[0]", snapshotsList[0]);
+            browserWindowFinishAndErrorData.snapshotsList = snapshotsList;
             currentRes.send(browserWindowFinishAndErrorData);
         }
     }}`;
@@ -203,17 +121,17 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         // and have this boolean set to "true" anytime the file changes or user updates url.
         // Then, we can set the target pages later only when we need to run the code (so ideally by this point
         // the BrowserViews will all have been updated)
-    req.app.locals.filesCollection.find({
+    /*req.app.locals.filesCollection.find({
         fileID: req.app.locals.fileID
     }).toArray(function(error, docs){
-        //console.log("docs[0].startingUrl", docs[0].startingUrl);
-        let checkIfTargetPageListReady = setTimeout((wrappedCodeString) => {
-            if(req.app.locals.targetPageListReady){
-                clearTimeout(checkIfTargetPageListReady);
-                evaluateCodeOnAllPages(wrappedCodeString);
-            }
-        }, 200, wrappedCodeString);
-    });
+        //console.log("docs[0].startingUrl", docs[0].startingUrl);*/
+    let checkIfTargetPageListReady = setInterval((wrappedCodeString) => {
+        if(req.app.locals.targetPageListReady){
+            clearTimeout(checkIfTargetPageListReady);
+            evaluateCodeOnAllPages(wrappedCodeString);
+        }
+    }, 200, wrappedCodeString);
+    /*});*/
 });
 
 const findPuppeteerErrorLineNumber = function(errorStackString){
@@ -254,7 +172,7 @@ const evaluateCodeOnAllPages = function(wrappedCodeString){
         //console.log("allParamsVarCode", allParamsVarCode);
 
         // Append param code to front, and func x call to end
-        updatedCodeString = pageVarCode + allParamsVarCode + updatedCodeString + ` x(${pageWinID});`;
+        updatedCodeString = pageVarCode + allParamsVarCode + updatedCodeString + `; runUserCode(${pageWinID});`;
         //updatedCodeString += ` x(${borderWinID});`;
         eval(updatedCodeString);
     }
