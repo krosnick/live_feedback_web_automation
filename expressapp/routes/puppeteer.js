@@ -138,7 +138,7 @@ const findPuppeteerErrorLineNumber = function(errorStackString){
     const lineStrings = errorStackString.split("\n");
     for(let i = 0; i < lineStrings.length; i++){
         const lineString = lineStrings[i].trim();
-        if(lineString.indexOf("at async x") > -1){
+        if(lineString.indexOf("at async runUserCode") > -1){
             const lastColonIndex = lineString.lastIndexOf(":");
             const secondToLastColonIndex =  lineString.lastIndexOf(":", lastColonIndex-1);
             const lineNumber = lineString.substring(secondToLastColonIndex+1, lastColonIndex);
