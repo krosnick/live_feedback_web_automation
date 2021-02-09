@@ -1,6 +1,7 @@
 const { ipcRenderer } = require('electron');
 
 let decorations = [];
+let snapshotLineToDOMObject;
 
 function editorOnDidChangeContent(){
     clearTimeout(codeChangeSetTimeout);
@@ -22,6 +23,37 @@ function editorOnDidChangeContent(){
             createSquigglyErrorMarkers(errorData);*/
         });
     }, 1000);
+}
+
+function editorOnDidChangeCursorPosition(e){
+    //console.log("editorOnDidChangeCursorPosition");
+    const lineNumber = e.position.lineNumber;
+    //console.log("lineNumber", lineNumber);
+    
+    // Should update the tooltip that's being shown
+    // First delete all existing .tooltip elements
+    $(".tooltip").remove();
+
+    // If there's a snapshot for this line
+    if(snapshotLineToDOMObject[lineNumber]){
+        const snapshot = Object.values(snapshotLineToDOMObject[lineNumber])[0];
+
+        const lineNumberElement = $("#codeEditor");
+        const offset = lineNumberElement.offset();
+        const left = offset.left;
+        const top = offset.top;
+        const newElement = $(`<div class="tooltip" role="tooltip" data-show="" style="left: ${left}px; top: ${top}px;"><iframe></iframe></div>`).appendTo("body");
+        newElement.find("iframe").attr("srcdoc", snapshot);
+
+        const element = lineNumberElement[0];
+        const tooltip = newElement[0];
+
+        // Pass the button, the tooltip, and some options, and Popper will do the
+        // magic positioning for you:
+        Popper.createPopper(tooltip, element, {
+            placement: 'right'
+        });
+    }
 }
 
 $(function(){
@@ -53,7 +85,7 @@ $(function(){
                 console.log("browserWindowFinishAndErrorData", data);
                 const errorData = data.errors;
                 const ranToCompletionData = data.ranToCompletion;
-                const snapshotsList = data.snapshotsList;
+                snapshotLineToDOMObject = data.snapshotLineToDOMObject;
                 let errorLineNumbers = createSquigglyErrorMarkers(errorData);
                 if(errorLineNumbers.length > 0){
                     // There were errors. Let's put red decorations on these lines
@@ -89,7 +121,7 @@ $(function(){
                     decorations = monacoEditor.deltaDecorations(decorations, [{ range: new monaco.Range(1,1,lineCount,1), options: { isWholeLine: true, linesDecorationsClassName: 'greenLineDecoration' }}]);
                 }
 
-                //for(let snapshotIndex = 0; snapshotIndex < snapshotsList.length; snapshotIndex++){
+                /*//for(let snapshotIndex = 0; snapshotIndex < snapshotsList.length; snapshotIndex++){
                 for(let snapshotIndex = 0; snapshotIndex < 1; snapshotIndex++){
                     // Contains might not be good, because multiple line numbers that include "1" in it
                     // Might instead need to loop through to check for exact string.
@@ -110,8 +142,6 @@ $(function(){
                     //const newElement = $(`<div class="tooltip" role="tooltip" style="position: absolute; left: 20px"><iframe srcdoc="${snapshotsList[snapshotIndex]}"></iframe></div>`).appendTo(lineNumberElement);
                     //const newElement = $(`<div class="tooltip" role="tooltip" style="position: absolute; left: 20px">I'm a tooltip</div>`).appendTo(lineNumberElement);
                     //lineNumberElement.append(`<div id="tooltip" role="tooltip" style="position: absolute;">I'm a tooltip</div>`);
-                    /*const button = document.querySelector('#button');
-                    const tooltip = document.querySelector('#tooltip');*/
 
                     const element = lineNumberElement[0];
                     const tooltip = newElement[0];
@@ -141,7 +171,7 @@ $(function(){
                         placement: 'right'
                     });
 
-                }
+                }*/
             });
         });
     });

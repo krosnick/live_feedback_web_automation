@@ -1,5 +1,7 @@
 const express = require('express');
 const capcon = require('capture-console');
+const acorn = require("acorn");
+const walk = require("acorn-walk")
 var router = express.Router();
 //const remote = require('electron').remote;
 //const unique = require('unique-selector');
@@ -46,13 +48,56 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
 
     const middleStringToWrap = updatedRunFuncString.substring(indexOfOpeningCurlyBrace + 1, indexOfClosingCurlyBrace);*/
     
+    // AST processing
+    const acornAST = acorn.parse(code, {
+        ecmaVersion: 2020,
+        allowAwaitOutsideFunction: true,
+        locations: true
+    });
+    let statementAndDeclarationData = {};
+    walk.ancestor(acornAST, {
+        ExpressionStatement(node, ancestors) {
+            // Only include if this node doesn't have any "real" ancestors
+            if(ancestors.length <= 2){
+                statementAndDeclarationData[node.end] = node.loc.start.line;
+            }
+        },
+        VariableDeclaration(node, ancestors) {
+            // Only include if this node doesn't have any "real" ancestors
+            if(ancestors.length <= 2){
+                statementAndDeclarationData[node.end] = node.loc.start.line;
+            }
+        }
+    });
+    let endIndices = [];
+    Object.keys(statementAndDeclarationData).forEach(element => endIndices.push(parseInt(element)));
+    endIndices.sort((a, b) => a - b);
+    
+    // Create "instrumentedCodeString" by splitting "code" at statementAndDeclarationEndIndices
+        // and inserting the "capture" commands
+    let instrumentedCodeString = "";
+    for(i = 0; i < endIndices.length; i++){
+        const endIndex = endIndices[i];
+        if(i === 0){
+            // Substring from beginning of string
+            instrumentedCodeString += code.substring(0, endIndex);
+        }else{
+            const priorEndIndex = endIndices[i-1];
+            instrumentedCodeString += code.substring(priorEndIndex, endIndex);
+        }
+        const startLineNumber = statementAndDeclarationData[endIndex];
+        instrumentedCodeString += `; await page.waitFor(500); pageContent = await page.content(); lineObj = snapshotLineToDOMObject[${startLineNumber}] || {}; lineObj[winID] = pageContent; snapshotLineToDOMObject[${startLineNumber}] = lineObj;`;
+    }
+    console.log("instrumentedCodeString", instrumentedCodeString);
+
     // Let's split the code by semicolons(;)
     // Right after each semicolon, let's insert "await page.waitFor(200);snapshotsList.push(await page.content());" to take
         // a DOM snapshot at that point in the execution
-    const codeSegments = code.split(";");
+    /*const codeSegments = code.split(";");
     let instrumentedCodeString = "";
     for(let segmentIndex = 0; segmentIndex < codeSegments.length; segmentIndex++){
         const codeSegment = codeSegments[segmentIndex];
+        //instrumentedCodeString += codeSegment;
         if((segmentIndex+1 < codeSegments.length) && (codeSegments[segmentIndex+1].includes("waitFor"))){
             // Don't try to capture page content at this point, because the user is intending to wait for the page to finish navigation or waiting for a timeout, selector, etc.
             // So it makes sense to just wait until that has finished before we capture any snapshot.
@@ -61,9 +106,9 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
             instrumentedCodeString += codeSegment + "; await page.waitFor(1000); pageContent = await page.content(); snapshotsList.push(pageContent);";
         }
         //instrumentedCodeString += codeSegment + "; await page.waitFor(500); pageContent = await page.content(); snapshotsList.push(pageContent);";
-    }
+    }*/
     //console.log("instrumentedCodeString", instrumentedCodeString);
-    let wrappedCodeString = `let snapshotsList = []; let pageContent; let errorMessage; let errorLineNumber; async function runUserCode ( winID ) { try {`
+    let wrappedCodeString = `let lineObj; let snapshotLineToDOMObject = {}; let pageContent; let errorMessage; let errorLineNumber; async function runUserCode ( winID ) { try {`
     //+ middleStringToWrap +
     //+ code +
     + instrumentedCodeString +
@@ -76,7 +121,6 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         
         return;
     } finally {
-        //console.log("snapshotsList[0]", snapshotsList[0]);
         numBrowserWindowsFinishedCodeExecution += 1;
         if(errorMessage){
             browserWindowFinishAndErrorData.errors[winID] = { errorMessage: errorMessage,  errorLineNumber: errorLineNumber, correspondingBorderWinID: currentReq.app.locals.windowMetadata[winID].correspondingBorderWinID, parameterValueSet: currentReq.app.locals.windowMetadata[winID].parameterValueSet};
@@ -89,13 +133,13 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
             // Stop captures and send blank response 
             capcon.stopCapture(process.stdout);
             capcon.stopCapture(process.stderr);
-            console.log("snapshotsList[0]", snapshotsList[0]);
-            browserWindowFinishAndErrorData.snapshotsList = snapshotsList;
+            //console.log("snapshotLineToDOMObject", snapshotLineToDOMObject);
+            browserWindowFinishAndErrorData.snapshotLineToDOMObject = snapshotLineToDOMObject;
             currentRes.send(browserWindowFinishAndErrorData);
         }
     }}`;
     //}} x();`;
-    console.log("wrappedCodeString", wrappedCodeString);
+    //console.log("wrappedCodeString", wrappedCodeString);
 
     currentRes = res;
     currentReq = req;

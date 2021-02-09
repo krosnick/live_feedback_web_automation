@@ -32,7 +32,7 @@ $(function(){
         });
 
         monacoEditor.getModel().onDidChangeContent(editorOnDidChangeContent);
-
+        monacoEditor.onDidChangeCursorPosition(editorOnDidChangeCursorPosition);
 
         paramEditor = monaco.editor.create(document.getElementById("paramEditor"), {
             value: "",
