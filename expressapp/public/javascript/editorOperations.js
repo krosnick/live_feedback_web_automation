@@ -2,6 +2,7 @@ const { ipcRenderer } = require('electron');
 
 let decorations = [];
 let snapshotLineToDOMObject;
+//let activeViewLine;
 
 function editorOnDidChangeContent(){
     clearTimeout(codeChangeSetTimeout);
@@ -35,17 +36,26 @@ function editorOnDidChangeCursorPosition(e){
     $(".tooltip").remove();
 
     // If there's a snapshot for this line
-    if(snapshotLineToDOMObject[lineNumber]){
+    if(snapshotLineToDOMObject && snapshotLineToDOMObject[lineNumber]){
         const snapshot = Object.values(snapshotLineToDOMObject[lineNumber])[0];
 
-        const lineNumberElement = $("#codeEditor");
-        const offset = lineNumberElement.offset();
-        const left = offset.left;
-        const top = offset.top;
-        const newElement = $(`<div class="tooltip" role="tooltip" data-show="" style="left: ${left}px; top: ${top}px;"><iframe></iframe></div>`).appendTo("body");
+        /*let lineNumberElement;
+        if(activeViewLine){
+            lineNumberElement = activeViewLine;
+        }else{
+            lineNumberElement = $("#codeEditor .overflow-guard .monaco-scrollable-element");
+        }
+        console.log("lineNumberElement", lineNumberElement);
+        const offset = lineNumberElement.position();
+        console.log("offset", offset);
+        //const left = offset.left;
+        const top = offset.top;*/
+        //const newElement = $(`<div class="tooltip" role="tooltip" data-show="" style="right: 0px; top: ${top}px;"><iframe></iframe></div>`).appendTo("#codeEditor .overflow-guard .monaco-scrollable-element");
+        const newElement = $(`<div class="tooltip" role="tooltip" data-show="" style="right: 0px; top: 0px;"><iframe></iframe></div>`).appendTo("#codeEditor");
         newElement.find("iframe").attr("srcdoc", snapshot);
 
-        const element = lineNumberElement[0];
+        //const element = lineNumberElement[0];
+        const element = document.querySelector("#codeEditor");
         const tooltip = newElement[0];
 
         // Pass the button, the tooltip, and some options, and Popper will do the
@@ -53,10 +63,17 @@ function editorOnDidChangeCursorPosition(e){
         Popper.createPopper(tooltip, element, {
             placement: 'right'
         });
+
+        //activeViewLine = null;
     }
 }
 
 $(function(){
+    /*// For some reason not capturing key events, so for now just listening for clicks
+    $("body").on("click", "#codeEditor .view-line", function(e){
+        console.log("#codeEditor .view-line", e);
+        activeViewLine = $(e.target);
+    });*/
     $("body").on("click", "#runCode", function(e){
         // Clear all existing puppeteer error markers
         monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', []);
