@@ -7,6 +7,11 @@ var router = express.Router();
 //const unique = require('unique-selector');
 //const strip = require('strip-comments');
 
+// All Puppeteer methods who have a selector arg; the selector arg is always the first one
+const puppeteerMethodsWithSelectorArg = [ "$", "$$", "$$eval", "$eval", "click", "focus", "hover", "select", "tap", "type", "waitForSelector", "waitFor" ]
+// page.waitFor(selectorOrFunctionOrTimeout[, options[, ...args]])
+// So for "waitFor", check the first arg and see if it's a string (rather than function or variable)
+
 //let webviewTargetPage;
 let targetPagesList = [];
 let prevUsedTargetIDs = {};
@@ -17,6 +22,7 @@ let browserWindowFinishAndErrorData = {
     errors: {},
     ranToCompletion: {}
 };
+let snapshotLineToDOMSelectorData = {}
 
 //let codeToRunAfterPause = undefined;
 let currentCodeString = undefined;
@@ -28,6 +34,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         errors: {},
         ranToCompletion: {}
     };
+    snapshotLineToDOMSelectorData = {};
     //let updatedCodeString = code.replace(/await page/gi, 'await webviewTargetPage');
     //console.log("updatedRunFuncString", updatedRunFuncString);
     
@@ -47,7 +54,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     const endingString = updatedRunFuncString.substring(indexOfClosingCurlyBrace);
 
     const middleStringToWrap = updatedRunFuncString.substring(indexOfOpeningCurlyBrace + 1, indexOfClosingCurlyBrace);*/
-    
+
     // AST processing
     const acornAST = acorn.parse(code, {
         ecmaVersion: 2020,
@@ -59,13 +66,29 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         ExpressionStatement(node, ancestors) {
             // Only include if this node doesn't have any "real" ancestors
             if(ancestors.length <= 2){
-                statementAndDeclarationData[node.end] = node.loc.start.line;
+                statementAndDeclarationData[node.end] = {
+                    lineObj: node.loc.start.line
+                };
+                // Will be null if no selector found
+                const selectorInfo = checkForSelector(node.expression);
+                if(selectorInfo){
+                    statementAndDeclarationData[node.end].selectorData = selectorInfo;
+                    //console.log("statementAndDeclarationData");
+                }
             }
         },
         VariableDeclaration(node, ancestors) {
             // Only include if this node doesn't have any "real" ancestors
             if(ancestors.length <= 2){
-                statementAndDeclarationData[node.end] = node.loc.start.line;
+                statementAndDeclarationData[node.end] = {
+                    lineObj: node.loc.start.line
+                };
+                // Will be null if no selector found
+                const selectorInfo = checkForSelector(node.declarations[0].init);
+                if(selectorInfo){
+                    statementAndDeclarationData[node.end].selectorData = selectorInfo;
+                    //console.log("statementAndDeclarationData", statementAndDeclarationData);
+                }
             }
         }
     });
@@ -85,8 +108,10 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
             const priorEndIndex = endIndices[i-1];
             instrumentedCodeString += code.substring(priorEndIndex, endIndex);
         }
-        const startLineNumber = statementAndDeclarationData[endIndex];
-        instrumentedCodeString += `; await page.waitFor(500); pageContent = await page.content(); lineObj = snapshotLineToDOMObject[${startLineNumber}] || {}; lineObj[winID] = pageContent; snapshotLineToDOMObject[${startLineNumber}] = lineObj;`;
+        data = statementAndDeclarationData[endIndex];
+        const startLineNumber = data.lineObj;
+        const selectorData = data.selectorData;
+        instrumentedCodeString += `; await page.waitFor(500); pageContent = await page.content(); lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { domString: pageContent, selectorData: ${JSON.stringify(selectorData)} }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj;`;
     }
     console.log("instrumentedCodeString", instrumentedCodeString);
 
@@ -108,7 +133,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         //instrumentedCodeString += codeSegment + "; await page.waitFor(500); pageContent = await page.content(); snapshotsList.push(pageContent);";
     }*/
     //console.log("instrumentedCodeString", instrumentedCodeString);
-    let wrappedCodeString = `let lineObj; let snapshotLineToDOMObject = {}; let pageContent; let errorMessage; let errorLineNumber; async function runUserCode ( winID ) { try {`
+    let wrappedCodeString = `let lineObj; let pageContent; let errorMessage; let errorLineNumber; async function runUserCode ( winID ) { try {`
     //+ middleStringToWrap +
     //+ code +
     + instrumentedCodeString +
@@ -133,8 +158,8 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
             // Stop captures and send blank response 
             capcon.stopCapture(process.stdout);
             capcon.stopCapture(process.stderr);
-            //console.log("snapshotLineToDOMObject", snapshotLineToDOMObject);
-            browserWindowFinishAndErrorData.snapshotLineToDOMObject = snapshotLineToDOMObject;
+            //console.log("snapshotLineToDOMSelectorData", snapshotLineToDOMSelectorData);
+            browserWindowFinishAndErrorData.snapshotLineToDOMSelectorData = snapshotLineToDOMSelectorData;
             currentRes.send(browserWindowFinishAndErrorData);
         }
     }}`;
@@ -177,6 +202,36 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     }, 200, wrappedCodeString);
     /*});*/
 });
+
+const checkForSelector = function(expressionObj){
+    // Return selector string and the line/col location
+    // Or, if no selector in expression, return null
+
+    // Check if this is an Await expression, then check that it has Puppeteer method call, and that the method takes a selector
+    if(expressionObj.type === "AwaitExpression"){
+        if(expressionObj.argument && expressionObj.argument.callee && expressionObj.argument.callee.object && expressionObj.argument.callee.object.name === "page"){
+            if(expressionObj.argument.callee.property){
+                const methodName = expressionObj.argument.callee.property.name;
+                if(puppeteerMethodsWithSelectorArg.includes(methodName)){
+                    // This method does/may have a selector as the arg
+                    const selector = expressionObj.argument.arguments[0].value;
+
+                    // Have to confirm it's a string (because "waitFor" could take function or number instead)
+                    if(typeof(selector) === "string"){
+                        // It is a selector
+                        //console.log("method and selector", (methodName + ", " + selector));
+                        const loc = expressionObj.argument.arguments[0].loc;
+                        return {
+                            selectorString: selector,
+                            selectorLocation: loc
+                        };
+                    }
+                }
+            }
+        }
+    }
+    return null;
+};
 
 const findPuppeteerErrorLineNumber = function(errorStackString){
     const lineStrings = errorStackString.split("\n");

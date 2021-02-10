@@ -1,7 +1,7 @@
 const { ipcRenderer } = require('electron');
 
 let decorations = [];
-let snapshotLineToDOMObject;
+let snapshotLineToDOMSelectorData;
 //let activeViewLine;
 
 function editorOnDidChangeContent(){
@@ -36,8 +36,9 @@ function editorOnDidChangeCursorPosition(e){
     $(".tooltip").remove();
 
     // If there's a snapshot for this line
-    if(snapshotLineToDOMObject && snapshotLineToDOMObject[lineNumber]){
-        const snapshot = Object.values(snapshotLineToDOMObject[lineNumber])[0];
+    if(snapshotLineToDOMSelectorData && snapshotLineToDOMSelectorData[lineNumber]){
+        // Currently only showing 1 snapshot (even though there are multiple - 1 per example)
+        const snapshot = Object.values(snapshotLineToDOMSelectorData[lineNumber])[0].domString;
 
         /*let lineNumberElement;
         if(activeViewLine){
@@ -102,7 +103,7 @@ $(function(){
                 console.log("browserWindowFinishAndErrorData", data);
                 const errorData = data.errors;
                 const ranToCompletionData = data.ranToCompletion;
-                snapshotLineToDOMObject = data.snapshotLineToDOMObject;
+                snapshotLineToDOMSelectorData = data.snapshotLineToDOMSelectorData;
                 let errorLineNumbers = createSquigglyErrorMarkers(errorData);
                 if(errorLineNumbers.length > 0){
                     // There were errors. Let's put red decorations on these lines
