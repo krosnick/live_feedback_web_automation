@@ -38,7 +38,8 @@ function editorOnDidChangeCursorPosition(e){
     // If there's a snapshot for this line
     if(snapshotLineToDOMSelectorData && snapshotLineToDOMSelectorData[lineNumber]){
         // Currently only showing 1 snapshot (even though there are multiple - 1 per example)
-        const snapshot = Object.values(snapshotLineToDOMSelectorData[lineNumber])[0].domString;
+        const beforeSnapshot = Object.values(snapshotLineToDOMSelectorData[lineNumber])[0].beforeDomString;
+        const afterSnapshot = Object.values(snapshotLineToDOMSelectorData[lineNumber])[0].afterDomString;
 
         /*let lineNumberElement;
         if(activeViewLine){
@@ -52,11 +53,11 @@ function editorOnDidChangeCursorPosition(e){
         //const left = offset.left;
         const top = offset.top;*/
         //const newElement = $(`<div class="tooltip" role="tooltip" data-show="" style="right: 0px; top: ${top}px;"><iframe></iframe></div>`).appendTo("#codeEditor .overflow-guard .monaco-scrollable-element");
-        const newElement = $(`<div class="tooltip" role="tooltip" data-show="" style="right: 0px; top: 0px;"><iframe></iframe></div>`).appendTo("#codeEditor");
-        newElement.find("iframe").attr("srcdoc", snapshot);
-
+        const newElement = $(`<div class="tooltip" role="tooltip" data-show=""><iframe id='beforeSnapshot' class='snapshot'></iframe><iframe id='afterSnapshot' class='snapshot'></iframe></div>`).appendTo("#paramEditor");
+        newElement.find("#beforeSnapshot").attr("srcdoc", beforeSnapshot);
+        newElement.find("#afterSnapshot").attr("srcdoc", afterSnapshot);
         //const element = lineNumberElement[0];
-        const element = document.querySelector("#codeEditor");
+        const element = document.querySelector("#paramEditor");
         const tooltip = newElement[0];
 
         // Pass the button, the tooltip, and some options, and Popper will do the

@@ -14,3 +14,7 @@ function paramsOnDidChangeContent(){
         });
     }, 1000);
 }
+
+function paramsOnDidChangeCursorPosition(){
+    $(".tooltip").remove();
+}

@@ -61,6 +61,7 @@ $(function(){
         });
 
         paramEditor.getModel().onDidChangeContent(paramsOnDidChangeContent);
+        paramEditor.onDidChangeCursorPosition(paramsOnDidChangeCursorPosition);
     }, 3000);
 
     $('body').on('input', "#currentFileName", function(e){

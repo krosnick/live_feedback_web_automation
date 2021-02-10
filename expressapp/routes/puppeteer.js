@@ -100,6 +100,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         // and inserting the "capture" commands
     let instrumentedCodeString = "";
     for(i = 0; i < endIndices.length; i++){
+        instrumentedCodeString += `; beforePageContent = await page.content();`;
         const endIndex = endIndices[i];
         if(i === 0){
             // Substring from beginning of string
@@ -111,7 +112,8 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         data = statementAndDeclarationData[endIndex];
         const startLineNumber = data.lineObj;
         const selectorData = data.selectorData;
-        instrumentedCodeString += `; await page.waitFor(500); pageContent = await page.content(); lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { domString: pageContent, selectorData: ${JSON.stringify(selectorData)} }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj;`;
+        //instrumentedCodeString += `; await page.waitFor(500); pageContent = await page.content(); lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { domString: pageContent, selectorData: ${JSON.stringify(selectorData)} }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj;`;
+        instrumentedCodeString += `; afterPageContent = await page.content(); lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, afterDomString: afterPageContent, selectorData: ${JSON.stringify(selectorData)} }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj;`;
     }
     console.log("instrumentedCodeString", instrumentedCodeString);
 
@@ -133,7 +135,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         //instrumentedCodeString += codeSegment + "; await page.waitFor(500); pageContent = await page.content(); snapshotsList.push(pageContent);";
     }*/
     //console.log("instrumentedCodeString", instrumentedCodeString);
-    let wrappedCodeString = `let lineObj; let pageContent; let errorMessage; let errorLineNumber; async function runUserCode ( winID ) { try {`
+    let wrappedCodeString = `let lineObj; let beforePageContent; let afterPageContent; let errorMessage; let errorLineNumber; async function runUserCode ( winID ) { try {`
     //+ middleStringToWrap +
     //+ code +
     + instrumentedCodeString +

@@ -10,8 +10,10 @@
 #paramEditor {
     width: 730px;
     height: 125px;
-    margin: 10px;
+    margin: 10px !important;
     border: 1px solid gray;
+    position: relative !important;
+    transform: none !important;
 }
 
 #puppeteerTerminal {
@@ -113,14 +115,35 @@ body {
     border-radius: 4px;
     font-size: 13px;
     position: absolute;
+    right: 0px;
+    top: 0px;
     display: none;
-    width: 200px;
-    height: 200px;
-    transform: scale(0.4);
+    width: 500px;
+    height: 500px;
     overflow: hidden;
-    z-index: 10;
+    /*z-index: -1;*/
 }
 
 .tooltip[data-show] {
     display: block;
 }
+
+.snapshot {
+    position: absolute;
+    transform: scale(0.7);
+    transform-origin: right;
+}
+
+#beforeSnapshot {
+    top: 0px;
+    left: 0px;
+}
+
+#afterSnapshot {
+    top: 0px;
+    right: 0px;
+}
+
+/*.monaco-editor, .monaco-editor-background, .monaco-editor .inputarea.ime-input {
+    background-color: transparent !important;
+}*/
