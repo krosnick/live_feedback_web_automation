@@ -75,10 +75,37 @@ function scaleIframe(iframeElement, lineObj, transformOriginString){
             // Zoom to selector element if it is present in DOM
             if(selectorElement){
                 scaleToElement(selectorElement, iframeElement, iframeDocument, transformOriginString);
+                return;
+            }else{
+                // TODO - Check if this is a keyboard command and if the prior command had a selector it was operating on
+
             }
         }
+        // Otherwise, scale to page width
+        scaleToPageWidth(iframeElement, iframeDocument, transformOriginString);
     }, 500);
     //});
+}
+
+function scaleToPageWidth(iframeElement, iframeDocument, transformOriginString){
+    const pageWidth = iframeDocument.querySelector("body").scrollWidth;
+
+    const paddingTotalHoriz = parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-left')) + parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-right'));
+    const tooltipWidthWithoutPadding = document.querySelector(".tooltip").getBoundingClientRect().width - paddingTotalHoriz;
+    const allowedSnapshotWidth = tooltipWidthWithoutPadding/2;
+
+    const paddingTotalVert = parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-top')) + parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-bottom'));
+    const tooltipHeightWithoutPadding = document.querySelector(".tooltip").getBoundingClientRect().height - paddingTotalVert;
+    const allowedSnapshotHeight = tooltipHeightWithoutPadding;
+
+    const transformScale = allowedSnapshotWidth / pageWidth;
+    const newSnapshotWidth = allowedSnapshotWidth / transformScale;
+    const newSnapshotHeight = allowedSnapshotHeight / transformScale;
+
+    $(iframeElement).css('width', `${newSnapshotWidth}px`);
+    $(iframeElement).css('height', `${newSnapshotHeight}px`);
+    iframeElement.style.transform = `scale(${transformScale})`;
+    iframeElement.style.transformOrigin = transformOriginString;
 }
 
 function scaleToElement(selectorElement, iframeElement, iframeDocument, transformOriginString){
