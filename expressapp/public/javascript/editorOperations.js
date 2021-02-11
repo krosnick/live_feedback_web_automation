@@ -74,40 +74,44 @@ function scaleIframe(iframeElement, lineObj, transformOriginString){
             
             // Zoom to selector element if it is present in DOM
             if(selectorElement){
-                const currentElementWidth = selectorElement.getBoundingClientRect().width;
-                const currentElementHeight = selectorElement.getBoundingClientRect().height;
-
-                const paddingTotalHoriz = parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-left')) + parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-right'));
-                const tooltipWidthWithoutPadding = document.querySelector(".tooltip").getBoundingClientRect().width - paddingTotalHoriz;
-                const allowedSnapshotWidth = tooltipWidthWithoutPadding/2;
-                
-                const paddingTotalVert = parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-top')) + parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-bottom'));
-                const tooltipHeightWithoutPadding = document.querySelector(".tooltip").getBoundingClientRect().height - paddingTotalVert;
-                const allowedSnapshotHeight = tooltipHeightWithoutPadding;
-                
-                const transformOption1 = allowedSnapshotWidth / (2 * currentElementWidth); // want element to take up at most half of viewport width
-                const transformOption2 = allowedSnapshotHeight / (2 * currentElementHeight); // want element to take up at most half of viewport height
-
-                const chosenTransformScale = Math.min(transformOption1, transformOption2);
-
-                const newSnapshotWidth = allowedSnapshotWidth / chosenTransformScale;
-                const newSnapshotHeight = allowedSnapshotHeight / chosenTransformScale;
-
-                $(iframeElement).css('width', `${newSnapshotWidth}px`);
-                $(iframeElement).css('height', `${newSnapshotHeight}px`);
-                iframeElement.style.transform = `scale(${chosenTransformScale})`;
-                iframeElement.style.transformOrigin = transformOriginString;
-
-                // Want to center it
-                const scrollLeftAmount = iframeDocument.querySelector(selector).getBoundingClientRect().x - newSnapshotWidth/4;
-                const scrollTopAmount = iframeDocument.querySelector(selector).getBoundingClientRect().y - newSnapshotHeight/4;
-
-                iframeDocument.querySelector('html').scrollLeft = scrollLeftAmount;
-                iframeDocument.querySelector('html').scrollTop = scrollTopAmount;
+                scaleToElement(selectorElement, iframeElement, iframeDocument, transformOriginString);
             }
         }
     }, 500);
     //});
+}
+
+function scaleToElement(selectorElement, iframeElement, iframeDocument, transformOriginString){
+    const currentElementWidth = selectorElement.getBoundingClientRect().width;
+    const currentElementHeight = selectorElement.getBoundingClientRect().height;
+
+    const paddingTotalHoriz = parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-left')) + parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-right'));
+    const tooltipWidthWithoutPadding = document.querySelector(".tooltip").getBoundingClientRect().width - paddingTotalHoriz;
+    const allowedSnapshotWidth = tooltipWidthWithoutPadding/2;
+    
+    const paddingTotalVert = parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-top')) + parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-bottom'));
+    const tooltipHeightWithoutPadding = document.querySelector(".tooltip").getBoundingClientRect().height - paddingTotalVert;
+    const allowedSnapshotHeight = tooltipHeightWithoutPadding;
+    
+    const transformOption1 = allowedSnapshotWidth / (2 * currentElementWidth); // want element to take up at most half of viewport width
+    const transformOption2 = allowedSnapshotHeight / (2 * currentElementHeight); // want element to take up at most half of viewport height
+
+    const chosenTransformScale = Math.min(transformOption1, transformOption2);
+
+    const newSnapshotWidth = allowedSnapshotWidth / chosenTransformScale;
+    const newSnapshotHeight = allowedSnapshotHeight / chosenTransformScale;
+
+    $(iframeElement).css('width', `${newSnapshotWidth}px`);
+    $(iframeElement).css('height', `${newSnapshotHeight}px`);
+    iframeElement.style.transform = `scale(${chosenTransformScale})`;
+    iframeElement.style.transformOrigin = transformOriginString;
+
+    // Want to center it
+    const scrollLeftAmount = selectorElement.getBoundingClientRect().x - newSnapshotWidth/4;
+    const scrollTopAmount = selectorElement.getBoundingClientRect().y - newSnapshotHeight/4;
+
+    iframeDocument.querySelector('html').scrollLeft = scrollLeftAmount;
+    iframeDocument.querySelector('html').scrollTop = scrollTopAmount;
 }
 
 $(function(){
