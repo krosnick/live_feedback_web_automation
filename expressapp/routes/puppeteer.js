@@ -205,6 +205,47 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     /*});*/
 });
 
+router.post('/findSelectorsInLine', async function(req, res, next) {
+    //console.log("findSelectorsInLine");
+    const codeLine = req.body.codeLine;
+
+    try {
+        const acornAST = acorn.parse(codeLine, {
+            ecmaVersion: 2020,
+            allowAwaitOutsideFunction: true,
+            locations: true
+        });
+        let selectorDataList = [];
+        walk.ancestor(acornAST, {
+            ExpressionStatement(node, ancestors) {
+                // Only include if this node doesn't have any "real" ancestors
+                if(ancestors.length <= 2){
+                    // Will be null if no selector found
+                    const selectorInfo = checkForSelector(node.expression);
+                    if(selectorInfo){
+                        //console.log("selectorInfo", selectorInfo);
+                        selectorDataList.push(selectorInfo);
+                    }
+                }
+            },
+            VariableDeclaration(node, ancestors) {
+                // Only include if this node doesn't have any "real" ancestors
+                if(ancestors.length <= 2){
+                    // Will be null if no selector found
+                    const selectorInfo = checkForSelector(node.declarations[0].init);
+                    if(selectorInfo){
+                        //console.log("selectorInfo", selectorInfo);
+                        selectorDataList.push(selectorInfo);
+                    }
+                }
+            }
+        });
+        res.send({ selectorDataList: selectorDataList });
+    } catch (error) {
+        res.end();
+    }
+});
+
 const checkForSelector = function(expressionObj){
     // Return selector string and the line/col location
     // Or, if no selector in expression, return null

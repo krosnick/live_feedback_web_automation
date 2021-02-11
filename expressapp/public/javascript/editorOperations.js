@@ -2,10 +2,33 @@ const { ipcRenderer } = require('electron');
 
 let decorations = [];
 let snapshotLineToDOMSelectorData;
-let squiggleLineMarkerObjList = [];
+let runtimeErrorModelMarkerData = {};
+let selectorSpecificModelMarkerData = {};
+
 //let activeViewLine;
 
 function editorOnDidChangeContent(e){
+    clearTimeout(codeChangeSetTimeout);
+    codeChangeSetTimeout = setTimeout(() => {
+        const updatedCode = monacoEditor.getValue();
+        console.log("updatedCode", updatedCode);
+
+        // Send the updated code value to the server
+        $.ajax({
+            method: "PUT",
+            url: "/code/update",
+            data: {
+                updatedFileContents: updatedCode
+            }
+        }).done(function(data){
+            /*console.log("browserWindowFinishAndErrorData", data);
+            const errorData = data.errors;
+            //const ranToCompletionData = data.ranToCompletion;
+            createSquigglyErrorMarkers(errorData);*/
+        });
+    }, 1000);
+
+    // Updating snapshotLineToDOMSelectorData and checking validity of selectors in current line
     //console.log("editorOnDidChangeContent event", e);
     let lowestLineNumber = undefined;
     for(change of e.changes){
@@ -35,29 +58,44 @@ function editorOnDidChangeContent(e){
         }
         //console.log("after snapshotLineToDOMSelectorData", Object.keys(snapshotLineToDOMSelectorData).length);
 
-        // TODO - for lowestLineNumber, see if it has any selectors. If so, check if that selector exists in beforeSnapshot
+        // For lowestLineNumber, see if it has any selectors. If so, check if that selector exists in beforeSnapshot
             // Might need to give server the line of code to analyze it's AST and get selector
-    }
-    
-    clearTimeout(codeChangeSetTimeout);
-    codeChangeSetTimeout = setTimeout(() => {
-        const updatedCode = monacoEditor.getValue();
-        console.log("updatedCode", updatedCode);
-
-        // Send the updated code value to the server
+        const codeLineString = monacoEditor.getModel().getLineContent(lowestLineNumber);
         $.ajax({
-            method: "PUT",
-            url: "/code/update",
+            method: "POST",
+            url: "/puppeteer/findSelectorsInLine",
             data: {
-                updatedFileContents: updatedCode
+                codeLine: codeLineString
             }
         }).done(function(data){
-            /*console.log("browserWindowFinishAndErrorData", data);
-            const errorData = data.errors;
-            //const ranToCompletionData = data.ranToCompletion;
-            createSquigglyErrorMarkers(errorData);*/
+            // Also need to remove all line numbers >= lowestLineNumber from selectorSpecificModelMarkerData
+            // so that we don't have stale selector squiggles
+            const modelMarkerLineNumbers = Object.keys(selectorSpecificModelMarkerData);
+            for(lineNumberStr of modelMarkerLineNumbers){
+                if(parseInt(lineNumberStr) >= lowestLineNumber){
+                    delete selectorSpecificModelMarkerData[lineNumberStr];
+                }
+            }
+            
+            //console.log("findSelectorsInLine data", data);
+            if(data){
+                const selectorDataList = data.selectorDataList;
+                // For each obj in array, check the selector against beforeSnapshot; and show squiggle for it at the given location
+                // Can probably reuse some code from earlier
+                for(selectorDataItem of selectorDataList){
+                    // Update selectorDataItem; it's line numbers are wrong, because we sent over only a single line of code (not the whole code),
+                        // which actually isn't correct, should be lowestLineNumber
+                    const numLines = selectorDataItem.selectorLocation.end.line - selectorDataItem.selectorLocation.start.line; // should be 0?
+                    selectorDataItem.selectorLocation.start.line = lowestLineNumber;
+                    selectorDataItem.selectorLocation.end.line = lowestLineNumber + numLines;
+                    identifyAndCreateSelectorSquiggleData(lowestLineNumber, selectorDataItem);
+                }
+                // Update model markers
+                monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList());
+            }
         });
-    }, 1000);
+
+    }
 }
 
 function editorOnDidChangeCursorPosition(e){
@@ -183,8 +221,9 @@ $(function(){
     });*/
     $("body").on("click", "#runCode", function(e){
         // Clear all existing puppeteer error markers and gutter bar decorations
-        squiggleLineMarkerObjList = [];
-        monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', squiggleLineMarkerObjList);
+        runtimeErrorModelMarkerData = {};
+        selectorSpecificModelMarkerData = {};
+        monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList()); // just empty
         decorations = monacoEditor.deltaDecorations(decorations, []);
 
         // Need to ask server for border BrowserView IDs
@@ -252,71 +291,13 @@ $(function(){
                     // Create appropriate squiggles.
                 const lineNumbers = Object.keys(snapshotLineToDOMSelectorData);
                 for(lineNumber of lineNumbers){
-                    const lineObj = snapshotLineToDOMSelectorData[lineNumber];
                     // selectorData (string and location) is the same regardless of window
                     const selectorData = Object.values(snapshotLineToDOMSelectorData[lineNumber])[0].selectorData;
                     if(selectorData){
-                        // This line has a selector. Let's check it's validity 
-                        let selectorNotFoundWinIDList = [];
-                        let selectorNotUniqueWinIDList = [];
-                    
-                        const numWindows = Object.keys(lineObj).length;
-                        for (const [winID, data] of Object.entries(lineObj)) {
-                            const beforeDomString = data.beforeDomString;
-                            const selectorString = data.selectorData.selectorString;
-
-                            const domObj = $(beforeDomString);
-                            const selectorResults = domObj.find(selectorString);
-                            if(selectorResults.length === 0){
-                                selectorNotFoundWinIDList.push(winID);
-                            }else if(selectorResults.length > 1){
-                                selectorNotUniqueWinIDList.push(winID);
-                            }
-                        }
-
-                        const selector = selectorData.selectorString;
-                        const selectorLocation = selectorData.selectorLocation;
-                        // Create squiggle model marker obj accordingly, add to squiggleLineMarkerObjList
-                        let message;
-                        let severity;
-                        if(selectorNotFoundWinIDList.length > 0){
-                            // Selector not found (for at least some windows); indicate error
-                            severity = monaco.MarkerSeverity.Error;
-                            if(selectorNotFoundWinIDList.length === numWindows){
-                                // Not found for any windows
-                                message = `Selector ${selector} cannot be found at this point in the execution`;
-                            }else{
-                                // Found for some windows but not all
-                                message = `Selector ${selector} cannot be found at this point in the execution for parameter sets - TODO INSERT HERE`;
-                            }
-                        }else if(selectorNotUniqueWinIDList.length > 0){
-                            // Selector found but not unique
-                            severity = monaco.MarkerSeverity.Warning;
-                            if(selectorNotUniqueWinIDList.length === numWindows){
-                                // For all windows, not unique
-                                message = `Selector ${selector} is not unique`;
-                            }else{
-                                // For some windows not unique
-                                message = `Selector ${selector} is not unique for parameter sets - TODO INSERT HERE`;
-                            }
-                        }else{
-                            // Selector is found and is unique
-                            severity = monaco.MarkerSeverity.Info;
-                            message = `Selector ${selector} was found and is unique`;
-                        }
-                        const markerObj = {
-                            startLineNumber: selectorLocation.start.line,
-                            startColumn: selectorLocation.start.column + 1,
-                            endLineNumber: selectorLocation.end.line,
-                            endColumn: selectorLocation.end.column + 1,
-                            message: message,
-                            severity: severity
-                        };
-                        squiggleLineMarkerObjList.push(markerObj);
+                        identifyAndCreateSelectorSquiggleData(lineNumber, selectorData);
                     }
                 }
-
-                monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', squiggleLineMarkerObjList);
+                monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList());
             });
         });
     });
@@ -326,6 +307,82 @@ $(function(){
         $("#puppeteerTerminal").empty();
     });
 });
+
+const generateModelMarkerList = function(){
+    let modelMarkerList = [];
+    for(lineList of Object.values(runtimeErrorModelMarkerData)){
+        modelMarkerList = modelMarkerList.concat(lineList);
+    }
+    for(lineList of Object.values(selectorSpecificModelMarkerData)){
+        modelMarkerList = modelMarkerList.concat(lineList);
+    }
+    //console.log("modelMarkerList", modelMarkerList);
+    return modelMarkerList;
+};
+
+const identifyAndCreateSelectorSquiggleData = function(lineNumber, selectorDataToTest){
+    if(snapshotLineToDOMSelectorData && snapshotLineToDOMSelectorData[lineNumber]){
+        const lineObj = snapshotLineToDOMSelectorData[lineNumber];
+        let selectorNotFoundWinIDList = [];
+        let selectorNotUniqueWinIDList = [];
+
+        const selector = selectorDataToTest.selectorString;
+        const numWindows = Object.keys(lineObj).length;
+        for (const [winID, data] of Object.entries(lineObj)) {
+            const beforeDomString = data.beforeDomString;
+
+            const domObj = $(beforeDomString);
+            const selectorResults = domObj.find(selector);
+            if(selectorResults.length === 0){
+                selectorNotFoundWinIDList.push(winID);
+            }else if(selectorResults.length > 1){
+                selectorNotUniqueWinIDList.push(winID);
+            }
+        }
+
+        const selectorLocation = selectorDataToTest.selectorLocation;
+        // Create squiggle model marker obj accordingly, add to squiggleLineMarkerObjList
+        let message;
+        let severity;
+        if(selectorNotFoundWinIDList.length > 0){
+            // Selector not found (for at least some windows); indicate error
+            severity = monaco.MarkerSeverity.Error;
+            if(selectorNotFoundWinIDList.length === numWindows){
+                // Not found for any windows
+                message = `Selector ${selector} cannot be found at this point in the execution`;
+            }else{
+                // Found for some windows but not all
+                message = `Selector ${selector} cannot be found at this point in the execution for parameter sets - TODO INSERT HERE`;
+            }
+        }else if(selectorNotUniqueWinIDList.length > 0){
+            // Selector found but not unique
+            severity = monaco.MarkerSeverity.Warning;
+            if(selectorNotUniqueWinIDList.length === numWindows){
+                // For all windows, not unique
+                message = `Selector ${selector} is not unique`;
+            }else{
+                // For some windows not unique
+                message = `Selector ${selector} is not unique for parameter sets - TODO INSERT HERE`;
+            }
+        }else{
+            // Selector is found and is unique
+            severity = monaco.MarkerSeverity.Info;
+            message = `Selector ${selector} was found and is unique`;
+        }
+        const markerObj = {
+            startLineNumber: selectorLocation.start.line,
+            startColumn: selectorLocation.start.column + 1,
+            endLineNumber: selectorLocation.end.line,
+            endColumn: selectorLocation.end.column + 1,
+            message: message,
+            severity: severity
+        };
+        //console.log("selector markerObj", markerObj);
+        const lineList = selectorSpecificModelMarkerData[lineNumber] || [];
+        lineList.push(markerObj);
+        selectorSpecificModelMarkerData[lineNumber] = lineList;
+    }
+};
 
 const createSquigglyErrorMarkers = function(errorData){
     let errorLineNumbers = [];
@@ -353,7 +410,9 @@ const createSquigglyErrorMarkers = function(errorData){
                 message: `The following error occurred for the ${parameterValueSets.length} param sets ${JSON.stringify(parameterValueSets)}:\n${message}`,
                 severity: monaco.MarkerSeverity.Error
             };
-            squiggleLineMarkerObjList.push(markerObj);
+            const lineList = runtimeErrorModelMarkerData[lineNumber] || [];
+            lineList.push(markerObj);
+            runtimeErrorModelMarkerData[lineNumber] = lineList;
         }
 
         for(const pair of borderWindowIDAndMessageList){
