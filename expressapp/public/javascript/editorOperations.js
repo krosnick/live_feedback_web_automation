@@ -55,21 +55,25 @@ function editorOnDidChangeCursorPosition(e){
         });
 
         const beforeSnapshotIframe = document.querySelector("#beforeSnapshot");
-        //beforeSnapshotIframeDocument.addEventListener('DOMFrameContentLoaded', (event) => {
-        // Using setTimeout for now, to wait 500ms and hope that's enough for the DOM to be loaded so that
-            // we know the dimensions we're accessing are stable (i.e., that the elements exist and they're not just size 0)
-            // Prev tried using .onload or DOMFrameContentLoaded or DOMContentLoaded but these didn't work
-        setTimeout(function(){
-            //console.log("beforeSnapshotIframeDocument", beforeSnapshotIframeDocument);
-            const beforeSnapshotIframeDocument = document.querySelector("#beforeSnapshot").contentWindow.document;
-            if(lineObj.selectorData){
-                const selector = lineObj.selectorData.selectorString;
-                const selectorElement = beforeSnapshotIframeDocument.querySelector(selector);
-                //console.log("selectorElement", selectorElement);
-                
-                /*beforeSnapshotIframeDocument.querySelector('html').scrollTop = selectorElement.offsetTop;
-                beforeSnapshotIframeDocument.querySelector('html').scrollLeft = selectorElement.offsetLeft;*/
+        const afterSnapshotIframe = document.querySelector("#afterSnapshot");
+        scaleIframe(beforeSnapshotIframe, lineObj, `left top`);
+        scaleIframe(afterSnapshotIframe, lineObj, `right top`);
+    }
+}
 
+function scaleIframe(iframeElement, lineObj, transformOriginString){
+    //beforeSnapshotIframeDocument.addEventListener('DOMFrameContentLoaded', (event) => {
+    // Using setTimeout for now, to wait 500ms and hope that's enough for the DOM to be loaded so that
+        // we know the dimensions we're accessing are stable (i.e., that the elements exist and they're not just size 0)
+        // Prev tried using .onload or DOMFrameContentLoaded or DOMContentLoaded but these didn't work
+    setTimeout(function(){
+        const iframeDocument = iframeElement.contentWindow.document;
+        if(lineObj.selectorData){
+            const selector = lineObj.selectorData.selectorString;
+            const selectorElement = iframeDocument.querySelector(selector);
+            
+            // Zoom to selector element if it is present in DOM
+            if(selectorElement){
                 const currentElementWidth = selectorElement.getBoundingClientRect().width;
                 const currentElementHeight = selectorElement.getBoundingClientRect().height;
 
@@ -81,29 +85,29 @@ function editorOnDidChangeCursorPosition(e){
                 const tooltipHeightWithoutPadding = document.querySelector(".tooltip").getBoundingClientRect().height - paddingTotalVert;
                 const allowedSnapshotHeight = tooltipHeightWithoutPadding;
                 
-                const transformOption1 = allowedSnapshotWidth / (2* currentElementWidth); // want element to take up at most half of viewport width
-                const transformOption2 = allowedSnapshotHeight / (2* currentElementHeight); // want element to take up at most half of viewport height
+                const transformOption1 = allowedSnapshotWidth / (2 * currentElementWidth); // want element to take up at most half of viewport width
+                const transformOption2 = allowedSnapshotHeight / (2 * currentElementHeight); // want element to take up at most half of viewport height
 
                 const chosenTransformScale = Math.min(transformOption1, transformOption2);
 
                 const newSnapshotWidth = allowedSnapshotWidth / chosenTransformScale;
                 const newSnapshotHeight = allowedSnapshotHeight / chosenTransformScale;
 
-                $(beforeSnapshotIframe).css('width', `${newSnapshotWidth}px`);
-                $(beforeSnapshotIframe).css('height', `${newSnapshotHeight}px`);
-                beforeSnapshotIframe.style.transform = `scale(${chosenTransformScale})`;
-                beforeSnapshotIframe.style.transformOrigin = `left top`;
+                $(iframeElement).css('width', `${newSnapshotWidth}px`);
+                $(iframeElement).css('height', `${newSnapshotHeight}px`);
+                iframeElement.style.transform = `scale(${chosenTransformScale})`;
+                iframeElement.style.transformOrigin = transformOriginString;
 
                 // Want to center it
-                const scrollLeftAmount = beforeSnapshotIframeDocument.querySelector(selector).getBoundingClientRect().x - newSnapshotWidth/4;
-                const scrollTopAmount = beforeSnapshotIframeDocument.querySelector(selector).getBoundingClientRect().y - newSnapshotHeight/4;
+                const scrollLeftAmount = iframeDocument.querySelector(selector).getBoundingClientRect().x - newSnapshotWidth/4;
+                const scrollTopAmount = iframeDocument.querySelector(selector).getBoundingClientRect().y - newSnapshotHeight/4;
 
-                beforeSnapshotIframeDocument.querySelector('html').scrollLeft = scrollLeftAmount;
-                beforeSnapshotIframeDocument.querySelector('html').scrollTop = scrollTopAmount;
+                iframeDocument.querySelector('html').scrollLeft = scrollLeftAmount;
+                iframeDocument.querySelector('html').scrollTop = scrollTopAmount;
             }
-        }, 500);
-        //});
-    }
+        }
+    }, 500);
+    //});
 }
 
 $(function(){
