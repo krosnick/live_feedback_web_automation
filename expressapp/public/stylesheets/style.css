@@ -119,7 +119,7 @@ body {
     top: 0px;
     display: none;
     width: 500px;
-    height: 500px;
+    height: 125px;
     overflow: hidden;
     /*z-index: -1;*/
 }
@@ -130,8 +130,8 @@ body {
 
 .snapshot {
     position: absolute;
-    transform: scale(0.7);
-    transform-origin: right;
+    width: 250px;
+    height: 125px;
 }
 
 #beforeSnapshot {

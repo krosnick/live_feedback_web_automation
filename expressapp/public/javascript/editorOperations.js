@@ -38,25 +38,13 @@ function editorOnDidChangeCursorPosition(e){
     // If there's a snapshot for this line
     if(snapshotLineToDOMSelectorData && snapshotLineToDOMSelectorData[lineNumber]){
         // Currently only showing 1 snapshot (even though there are multiple - 1 per example)
-        const beforeSnapshot = Object.values(snapshotLineToDOMSelectorData[lineNumber])[0].beforeDomString;
-        const afterSnapshot = Object.values(snapshotLineToDOMSelectorData[lineNumber])[0].afterDomString;
+        const lineObj = Object.values(snapshotLineToDOMSelectorData[lineNumber])[0];
+        const beforeSnapshot = lineObj.beforeDomString;
+        const afterSnapshot = lineObj.afterDomString;
 
-        /*let lineNumberElement;
-        if(activeViewLine){
-            lineNumberElement = activeViewLine;
-        }else{
-            lineNumberElement = $("#codeEditor .overflow-guard .monaco-scrollable-element");
-        }
-        console.log("lineNumberElement", lineNumberElement);
-        const offset = lineNumberElement.position();
-        console.log("offset", offset);
-        //const left = offset.left;
-        const top = offset.top;*/
-        //const newElement = $(`<div class="tooltip" role="tooltip" data-show="" style="right: 0px; top: ${top}px;"><iframe></iframe></div>`).appendTo("#codeEditor .overflow-guard .monaco-scrollable-element");
         const newElement = $(`<div class="tooltip" role="tooltip" data-show=""><iframe id='beforeSnapshot' class='snapshot'></iframe><iframe id='afterSnapshot' class='snapshot'></iframe></div>`).appendTo("#paramEditor");
         newElement.find("#beforeSnapshot").attr("srcdoc", beforeSnapshot);
         newElement.find("#afterSnapshot").attr("srcdoc", afterSnapshot);
-        //const element = lineNumberElement[0];
         const element = document.querySelector("#paramEditor");
         const tooltip = newElement[0];
 
@@ -66,7 +54,55 @@ function editorOnDidChangeCursorPosition(e){
             placement: 'right'
         });
 
-        //activeViewLine = null;
+        const beforeSnapshotIframe = document.querySelector("#beforeSnapshot");
+        //beforeSnapshotIframeDocument.addEventListener('DOMFrameContentLoaded', (event) => {
+        // Using setTimeout for now, to wait 500ms and hope that's enough for the DOM to be loaded so that
+            // we know the dimensions we're accessing are stable (i.e., that the elements exist and they're not just size 0)
+            // Prev tried using .onload or DOMFrameContentLoaded or DOMContentLoaded but these didn't work
+        setTimeout(function(){
+            //console.log("beforeSnapshotIframeDocument", beforeSnapshotIframeDocument);
+            const beforeSnapshotIframeDocument = document.querySelector("#beforeSnapshot").contentWindow.document;
+            if(lineObj.selectorData){
+                const selector = lineObj.selectorData.selectorString;
+                const selectorElement = beforeSnapshotIframeDocument.querySelector(selector);
+                //console.log("selectorElement", selectorElement);
+                
+                /*beforeSnapshotIframeDocument.querySelector('html').scrollTop = selectorElement.offsetTop;
+                beforeSnapshotIframeDocument.querySelector('html').scrollLeft = selectorElement.offsetLeft;*/
+
+                const currentElementWidth = selectorElement.getBoundingClientRect().width;
+                const currentElementHeight = selectorElement.getBoundingClientRect().height;
+
+                const paddingTotalHoriz = parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-left')) + parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-right'));
+                const tooltipWidthWithoutPadding = document.querySelector(".tooltip").getBoundingClientRect().width - paddingTotalHoriz;
+                const allowedSnapshotWidth = tooltipWidthWithoutPadding/2;
+                
+                const paddingTotalVert = parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-top')) + parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-bottom'));
+                const tooltipHeightWithoutPadding = document.querySelector(".tooltip").getBoundingClientRect().height - paddingTotalVert;
+                const allowedSnapshotHeight = tooltipHeightWithoutPadding;
+                
+                const transformOption1 = allowedSnapshotWidth / (2* currentElementWidth); // want element to take up at most half of viewport width
+                const transformOption2 = allowedSnapshotHeight / (2* currentElementHeight); // want element to take up at most half of viewport height
+
+                const chosenTransformScale = Math.min(transformOption1, transformOption2);
+
+                const newSnapshotWidth = allowedSnapshotWidth / chosenTransformScale;
+                const newSnapshotHeight = allowedSnapshotHeight / chosenTransformScale;
+
+                $(beforeSnapshotIframe).css('width', `${newSnapshotWidth}px`);
+                $(beforeSnapshotIframe).css('height', `${newSnapshotHeight}px`);
+                beforeSnapshotIframe.style.transform = `scale(${chosenTransformScale})`;
+                beforeSnapshotIframe.style.transformOrigin = `left top`;
+
+                // Want to center it
+                const scrollLeftAmount = beforeSnapshotIframeDocument.querySelector(selector).getBoundingClientRect().x - newSnapshotWidth/4;
+                const scrollTopAmount = beforeSnapshotIframeDocument.querySelector(selector).getBoundingClientRect().y - newSnapshotHeight/4;
+
+                beforeSnapshotIframeDocument.querySelector('html').scrollLeft = scrollLeftAmount;
+                beforeSnapshotIframeDocument.querySelector('html').scrollTop = scrollTopAmount;
+            }
+        }, 500);
+        //});
     }
 }
 
