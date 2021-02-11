@@ -2,6 +2,7 @@ const { ipcRenderer } = require('electron');
 
 let decorations = [];
 let snapshotLineToDOMSelectorData;
+let squiggleLineMarkerObjList = [];
 //let activeViewLine;
 
 function editorOnDidChangeContent(){
@@ -148,8 +149,10 @@ $(function(){
         activeViewLine = $(e.target);
     });*/
     $("body").on("click", "#runCode", function(e){
-        // Clear all existing puppeteer error markers
-        monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', []);
+        // Clear all existing puppeteer error markers and gutter bar decorations
+        squiggleLineMarkerObjList = [];
+        monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', squiggleLineMarkerObjList);
+        decorations = monacoEditor.deltaDecorations(decorations, []);
 
         // Need to ask server for border BrowserView IDs
         $.ajax({
@@ -211,57 +214,76 @@ $(function(){
                     decorations = monacoEditor.deltaDecorations(decorations, [{ range: new monaco.Range(1,1,lineCount,1), options: { isWholeLine: true, linesDecorationsClassName: 'greenLineDecoration' }}]);
                 }
 
-                /*//for(let snapshotIndex = 0; snapshotIndex < snapshotsList.length; snapshotIndex++){
-                for(let snapshotIndex = 0; snapshotIndex < 1; snapshotIndex++){
-                    // Contains might not be good, because multiple line numbers that include "1" in it
-                    // Might instead need to loop through to check for exact string.
-                    // Or, loop through the line number divs and insert tooltips based on what's in snapshotsList
-                    //const lineNumberElement = $("#codeEditor .line-numbers:contains(3)");
-                    const lineNumberElement = $("#codeEditor");
-                    const offset = lineNumberElement.offset();
-                    const left = offset.left;
-                    const top = offset.top;
-                    const newElement = $(`<div class="tooltip" role="tooltip" style="left: ${left}px; top: ${top}px;"><iframe></iframe></div>`).appendTo("body");
-                    newElement.find("iframe").attr("srcdoc", snapshotsList[snapshotIndex]);
-                    //const newElement = $(`<div class="tooltip" role="tooltip" style="left: ${left}px; top: ${top}px;"><iframe srcdoc=${snapshotsList[snapshotIndex]} sandbox></iframe></div>`).appendTo("body");
-                    //const newElement = $(`<div class="tooltip" role="tooltip" style="left: ${left}px; top: ${top}px;">${snapshotsList[snapshotIndex]}</div>`).appendTo("body");
+                // For all lines in snapshotLineToDOMSelectorData, for each line that has a selector,
+                    // check against the beforeSnapshot to confirm it's in DOM, and also check for it's uniqueness.
+                    // Create appropriate squiggles.
+                const lineNumbers = Object.keys(snapshotLineToDOMSelectorData);
+                for(lineNumber of lineNumbers){
+                    const lineObj = snapshotLineToDOMSelectorData[lineNumber];
+                    // selectorData (string and location) is the same regardless of window
+                    const selectorData = Object.values(snapshotLineToDOMSelectorData[lineNumber])[0].selectorData;
+                    if(selectorData){
+                        // This line has a selector. Let's check it's validity 
+                        let selectorNotFoundWinIDList = [];
+                        let selectorNotUniqueWinIDList = [];
                     
-                    
-                    //const newElement = $(`<div class="tooltip" role="tooltip" style="left: ${left}px; top: ${top}px;">${snapshotsList[snapshotIndex]}</div>`).appendTo("#codeEditor");
-                    //const newElement = $(`<div class="tooltip" role="tooltip" style="position: absolute; left: 20px">${snapshotsList[snapshotIndex]}</div>`).appendTo(lineNumberElement);
-                    //const newElement = $(`<div class="tooltip" role="tooltip" style="position: absolute; left: 20px"><iframe srcdoc="${snapshotsList[snapshotIndex]}"></iframe></div>`).appendTo(lineNumberElement);
-                    //const newElement = $(`<div class="tooltip" role="tooltip" style="position: absolute; left: 20px">I'm a tooltip</div>`).appendTo(lineNumberElement);
-                    //lineNumberElement.append(`<div id="tooltip" role="tooltip" style="position: absolute;">I'm a tooltip</div>`);
+                        const numWindows = Object.keys(lineObj).length;
+                        for (const [winID, data] of Object.entries(lineObj)) {
+                            const beforeDomString = data.beforeDomString;
+                            const selectorString = data.selectorData.selectorString;
 
-                    const element = lineNumberElement[0];
-                    const tooltip = newElement[0];
+                            const domObj = $(beforeDomString);
+                            const selectorResults = domObj.find(selectorString);
+                            if(selectorResults.length === 0){
+                                selectorNotFoundWinIDList.push(winID);
+                            }else if(selectorResults.length > 1){
+                                selectorNotUniqueWinIDList.push(winID);
+                            }
+                        }
 
-                    function show() {
-                        tooltip.setAttribute('data-show', '');
+                        const selector = selectorData.selectorString;
+                        const selectorLocation = selectorData.selectorLocation;
+                        // Create squiggle model marker obj accordingly, add to squiggleLineMarkerObjList
+                        let message;
+                        let severity;
+                        if(selectorNotFoundWinIDList.length > 0){
+                            // Selector not found (for at least some windows); indicate error
+                            severity = monaco.MarkerSeverity.Error;
+                            if(selectorNotFoundWinIDList.length === numWindows){
+                                // Not found for any windows
+                                message = `Selector ${selector} cannot be found at this point in the execution`;
+                            }else{
+                                // Found for some windows but not all
+                                message = `Selector ${selector} cannot be found at this point in the execution for parameter sets - TODO INSERT HERE`;
+                            }
+                        }else if(selectorNotUniqueWinIDList.length > 0){
+                            // Selector found but not unique
+                            severity = monaco.MarkerSeverity.Warning;
+                            if(selectorNotUniqueWinIDList.length === numWindows){
+                                // For all windows, not unique
+                                message = `Selector ${selector} is not unique`;
+                            }else{
+                                // For some windows not unique
+                                message = `Selector ${selector} is not unique for parameter sets - TODO INSERT HERE`;
+                            }
+                        }else{
+                            // Selector is found and is unique
+                            severity = monaco.MarkerSeverity.Info;
+                            message = `Selector ${selector} was found and is unique`;
+                        }
+                        const markerObj = {
+                            startLineNumber: selectorLocation.start.line,
+                            startColumn: selectorLocation.start.column + 1,
+                            endLineNumber: selectorLocation.end.line,
+                            endColumn: selectorLocation.end.column + 1,
+                            message: message,
+                            severity: severity
+                        };
+                        squiggleLineMarkerObjList.push(markerObj);
                     }
-                    
-                    function hide() {
-                        tooltip.removeAttribute('data-show');
-                    }
-                    
-                    const showEvents = ['mouseenter', 'focus'];
-                    const hideEvents = ['mouseleave', 'blur'];
-                    
-                    showEvents.forEach(event => {
-                        element.addEventListener(event, show);
-                    });
-                    
-                    hideEvents.forEach(event => {
-                        element.addEventListener(event, hide);
-                    });
+                }
 
-                    // Pass the button, the tooltip, and some options, and Popper will do the
-                    // magic positioning for you:
-                    Popper.createPopper(tooltip, element, {
-                        placement: 'right'
-                    });
-
-                }*/
+                monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', squiggleLineMarkerObjList);
             });
         });
     });
@@ -278,7 +300,6 @@ const createSquigglyErrorMarkers = function(errorData){
         // There are puppeteer errors; render markers appropriately
         const uniqueErrorObjList = createUniqueListOfErrorObjects(errorData);
 
-        const markerObjList = [];
         const borderWindowIDAndMessageList = [];
         // For each error, render markers
         for(const errorObj of uniqueErrorObjList) {
@@ -299,10 +320,8 @@ const createSquigglyErrorMarkers = function(errorData){
                 message: `The following error occurred for the ${parameterValueSets.length} param sets ${JSON.stringify(parameterValueSets)}:\n${message}`,
                 severity: monaco.MarkerSeverity.Error
             };
-            markerObjList.push(markerObj);
+            squiggleLineMarkerObjList.push(markerObj);
         }
-        
-        monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', markerObjList);
 
         for(const pair of borderWindowIDAndMessageList){
             const borderWinID = parseInt(pair.borderWinID);
