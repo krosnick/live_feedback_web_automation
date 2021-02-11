@@ -5,9 +5,42 @@ let snapshotLineToDOMSelectorData;
 let squiggleLineMarkerObjList = [];
 //let activeViewLine;
 
-function editorOnDidChangeContent(){
+function editorOnDidChangeContent(e){
+    //console.log("editorOnDidChangeContent event", e);
+    let lowestLineNumber = undefined;
+    for(change of e.changes){
+        const startLineNumber = change.range.startLineNumber;
+        if(lowestLineNumber === undefined || startLineNumber < lowestLineNumber){
+            lowestLineNumber = startLineNumber;
+        }
+    }
+
+    if(snapshotLineToDOMSelectorData){
+        //console.log("before snapshotLineToDOMSelectorData", Object.keys(snapshotLineToDOMSelectorData).length);
+        // Go through and remove all line numbers greater than lowestLineNumber
+        // And for lowestLineNumber, remove it's afterSnapshots
+        const lineNumbers = Object.keys(snapshotLineToDOMSelectorData);
+        for(lineNumberStr of lineNumbers){
+            if(parseInt(lineNumberStr) > lowestLineNumber){
+                delete snapshotLineToDOMSelectorData[lineNumberStr];
+            }
+            if(parseInt(lineNumberStr) === lowestLineNumber){
+                const lineObj = snapshotLineToDOMSelectorData[lineNumberStr];
+                for(data of Object.values(lineObj)){
+                    //console.log("before data", data);
+                    delete data["afterDomString"];
+                    //console.log("after data", data);
+                }
+            }
+        }
+        //console.log("after snapshotLineToDOMSelectorData", Object.keys(snapshotLineToDOMSelectorData).length);
+
+        // TODO - for lowestLineNumber, see if it has any selectors. If so, check if that selector exists in beforeSnapshot
+            // Might need to give server the line of code to analyze it's AST and get selector
+    }
+    
     clearTimeout(codeChangeSetTimeout);
-    codeChangeSetTimeout = setTimeout((event) => {
+    codeChangeSetTimeout = setTimeout(() => {
         const updatedCode = monacoEditor.getValue();
         console.log("updatedCode", updatedCode);
 
