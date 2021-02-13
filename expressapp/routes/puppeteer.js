@@ -1,7 +1,8 @@
 const express = require('express');
 const capcon = require('capture-console');
 const acorn = require("acorn");
-const walk = require("acorn-walk")
+const _ = require("lodash");
+const walk = require("acorn-walk");
 var router = express.Router();
 //const remote = require('electron').remote;
 //const unique = require('unique-selector');
@@ -9,6 +10,7 @@ var router = express.Router();
 
 // All Puppeteer methods who have a selector arg; the selector arg is always the first one
 const puppeteerMethodsWithSelectorArg = [ "$", "$$", "$$eval", "$eval", "click", "focus", "hover", "select", "tap", "type", "waitForSelector", "waitFor" ]
+const puppeteerKeyboardMethods = ["down", "press", "sendCharacter", "type", "up"];
 // page.waitFor(selectorOrFunctionOrTimeout[, options[, ...args]])
 // So for "waitFor", check the first arg and see if it's a string (rather than function or variable)
 
@@ -70,10 +72,9 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
                     lineObj: node.loc.start.line
                 };
                 // Will be null if no selector found
-                const selectorInfo = checkForSelector(node.expression);
+                const selectorInfo = checkForSelector(node.expression, ancestors);
                 if(selectorInfo){
                     statementAndDeclarationData[node.end].selectorData = selectorInfo;
-                    //console.log("statementAndDeclarationData");
                 }
             }
         },
@@ -84,10 +85,9 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
                     lineObj: node.loc.start.line
                 };
                 // Will be null if no selector found
-                const selectorInfo = checkForSelector(node.declarations[0].init);
+                const selectorInfo = checkForSelector(node.declarations[0].init, ancestors);
                 if(selectorInfo){
                     statementAndDeclarationData[node.end].selectorData = selectorInfo;
-                    //console.log("statementAndDeclarationData", statementAndDeclarationData);
                 }
             }
         }
@@ -246,13 +246,14 @@ router.post('/findSelectorsInLine', async function(req, res, next) {
     }
 });
 
-const checkForSelector = function(expressionObj){
+const checkForSelector = function(expressionObj, ancestors){
     // Return selector string and the line/col location
     // Or, if no selector in expression, return null
 
-    // Check if this is an Await expression, then check that it has Puppeteer method call, and that the method takes a selector
+    // Check if this is an Await expression, then check that it has Puppeteer method call, and that the method takes a selector or that it is a keyboard action
     if(expressionObj.type === "AwaitExpression"){
         if(expressionObj.argument && expressionObj.argument.callee && expressionObj.argument.callee.object && expressionObj.argument.callee.object.name === "page"){
+            // Is a Puppeteer page method. Checking if takes a selector
             if(expressionObj.argument.callee.property){
                 const methodName = expressionObj.argument.callee.property.name;
                 if(puppeteerMethodsWithSelectorArg.includes(methodName)){
@@ -262,12 +263,74 @@ const checkForSelector = function(expressionObj){
                     // Have to confirm it's a string (because "waitFor" could take function or number instead)
                     if(typeof(selector) === "string"){
                         // It is a selector
-                        //console.log("method and selector", (methodName + ", " + selector));
                         const loc = expressionObj.argument.arguments[0].loc;
                         return {
+                            method: methodName,
+                            isSelectorOwn: true,
                             selectorString: selector,
                             selectorLocation: loc
                         };
+                    }
+                }
+            }
+        }else if(expressionObj.argument && expressionObj.argument.callee && expressionObj.argument.callee.object && expressionObj.argument.callee.object.object && expressionObj.argument.callee.object.object.name === "page" && expressionObj.argument.callee.object.property && expressionObj.argument.callee.object.property.name === "keyboard"){
+            // Is Puppeteer page.keyboard; let's check that it's a method, i.e., in puppeteerKeyboardMethods
+            if(expressionObj.argument.callee.property){
+                const methodName = expressionObj.argument.callee.property.name;
+                if(puppeteerKeyboardMethods.includes(methodName)){
+                    // This is a page.keyboard method. We now need to get expressionObj's prev sibling, and see if it has a selector (and only then return that info)
+                    // So we need to find expressionObj within ancestors[ancestors.length-2], so that we can then find it's prev sibling
+                    if(ancestors){
+                        const prevSiblingExpressionObj = findPrevSibling(expressionObj, ancestors[ancestors.length-2]);
+                        if(prevSiblingExpressionObj){
+                            const siblingSelectorInfo = checkForSelector(prevSiblingExpressionObj, null);
+                            return {
+                                method: "keyboard." + methodName,
+                                isSelectorOwn: false, /* So client knows to not try setting a selector validity message for this line */
+                                selectorString: siblingSelectorInfo.selectorString,
+                                selectorLocation: siblingSelectorInfo.selectorLocation
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return null;
+};
+
+const findPrevSibling = function(expressionObj, parentObj){
+    // Check that parentObj has "body" attribute
+        // and that "body" is either a "BlockStatement" (with it's own "body" attribute)
+        // or that "body" is an array
+    if(parentObj.body){
+        let statementList;
+        if(Array.isArray(parentObj.body)){
+            statementList = parentObj.body;
+        }else if(parentObj.body.type === "BlockStatement"){
+            statementList = parentObj.body.body;
+        }
+        if(statementList){
+            // Find expressionObj in statementList
+            for(let i = 0; i < statementList.length; i++){
+                const statement = statementList[i];
+                let candidateExpression;
+                if(statement.type === "ExpressionStatement"){
+                    candidateExpression = statement.expression;
+                }else if(statement.type === "VariableDeclaration"){
+                    candidateExpression = statement.declarations[0].init;
+                }
+
+                if(candidateExpression && _.isEqual(expressionObj, candidateExpression)){
+                    // Found our own expression
+                    if(i > 0){
+                        // Now let's find the previous expression
+                        const prevStatement = statementList[i-1];
+                        if(prevStatement.type === "ExpressionStatement"){
+                            return prevStatement.expression;
+                        }else if(prevStatement.type === "VariableDeclaration"){
+                            return prevStatement.declarations[0].init;
+                        }
                     }
                 }
             }
