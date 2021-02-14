@@ -382,6 +382,8 @@ const identifyAndCreateSelectorSquiggleData = function(lineNumber, selectorDataT
         const lineObj = snapshotLineToDOMSelectorData[lineNumber];
         let selectorNotFoundWinIDList = [];
         let selectorNotUniqueWinIDList = [];
+        let selectorNotFoundParamString = "";
+        let selectorNotUniqueParamString = "";
 
         // Only if isSelectorOwn (i.e., the selector occurs on this line);
             // Otherwise doesn't make sense to show error for page.keyboard command
@@ -395,10 +397,15 @@ const identifyAndCreateSelectorSquiggleData = function(lineNumber, selectorDataT
                 const selectorResults = domObj.find(selector);
                 if(selectorResults.length === 0){
                     selectorNotFoundWinIDList.push(winID);
+                    selectorNotFoundParamString += JSON.stringify(data.parametersString);
                 }else if(selectorResults.length > 1){
                     selectorNotUniqueWinIDList.push(winID);
+                    selectorNotUniqueParamString += JSON.stringify(data.parametersString);
                 }
             }
+
+            /*console.log("selectorNotFoundParamString", selectorNotFoundParamString);
+            console.log("selectorNotUniqueParamString", selectorNotUniqueParamString);*/
 
             const selectorLocation = selectorDataToTest.selectorLocation;
             // Create squiggle model marker obj accordingly, add to squiggleLineMarkerObjList
@@ -412,7 +419,7 @@ const identifyAndCreateSelectorSquiggleData = function(lineNumber, selectorDataT
                     message = `Selector ${selector} cannot be found at this point in the execution`;
                 }else{
                     // Found for some windows but not all
-                    message = `Selector ${selector} cannot be found at this point in the execution for parameter sets - TODO INSERT HERE`;
+                    message = `Selector ${selector} cannot be found at this point in the execution for param sets ${selectorNotFoundParamString}`;
                 }
             }else if(selectorNotUniqueWinIDList.length > 0){
                 // Selector found but not unique
@@ -422,7 +429,7 @@ const identifyAndCreateSelectorSquiggleData = function(lineNumber, selectorDataT
                     message = `Selector ${selector} is not unique`;
                 }else{
                     // For some windows not unique
-                    message = `Selector ${selector} is not unique for parameter sets - TODO INSERT HERE`;
+                    message = `Selector ${selector} is not unique for param sets ${selectorNotUniqueParamString}`;
                 }
             }else{
                 // Selector is found and is unique

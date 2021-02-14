@@ -109,7 +109,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         const startLineNumber = data.lineObj;
         const selectorData = data.selectorData;
         //instrumentedCodeString += `; await page.waitFor(500); pageContent = await page.content(); lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { domString: pageContent, selectorData: ${JSON.stringify(selectorData)} }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj;`;
-        instrumentedCodeString += `; afterPageContent = await page.content(); lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, afterDomString: afterPageContent, selectorData: ${JSON.stringify(selectorData)} }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj;`;
+        instrumentedCodeString += `; afterPageContent = await page.content(); lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, afterDomString: afterPageContent, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj;`;
     }
     console.log("instrumentedCodeString", instrumentedCodeString);
 
@@ -373,7 +373,7 @@ const evaluateCodeOnAllPages = function(wrappedCodeString){
         //console.log("allParamsVarCode", allParamsVarCode);
 
         // Append param code to front, and func x call to end
-        updatedCodeString = pageVarCode + allParamsVarCode + updatedCodeString + `; runUserCode(${pageWinID});`;
+        updatedCodeString = `const parametersString = ${JSON.stringify(paramSetObj)};` + pageVarCode + allParamsVarCode + updatedCodeString + `; runUserCode(${pageWinID});`;
         //updatedCodeString += ` x(${borderWinID});`;
         eval(updatedCodeString);
     }
