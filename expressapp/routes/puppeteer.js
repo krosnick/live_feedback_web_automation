@@ -131,7 +131,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         //instrumentedCodeString += codeSegment + "; await page.waitFor(500); pageContent = await page.content(); snapshotsList.push(pageContent);";
     }*/
     //console.log("instrumentedCodeString", instrumentedCodeString);
-    let wrappedCodeString = `let lineObj; let beforePageContent; let afterPageContent; let errorMessage; let errorLineNumber; async function runUserCode ( winID ) { try {`
+    let wrappedCodeString = `async function runUserCode ( winID ) { let lineObj; let beforePageContent; let afterPageContent; let errorMessage; let errorLineNumber; await page.goto("about:blank"); try {`
     //+ middleStringToWrap +
     //+ code +
     + instrumentedCodeString +

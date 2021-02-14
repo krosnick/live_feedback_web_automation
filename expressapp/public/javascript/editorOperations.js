@@ -223,6 +223,8 @@ $(function(){
         // Clear all existing puppeteer error markers and gutter bar decorations
         runtimeErrorModelMarkerData = {};
         selectorSpecificModelMarkerData = {};
+        snapshotLineToDOMSelectorData = {};
+        $(".tooltip").remove();
         monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList()); // just empty
         decorations = monacoEditor.deltaDecorations(decorations, []);
 
