@@ -133,6 +133,60 @@ function editorOnDidChangeCursorPosition(e){
     }
 }
 
+function addCursorAndBorder(iframeElement, methodType, selector){
+    const iframeContentDocument = iframeElement.contentDocument;
+    
+    const targetSelector = selector;
+    const eventType = methodType;
+
+    if(targetSelector){
+        const iframeDocBody = iframeElement.contentWindow.document.body;
+        console.log("iframeDocBody", iframeDocBody);
+        //console.log("iframeDocBody", iframeDocBody);
+        const element = iframeDocBody.querySelector(targetSelector);
+        console.log("targetSelector", targetSelector);
+        console.log("element", element);
+        //console.log("element", element);
+        // Apply border only if this is an interactive widget,
+            // e.g., <button>, <input>, <a>, <select>, <option>, <textarea>
+        if(element.tagName === "BUTTON" || element.tagName === "INPUT" || element.tagName === "A" || element.tagName === "SELECT" || element.tagName === "OPTION" || element.tagName === "TEXTAREA"){
+            // If a radio button or checkbox, let's add the border and mouse icon to its parent since checkboxes and radio buttons are small, won't be able to see border/mouse icon
+            if(element.tagName === "INPUT" && (element.type === "checkbox" || element.type === "radio")){
+                borderElement = element.parentNode;
+            }else{
+                borderElement = element;
+            }
+            borderElement.style.border = "5px solid blue";
+            borderElement.style.borderRadius = "10px";
+
+            // Append mouse icon img if element is semantically "clickable",
+                // e.g., button, link, radio button, checkbox, but NOT textfield etc
+            if(element.tagName === "BUTTON" || element.tagName === "A" || element.tagName === "SELECT" || element.tagName === "OPTION" || (element.tagName === "INPUT" && (element.type === "button" || element.type === "checkbox" || element.type === "color" || element.type === "file" || element.type === "radio" || element.type === "range" || element.type === "submit"))){
+                const imageElement = document.createElement('img');
+                borderElement.appendChild(imageElement);
+                
+                // Should change this to a local file
+                imageElement.src = "https://cdn2.iconfinder.com/data/icons/design-71/32/Design_design_cursor_pointer_arrow_mouse-512.png";
+                imageElement.width = 20;
+                imageElement.height = 20;
+                //imageElement.maxWidth = "50%";
+                //imageElement.maxHeight = "50%";
+                imageElement.style.position = "absolute";
+                imageElement.style.left = "calc(50% - 10px)";
+                imageElement.style.top = "calc(50% - 10px)";
+                //imageElement.style.left = "50%";
+                //imageElement.style.top = "50%";
+            }
+        }
+    }
+    iframeContentDocument.body.innerHTML = iframeContentDocument.body.innerHTML +
+    `<style>
+        .selectorReferenceInlineDecoration {
+            background-color: lightsalmon;
+        }
+    </style>`;
+}
+
 function scaleIframe(iframeElement, lineObj, transformOriginString){
     //beforeSnapshotIframeDocument.addEventListener('DOMFrameContentLoaded', (event) => {
     // Using setTimeout for now, to wait 500ms and hope that's enough for the DOM to be loaded so that
@@ -147,6 +201,7 @@ function scaleIframe(iframeElement, lineObj, transformOriginString){
             // Zoom to selector element if it is present in DOM
             if(selectorElement){
                 scaleToElement(selectorElement, iframeElement, iframeDocument, transformOriginString);
+                addCursorAndBorder(iframeElement, lineObj.selectorData.method, lineObj.selectorData.selectorString);
                 return;
             }else{
                 // TODO - Check if this is a keyboard command and if the prior command had a selector it was operating on
