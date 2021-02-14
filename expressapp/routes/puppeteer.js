@@ -66,29 +66,25 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     let statementAndDeclarationData = {};
     walk.ancestor(acornAST, {
         ExpressionStatement(node, ancestors) {
-            // Only include if this node doesn't have any "real" ancestors
-            if(ancestors.length <= 2){
-                statementAndDeclarationData[node.end] = {
-                    lineObj: node.loc.start.line
-                };
-                // Will be null if no selector found
-                const selectorInfo = checkForSelector(node.expression, ancestors);
-                if(selectorInfo){
-                    statementAndDeclarationData[node.end].selectorData = selectorInfo;
-                }
+            statementAndDeclarationData[node.end] = {
+                lineObj: node.loc.start.line
+            };
+            //console.log("node.loc.start.line", node.loc.start.line);
+            // Will be null if no selector found
+            const selectorInfo = checkForSelector(node.expression, ancestors);
+            if(selectorInfo){
+                statementAndDeclarationData[node.end].selectorData = selectorInfo;
             }
         },
         VariableDeclaration(node, ancestors) {
-            // Only include if this node doesn't have any "real" ancestors
-            if(ancestors.length <= 2){
-                statementAndDeclarationData[node.end] = {
-                    lineObj: node.loc.start.line
-                };
-                // Will be null if no selector found
-                const selectorInfo = checkForSelector(node.declarations[0].init, ancestors);
-                if(selectorInfo){
-                    statementAndDeclarationData[node.end].selectorData = selectorInfo;
-                }
+            statementAndDeclarationData[node.end] = {
+                lineObj: node.loc.start.line
+            };
+            //console.log("node.loc.start.line", node.loc.start.line);
+            // Will be null if no selector found
+            const selectorInfo = checkForSelector(node.declarations[0].init, ancestors);
+            if(selectorInfo){
+                statementAndDeclarationData[node.end].selectorData = selectorInfo;
             }
         }
     });
