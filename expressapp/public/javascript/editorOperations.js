@@ -4,6 +4,7 @@ let decorations = [];
 let snapshotLineToDOMSelectorData;
 let runtimeErrorModelMarkerData = {};
 let selectorSpecificModelMarkerData = {};
+let runtimeErrorMessagesStale = false;
 
 //let activeViewLine;
 
@@ -27,6 +28,14 @@ function editorOnDidChangeContent(e){
             createSquigglyErrorMarkers(errorData);*/
         });
     }, 1000);
+
+    runtimeErrorMessagesStale = true;
+    // Update runtimeErrorModelMarkerData error messages to warn they might be stale 
+    for(lineObj of Object.values(runtimeErrorModelMarkerData)){
+        for(markerDatum of lineObj){
+            markerDatum.message = "[Note error might be stale] " + markerDatum.message;
+        }
+    }
 
     // Updating snapshotLineToDOMSelectorData and checking validity of selectors in current line
     //console.log("editorOnDidChangeContent event", e);
@@ -304,6 +313,7 @@ $(function(){
                     code: code
                 }
             }).done(function(data) {
+                runtimeErrorMessagesStale = false;
                 console.log("browserWindowFinishAndErrorData", data);
                 const errorData = data.errors;
                 const ranToCompletionData = data.ranToCompletion;
