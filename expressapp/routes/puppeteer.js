@@ -100,7 +100,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         data = statementAndDeclarationData[endIndex];
         const startLineNumber = data.lineObj;
         const selectorData = data.selectorData;
-        instrumentedCodeString += `; beforePageContent = await page.content(); lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj;`;
+        instrumentedCodeString += `; snapshotCaptured = false; try { beforePageContent = await page.content(); snapshotCaptured = true; } catch(e){ } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; beforePageContent = null; } snapshotCaptured = false; }`;
         if(i === 0){
             // Substring from beginning of string
             instrumentedCodeString += code.substring(0, endIndex);
@@ -110,7 +110,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         }
         //instrumentedCodeString += `; await page.waitFor(500); pageContent = await page.content(); lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { domString: pageContent, selectorData: ${JSON.stringify(selectorData)} }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj;`;
         //instrumentedCodeString += `; afterPageContent = await page.content(); lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, afterDomString: afterPageContent, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj;`;
-        instrumentedCodeString += `; afterPageContent = await page.content(); lineObj = snapshotLineToDOMSelectorData[${startLineNumber}]; lineObj[winID].afterDomString = afterPageContent; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj;`;
+        instrumentedCodeString += `; snapshotCaptured = false; try { afterPageContent = await page.content(); snapshotCaptured = true; } catch(e){ } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; if(!(lineObj[winID])){ lineObj[winID] = {}; } lineObj[winID].afterDomString = afterPageContent; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; afterPageContent = null; } snapshotCaptured = false; }`;
     }
     console.log("instrumentedCodeString", instrumentedCodeString);
 
