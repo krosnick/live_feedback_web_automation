@@ -29,12 +29,14 @@ function editorOnDidChangeContent(e){
         });
     }, 1000);
 
-    runtimeErrorMessagesStale = true;
-    // Update runtimeErrorModelMarkerData error messages to warn they might be stale 
-    for(lineObj of Object.values(runtimeErrorModelMarkerData)){
-        for(markerDatum of lineObj){
-            markerDatum.message = "[Note error might be stale] " + markerDatum.message;
+    if(runtimeErrorMessagesStale === false){
+        // Update runtimeErrorModelMarkerData error messages to warn they might be stale 
+        for(lineObj of Object.values(runtimeErrorModelMarkerData)){
+            for(markerDatum of lineObj){
+                markerDatum.message = "[Note error might be stale] " + markerDatum.message;
+            }
         }
+        runtimeErrorMessagesStale = true;
     }
 
     // Updating snapshotLineToDOMSelectorData and checking validity of selectors in current line
