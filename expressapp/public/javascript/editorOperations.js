@@ -34,6 +34,7 @@ function editorOnDidChangeContent(e){
         for(lineObj of Object.values(runtimeErrorModelMarkerData)){
             for(markerDatum of lineObj){
                 markerDatum.message = "[Note error might be stale] " + markerDatum.message;
+                markerDatum.severity = monaco.MarkerSeverity.Hint;
             }
         }
         runtimeErrorMessagesStale = true;
