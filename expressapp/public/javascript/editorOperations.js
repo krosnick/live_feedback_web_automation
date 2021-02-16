@@ -259,8 +259,8 @@ function scaleToElement(selectorElement, iframeElement, iframeDocument, transfor
     const tooltipHeightWithoutPadding = document.querySelector(".tooltip").getBoundingClientRect().height - paddingTotalVert;
     const allowedSnapshotHeight = tooltipHeightWithoutPadding;
     
-    const transformOption1 = allowedSnapshotWidth / (2 * currentElementWidth); // want element to take up at most half of viewport width
-    const transformOption2 = allowedSnapshotHeight / (2 * currentElementHeight); // want element to take up at most half of viewport height
+    const transformOption1 = allowedSnapshotWidth / (3 * currentElementWidth); // want element to take up at most half of viewport width
+    const transformOption2 = allowedSnapshotHeight / (3 * currentElementHeight); // want element to take up at most half of viewport height
 
     const chosenTransformScale = Math.min(transformOption1, transformOption2);
 
@@ -273,8 +273,8 @@ function scaleToElement(selectorElement, iframeElement, iframeDocument, transfor
     iframeElement.style.transformOrigin = transformOriginString;
 
     // Want to center it
-    const scrollLeftAmount = selectorElement.getBoundingClientRect().x - newSnapshotWidth/4;
-    const scrollTopAmount = selectorElement.getBoundingClientRect().y - newSnapshotHeight/4;
+    const scrollLeftAmount = selectorElement.getBoundingClientRect().x - newSnapshotWidth/3;
+    const scrollTopAmount = selectorElement.getBoundingClientRect().y - newSnapshotHeight/3;
 
     iframeDocument.querySelector('html').scrollLeft = scrollLeftAmount;
     iframeDocument.querySelector('html').scrollTop = scrollTopAmount;
