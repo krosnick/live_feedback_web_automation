@@ -281,11 +281,13 @@ const checkForSelector = function(expressionObj, ancestors){
                         const prevSiblingExpressionObj = findPrevSibling(expressionObj, ancestors[ancestors.length-2]);
                         if(prevSiblingExpressionObj){
                             const siblingSelectorInfo = checkForSelector(prevSiblingExpressionObj, null);
-                            return {
-                                method: "keyboard." + methodName,
-                                isSelectorOwn: false, /* So client knows to not try setting a selector validity message for this line */
-                                selectorString: siblingSelectorInfo.selectorString,
-                                selectorLocation: siblingSelectorInfo.selectorLocation
+                            if(siblingSelectorInfo){
+                                return {
+                                    method: "keyboard." + methodName,
+                                    isSelectorOwn: false, /* So client knows to not try setting a selector validity message for this line */
+                                    selectorString: siblingSelectorInfo.selectorString,
+                                    selectorLocation: siblingSelectorInfo.selectorLocation
+                                }
                             }
                         }
                     }
