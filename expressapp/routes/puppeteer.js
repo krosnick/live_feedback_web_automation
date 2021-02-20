@@ -77,14 +77,18 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
             }
         },
         VariableDeclaration(node, ancestors) {
-            statementAndDeclarationData[node.end] = {
-                lineObj: node.loc.start.line
-            };
-            //console.log("node.loc.start.line", node.loc.start.line);
-            // Will be null if no selector found
-            const selectorInfo = checkForSelector(node.declarations[0].init, ancestors);
-            if(selectorInfo){
-                statementAndDeclarationData[node.end].selectorData = selectorInfo;
+            // Exclude if it is a variable declaration within for loop, e.g., (for(let i = 0; ...))
+            const parentType = ancestors[ancestors.length-2].type;
+            if(parentType !== "ForStatement" && parentType !== "ForInStatement"){
+                statementAndDeclarationData[node.end] = {
+                    lineObj: node.loc.start.line
+                };
+                //console.log("node.loc.start.line", node.loc.start.line);
+                // Will be null if no selector found
+                const selectorInfo = checkForSelector(node.declarations[0].init, ancestors);
+                if(selectorInfo){
+                    statementAndDeclarationData[node.end].selectorData = selectorInfo;
+                }
             }
         }
     });
