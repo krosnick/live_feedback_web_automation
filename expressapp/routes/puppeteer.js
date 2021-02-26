@@ -3,6 +3,12 @@ const capcon = require('capture-console');
 const acorn = require("acorn");
 const _ = require("lodash");
 const walk = require("acorn-walk");
+const pixelmatch = require('pixelmatch');
+const sizeOf = require('buffer-image-size');
+const PNG = require('pngjs').PNG;
+const Jimp = require('jimp');
+const skmeans = require("skmeans");
+const graphlib = require("graphlib");
 var router = express.Router();
 //const remote = require('electron').remote;
 //const unique = require('unique-selector');
@@ -114,7 +120,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         }
         //instrumentedCodeString += `; await page.waitFor(500); pageContent = await page.content(); lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { domString: pageContent, selectorData: ${JSON.stringify(selectorData)} }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj;`;
         //instrumentedCodeString += `; afterPageContent = await page.content(); lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, afterDomString: afterPageContent, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj;`;
-        instrumentedCodeString += `; snapshotCaptured = false; try { afterPageContent = await page.content(); snapshotCaptured = true; } catch(e){ } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; if(!(lineObj[winID])){ lineObj[winID] = {}; } lineObj[winID].afterDomString = afterPageContent; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; afterPageContent = null; } snapshotCaptured = false; }`;
+        instrumentedCodeString += `; snapshotCaptured = false; try { afterPageContent = await page.content(); afterPageScreenshot = await page.screenshot({ fullPage: false, clip: { x: 0, y: 0, width: 500, height: 500 } } ); snapshotCaptured = true; } catch(e){ } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; if(!(lineObj[winID])){ lineObj[winID] = {}; } lineObj[winID].afterDomString = afterPageContent; lineObj[winID].afterScreenshotBuffer = afterPageScreenshot; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; afterPageContent = null; afterPageScreenshot = null; } snapshotCaptured = false; }`;
     }
     console.log("instrumentedCodeString", instrumentedCodeString);
 
@@ -136,7 +142,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         //instrumentedCodeString += codeSegment + "; await page.waitFor(500); pageContent = await page.content(); snapshotsList.push(pageContent);";
     }*/
     //console.log("instrumentedCodeString", instrumentedCodeString);
-    let wrappedCodeString = `async function runUserCode ( winID ) { let lineObj; let beforePageContent; let afterPageContent; let errorMessage; let errorLineNumber; await page.goto("about:blank"); try {`
+    let wrappedCodeString = `async function runUserCode ( winID ) { let lineObj; let beforePageContent; let afterPageContent; let afterPageScreenshot; let errorMessage; let errorLineNumber; await page.goto("about:blank"); try {`
     //+ middleStringToWrap +
     //+ code +
     + instrumentedCodeString +
@@ -162,8 +168,37 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
             capcon.stopCapture(process.stdout);
             capcon.stopCapture(process.stderr);
             //console.log("snapshotLineToDOMSelectorData", snapshotLineToDOMSelectorData);
-            browserWindowFinishAndErrorData.snapshotLineToDOMSelectorData = snapshotLineToDOMSelectorData;
-            currentRes.send(browserWindowFinishAndErrorData);
+            // Do some extra processing of snapshotLineToDOMSelectorData here
+                // Per line, compare each pair of afterScreenshotBuffers and create pixelDiff attribute
+                // Then remove afterScreenshotBuffer attribute
+            const componentsPromises = [];
+            const lineNumList = [];
+            for(const [lineNum, lineObj] of Object.entries(snapshotLineToDOMSelectorData)){
+                const componentsScreenshotComparison = compareScreenshots(lineNum, lineObj);
+                componentsPromises.push(componentsScreenshotComparison);
+                lineNumList.push(lineNum);
+            }
+            Promise.all(componentsPromises).then((values) => {
+                //console.log("components values", values);
+                //console.log("lineNumList", lineNumList);
+                const lineNumToComponentsList = {};
+                for(let i = 0; i < lineNumList.length; i++){
+                    const lineNum = lineNumList[i];
+                    const componentsList = values[i];
+                    if(componentsList){ // i.e., not equal to null or undefined
+                        lineNumToComponentsList[lineNum] = componentsList;
+                    }
+                }
+                // Need to remove afterScreenshotBuffer attributes from snapshotLineToDOMSelectorData
+                for(const lineObj of Object.values(snapshotLineToDOMSelectorData)){
+                    for(const winIDObj of Object.values(lineObj)){
+                        delete winIDObj.afterScreenshotBuffer;
+                    }
+                }
+                browserWindowFinishAndErrorData.snapshotLineToDOMSelectorData = snapshotLineToDOMSelectorData;
+                browserWindowFinishAndErrorData.lineNumToComponentsList = lineNumToComponentsList;
+                currentRes.send(browserWindowFinishAndErrorData);
+            });
         }
     }}`;
     //}} x();`;
@@ -246,6 +281,141 @@ router.post('/findSelectorsInLine', async function(req, res, next) {
         res.end();
     }
 });
+
+const compareScreenshots = function(lineNum, lineObj){
+    const winIDs = Object.keys(lineObj);
+    
+    // Right now screenshots are all 500x500, so this isn't really necessary,
+        // but let's find the smallest width and height dimensions to use
+    const widthList = [];
+    const heightList = [];
+    for(let i = 0; i < winIDs.length; i++){
+        const winID = winIDs[i];
+        const screenshot = lineObj[winID].afterScreenshotBuffer;
+        if(screenshot){
+            const dimensions = sizeOf(screenshot);
+            widthList.push(dimensions.width);
+            heightList.push(dimensions.height);   
+        }
+    }
+    /*console.log("widthList", widthList);
+    console.log("heightList", heightList);*/
+    
+    if(widthList.length > 0){
+        const smallestWidth = Math.min(...widthList);
+        const smallestHeight = Math.min(...heightList);
+        /*console.log("smallestWidth", smallestWidth);
+        console.log("smallestHeight", smallestHeight);*/
+
+        // Read in each screenshot using PNG, and then crop it if necessary
+        const bitmapObjList = [];
+        const bitmapWinIDList = [];
+        for(let i = 0; i < winIDs.length; i++){
+            const winID = winIDs[i];
+            const screenshot = lineObj[winID].afterScreenshotBuffer;
+            if(screenshot){
+                bitmapWinIDList.push(winID);
+                const img = PNG.sync.read(screenshot);
+                const imgBitmapObj = Jimp.read(img)
+                .then(image => {
+                    const croppedImage = image.crop( 0, 0, smallestWidth, smallestHeight );
+                    const bitmapObj = croppedImage.bitmap.data;
+                    return bitmapObj;
+                })
+                .catch(err => {
+                    // Handle an exception.
+                    console.log("err", err);
+                });
+                bitmapObjList.push(imgBitmapObj);
+            }
+        }
+        //console.log("bitmapObjList", bitmapObjList);
+        const diff = new PNG({width: smallestWidth, height: smallestHeight});
+        return Promise.all(bitmapObjList).then((values) => {
+            //console.log("values", values);
+            // Compare each pair of screenshots
+            const numDiffPixelsList = [];
+            const correspondingWinIDPairList = [];
+            for(let i = 0; i < bitmapWinIDList.length - 1; i++){
+                for(let j = i + 1; j < bitmapWinIDList.length; j++){
+                    // Compare the 2 screenshots
+                    const winID1 = bitmapWinIDList[i];
+                    const winID2 = bitmapWinIDList[j];
+                    const bitmapObj1 = values[i];
+                    const bitmapObj2 = values[j];
+                    const numDiffPixels = pixelmatch(bitmapObj1, bitmapObj2, diff.data, smallestWidth, smallestHeight);
+                    //console.log(`numDiffPixels for ${winID1} and ${winID2}`, numDiffPixels);
+                    numDiffPixelsList.push(numDiffPixels);
+                    correspondingWinIDPairList.push({ winID1: winID1, winID2: winID2 });
+                }
+            }
+            //console.log("numDiffPixelsList.length", numDiffPixelsList.length);
+            // Compute k-means clustering (with k=2) to note which pairs are "similar" vs "dissimilar"
+            if(numDiffPixelsList.length === 0){
+                // Seems like no screenshots?
+                //console.log("components", null);
+                return null;
+            }else if(numDiffPixelsList.length === 1){
+                // Only 2 screenshots to show. Doesn't make sense to cluster. For now, just show both screenshots to user separately.
+                const winID1 = bitmapWinIDList[0];
+                const winID2 = bitmapWinIDList[1];
+                const components = [ [winID1], [winID2] ];
+                //console.log("components", components);
+                return components;
+            }else{
+                const kMeansResult = skmeans(numDiffPixelsList, 2);
+                //console.log("kMeansResult", kMeansResult);
+
+                // The smaller centroid corresponds to pairs that are "similar"
+                // The larger centroid corresponds to pairs that are "dissimilar"
+                
+                // Find the smaller centroid
+                const centroids = kMeansResult.centroids;
+                let smallerCentroidIndex;
+                if(centroids[0] < centroids[1]){
+                    smallerCentroidIndex = 0;
+                }else{
+                    smallerCentroidIndex = 1;
+                }
+                //console.log("smallerCentroidIndex", smallerCentroidIndex);
+
+                // Identify "similar" pairs, i.e., data that are in smallerCentroidIndex
+                const similarPairIndices = [];
+                const idxs = kMeansResult.idxs;
+                for(let index = 0; index < idxs.length; index++){
+                    if(idxs[index] === smallerCentroidIndex){
+                        similarPairIndices.push(index);
+                    }
+                }
+                //console.log("similarPairIndices", similarPairIndices);
+
+                // Take the "similar" pairs and create edges between them in a graph,
+                    // and then identify connected components. If a given winID isn't in the
+                    // graph at all, then that means it's "dissimilar" from all other winIDs.
+                // First create graph and add all winIDs as nodes
+                const g = new graphlib.Graph({ directed: false });
+                for(let i = 0; i < bitmapWinIDList.length; i++){
+                    const winID = bitmapWinIDList[i];
+                    g.setNode(winID);
+                }
+                // Create edge for pairs
+                for(let i = 0; i < similarPairIndices.length; i++){
+                    const pairIndex = similarPairIndices[i];
+                    const pairObj = correspondingWinIDPairList[pairIndex];
+                    const winID1 = pairObj.winID1;
+                    const winID2 = pairObj.winID2;
+                    g.setEdge(winID1, winID2);
+                }
+                const components = graphlib.alg.components(g);
+                //console.log("components", components);
+                return components;
+            }
+
+            // We should send client list of sets of winIDs that are similar (for winIDs that
+                // are dissimilar from all other winIDs, send each as its own set)
+        });
+    }
+};
 
 const checkForSelector = function(expressionObj, ancestors){
     // Return selector string and the line/col location
