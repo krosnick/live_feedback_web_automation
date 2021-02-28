@@ -42,6 +42,8 @@
 body #codePane {
     border: 1px solid gray;
     padding: 5px;
+    position: relative !important;
+    transform: none !important;
 }
 
 body {
@@ -147,3 +149,7 @@ body {
 /*.monaco-editor, .monaco-editor-background, .monaco-editor .inputarea.ime-input {
     background-color: transparent !important;
 }*/
+
+#showSnapshots {
+    display: none;
+}
