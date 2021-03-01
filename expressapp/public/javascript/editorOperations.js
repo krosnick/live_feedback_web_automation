@@ -153,7 +153,8 @@ function createSnapshot(lineNumber){
         const beforeSnapshotIframe = document.querySelector("#beforeSnapshot");
         const afterSnapshotIframe = document.querySelector("#afterSnapshot");
         scaleIframe(beforeSnapshotIframe, lineObj, `left top`);
-        scaleIframe(afterSnapshotIframe, lineObj, `right top`);
+        scaleIframe(afterSnapshotIframe, lineObj, `left top`);
+        //scaleIframe(afterSnapshotIframe, lineObj, `right top`);
     }
 }
 

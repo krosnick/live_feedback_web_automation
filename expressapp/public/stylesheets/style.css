@@ -121,17 +121,22 @@ body {
     top: 0px;
     display: none;
     width: 500px;
-    height: 125px;
+    /*height: 125px;*/
+    height: 250px;
     overflow: hidden;
     /*z-index: -1;*/
 }
 
 .tooltip[data-show] {
-    display: block;
+    /*display: block;*/
+    display: grid;
+    grid-template-columns: 250px;
+    grid-template-rows: 125px;
 }
 
 .snapshot {
-    position: absolute;
+    /*position: absolute;*/
+    position: relative;
     width: 250px;
     height: 125px;
 }
@@ -142,8 +147,10 @@ body {
 }
 
 #afterSnapshot {
-    top: 0px;
-    right: 0px;
+    /*top: 0px;
+    right: 0px;*/
+    /*top: 125px;*/
+    left: 0px;
 }
 
 /*.monaco-editor, .monaco-editor-background, .monaco-editor .inputarea.ime-input {
