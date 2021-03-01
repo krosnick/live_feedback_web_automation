@@ -130,8 +130,25 @@ body {
 .tooltip[data-show] {
     /*display: block;*/
     display: grid;
-    grid-template-columns: 250px;
-    grid-template-rows: 125px;
+    /*grid-template-columns: 250px;
+    grid-template-rows: 125px;*/
+    grid-template-columns: 70px repeat(auto-fit, 250px);
+    grid-template-rows: repeat(auto-fit, 125px);
+    grid-auto-flow: column;
+}
+
+.beforeAfterLabel {
+    position: relative;
+    width: 250px;
+    height: 125px;
+    color: black;
+    background-color: white;
+    text-align: center;
+    border-right: 1px solid gray;
+}
+
+#beforeLabel {
+    border-bottom: 1px solid gray;
 }
 
 .snapshot {
