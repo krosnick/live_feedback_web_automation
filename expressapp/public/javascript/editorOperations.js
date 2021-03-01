@@ -147,6 +147,7 @@ function createSnapshot(lineNumber){
 
             newElement.find("#snapshots").append(`
                 <iframe winID='${winID}' class='snapshot beforeSnapshot'></iframe>
+                <div class="downArrow">&#8595;</div>
                 <iframe winID='${winID}' class='snapshot afterSnapshot'></iframe>
             `);
             newElement.find(`[winID='${winID}'].beforeSnapshot`).attr("srcdoc", beforeSnapshot);

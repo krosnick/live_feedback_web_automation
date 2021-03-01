@@ -121,10 +121,9 @@ body {
     top: 0px;
     display: none;
     width: 570px;
-    /*height: 125px;*/
-    height: 280px;
-    /*overflow-x: scroll;*/
+    height: 320px;
     background-color: white;
+    color: black;
     border: 1px solid gray;
     /*z-index: -1;*/
 }
@@ -141,16 +140,7 @@ body {
 
 .beforeAfterLabel {
     position: relative;
-    width: 70px;
-    height: 125px;
-    color: black;
-    background-color: white;
     text-align: center;
-    border-right: 1px solid gray;
-}
-
-#afterLabel {
-    border-top: 1px solid gray;
 }
 
 .snapshot {
@@ -184,22 +174,27 @@ body {
     position: absolute;
     display: grid;
     grid-template-columns: 70px;
-    grid-template-rows: repeat(2, 125px);
+    grid-template-rows: 160px 125px;
     grid-auto-flow: column;
     grid-column-gap: 10px;
     grid-row-gap: 10px;
+    height: 320px;
 }
 
 #snapshots {
     position: absolute;
     display: grid;
     grid-template-columns: repeat(auto-fit, 250px);
-    grid-template-rows: repeat(2, 125px);
+    grid-template-rows: 125px 20px 125px;
     grid-auto-flow: column;
     grid-column-gap: 10px;
     grid-row-gap: 10px;
     overflow-x: scroll;
     right: 0px;
     width: 520px;
-    height: 290px;
+    height: 320px;
+}
+
+.downArrow {
+    text-align: center;
 }
