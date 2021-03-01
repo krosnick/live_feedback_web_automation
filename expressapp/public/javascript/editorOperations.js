@@ -130,23 +130,29 @@ function createSnapshot(lineNumber){
     
     // If there's a snapshot for this line
     if(snapshotLineToDOMSelectorData && snapshotLineToDOMSelectorData[lineNumber]){
-        // Currently only showing 1 snapshot (even though there are multiple - 1 per example)
-        const lineObj = Object.values(snapshotLineToDOMSelectorData[lineNumber])[0];
-        const beforeSnapshot = lineObj.beforeDomString;
-        const afterSnapshot = lineObj.afterDomString;
-
-        //const newElement = $(`<div class="tooltip" role="tooltip" data-show=""><iframe id='beforeSnapshot' class='snapshot'></iframe><iframe id='afterSnapshot' class='snapshot'></iframe></div>`).appendTo("#paramEditor");
-        //const newElement = $(`<div class="tooltip" role="tooltip" data-show=""><iframe id='beforeSnapshot' class='snapshot'></iframe><iframe id='afterSnapshot' class='snapshot'></iframe></div>`).appendTo("#codePane");
         const newElement = $(`
             <div class="tooltip" role="tooltip" data-show="">
                 <div id="beforeLabel" class="beforeAfterLabel">Before</div>
                 <div id="afterLabel" class="beforeAfterLabel">After</div>
-                <iframe id='beforeSnapshot' class='snapshot'></iframe>
-                <iframe id='afterSnapshot' class='snapshot'></iframe>
             </div>
         `).appendTo("#codePane");
-        newElement.find("#beforeSnapshot").attr("srcdoc", beforeSnapshot);
-        newElement.find("#afterSnapshot").attr("srcdoc", afterSnapshot);
+
+        for(const [winID, lineObj] of Object.entries(snapshotLineToDOMSelectorData[lineNumber])){
+            const beforeSnapshot = lineObj.beforeDomString;
+            const afterSnapshot = lineObj.afterDomString;
+
+            newElement.append(`
+                <iframe winID='${winID}' class='snapshot beforeSnapshot'></iframe>
+                <iframe winID='${winID}' class='snapshot afterSnapshot'></iframe>
+            `);
+            newElement.find(`[winID='${winID}'].beforeSnapshot`).attr("srcdoc", beforeSnapshot);
+            newElement.find(`[winID='${winID}'].afterSnapshot`).attr("srcdoc", afterSnapshot);
+
+            const beforeSnapshotIframe = document.querySelector(`[winID='${winID}'].beforeSnapshot`);
+            const afterSnapshotIframe = document.querySelector(`[winID='${winID}'].afterSnapshot`);
+            scaleIframe(beforeSnapshotIframe, lineObj, `left top`);
+            scaleIframe(afterSnapshotIframe, lineObj, `left top`);
+        }
         
         //const element = document.querySelector("#paramEditor");
         const element = document.querySelector("#codePane");
@@ -157,12 +163,6 @@ function createSnapshot(lineNumber){
         Popper.createPopper(tooltip, element, {
             placement: 'right'
         });
-
-        const beforeSnapshotIframe = document.querySelector("#beforeSnapshot");
-        const afterSnapshotIframe = document.querySelector("#afterSnapshot");
-        scaleIframe(beforeSnapshotIframe, lineObj, `left top`);
-        scaleIframe(afterSnapshotIframe, lineObj, `left top`);
-        //scaleIframe(afterSnapshotIframe, lineObj, `right top`);
     }
 }
 

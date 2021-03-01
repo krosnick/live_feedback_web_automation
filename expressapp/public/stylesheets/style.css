@@ -158,12 +158,12 @@ body {
     height: 125px;
 }
 
-#beforeSnapshot {
+.beforeSnapshot {
     top: 0px;
     left: 0px;
 }
 
-#afterSnapshot {
+.afterSnapshot {
     /*top: 0px;
     right: 0px;*/
     /*top: 125px;*/
