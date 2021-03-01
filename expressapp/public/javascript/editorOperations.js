@@ -137,7 +137,14 @@ function createSnapshot(lineNumber){
 
         //const newElement = $(`<div class="tooltip" role="tooltip" data-show=""><iframe id='beforeSnapshot' class='snapshot'></iframe><iframe id='afterSnapshot' class='snapshot'></iframe></div>`).appendTo("#paramEditor");
         //const newElement = $(`<div class="tooltip" role="tooltip" data-show=""><iframe id='beforeSnapshot' class='snapshot'></iframe><iframe id='afterSnapshot' class='snapshot'></iframe></div>`).appendTo("#codePane");
-        const newElement = $(`<div class="tooltip" role="tooltip" data-show=""><div id="beforeLabel" class="beforeAfterLabel">Before</div><div id="afterLabel" class="beforeAfterLabel">After</div><iframe id='beforeSnapshot' class='snapshot'></iframe><iframe id='afterSnapshot' class='snapshot'></iframe></div>`).appendTo("#codePane");
+        const newElement = $(`
+            <div class="tooltip" role="tooltip" data-show="">
+                <div id="beforeLabel" class="beforeAfterLabel">Before</div>
+                <div id="afterLabel" class="beforeAfterLabel">After</div>
+                <iframe id='beforeSnapshot' class='snapshot'></iframe>
+                <iframe id='afterSnapshot' class='snapshot'></iframe>
+            </div>
+        `).appendTo("#codePane");
         newElement.find("#beforeSnapshot").attr("srcdoc", beforeSnapshot);
         newElement.find("#afterSnapshot").attr("srcdoc", afterSnapshot);
         

@@ -139,7 +139,7 @@ body {
 
 .beforeAfterLabel {
     position: relative;
-    width: 250px;
+    width: 70px;
     height: 125px;
     color: black;
     background-color: white;
@@ -147,8 +147,8 @@ body {
     border-right: 1px solid gray;
 }
 
-#beforeLabel {
-    border-bottom: 1px solid gray;
+#afterLabel {
+    border-top: 1px solid gray;
 }
 
 .snapshot {
