@@ -132,8 +132,12 @@ function createSnapshot(lineNumber){
     if(snapshotLineToDOMSelectorData && snapshotLineToDOMSelectorData[lineNumber]){
         const newElement = $(`
             <div class="tooltip" role="tooltip" data-show="">
-                <div id="beforeLabel" class="beforeAfterLabel">Before</div>
-                <div id="afterLabel" class="beforeAfterLabel">After</div>
+                <div id="labels">
+                    <div id="beforeLabel" class="beforeAfterLabel">Before</div>
+                    <div id="afterLabel" class="beforeAfterLabel">After</div>
+                </div>
+                <div id="snapshots">
+                </div>
             </div>
         `).appendTo("#codePane");
 
@@ -141,7 +145,7 @@ function createSnapshot(lineNumber){
             const beforeSnapshot = lineObj.beforeDomString;
             const afterSnapshot = lineObj.afterDomString;
 
-            newElement.append(`
+            newElement.find("#snapshots").append(`
                 <iframe winID='${winID}' class='snapshot beforeSnapshot'></iframe>
                 <iframe winID='${winID}' class='snapshot afterSnapshot'></iframe>
             `);

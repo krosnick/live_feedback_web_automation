@@ -120,25 +120,23 @@ body {
     right: 0px;
     top: 0px;
     display: none;
-    width: 500px;
+    width: 570px;
     /*height: 125px;*/
-    height: 260px;
-    overflow-x: scroll;
+    height: 280px;
+    /*overflow-x: scroll;*/
     background-color: white;
     border: 1px solid gray;
     /*z-index: -1;*/
 }
 
 .tooltip[data-show] {
-    /*display: block;*/
-    display: grid;
-    /*grid-template-columns: 250px;
-    grid-template-rows: 125px;*/
+    display: block;
+    /*display: grid;
     grid-template-columns: 70px repeat(auto-fit, 250px);
     grid-template-rows: repeat(2, 125px);
     grid-auto-flow: column;
     grid-column-gap: 10px;
-    grid-row-gap: 10px;
+    grid-row-gap: 10px;*/
 }
 
 .beforeAfterLabel {
@@ -180,4 +178,28 @@ body {
 
 #showSnapshots {
     display: none;
+}
+
+#labels {
+    position: absolute;
+    display: grid;
+    grid-template-columns: 70px;
+    grid-template-rows: repeat(2, 125px);
+    grid-auto-flow: column;
+    grid-column-gap: 10px;
+    grid-row-gap: 10px;
+}
+
+#snapshots {
+    position: absolute;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, 250px);
+    grid-template-rows: repeat(2, 125px);
+    grid-auto-flow: column;
+    grid-column-gap: 10px;
+    grid-row-gap: 10px;
+    overflow-x: scroll;
+    right: 0px;
+    width: 520px;
+    height: 290px;
 }
