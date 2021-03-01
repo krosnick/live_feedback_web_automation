@@ -5,6 +5,8 @@ let snapshotLineToDOMSelectorData;
 let runtimeErrorModelMarkerData = {};
 let selectorSpecificModelMarkerData = {};
 let runtimeErrorMessagesStale = false;
+const snapshotWidth = 250;
+const snapshotHeight = 125;
 
 //let activeViewLine;
 
@@ -239,17 +241,21 @@ function scaleIframe(iframeElement, lineObj, transformOriginString){
 function scaleToPageWidth(iframeElement, iframeDocument, transformOriginString){
     const pageWidth = iframeDocument.querySelector("body").scrollWidth;
 
-    const paddingTotalHoriz = parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-left')) + parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-right'));
+    /*const paddingTotalHoriz = parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-left')) + parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-right'));
     const tooltipWidthWithoutPadding = document.querySelector(".tooltip").getBoundingClientRect().width - paddingTotalHoriz;
     const allowedSnapshotWidth = tooltipWidthWithoutPadding/2;
 
     const paddingTotalVert = parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-top')) + parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-bottom'));
     const tooltipHeightWithoutPadding = document.querySelector(".tooltip").getBoundingClientRect().height - paddingTotalVert;
-    const allowedSnapshotHeight = tooltipHeightWithoutPadding;
+    const allowedSnapshotHeight = tooltipHeightWithoutPadding;*/
 
-    const transformScale = allowedSnapshotWidth / pageWidth;
+    /*const transformScale = allowedSnapshotWidth / pageWidth;
     const newSnapshotWidth = allowedSnapshotWidth / transformScale;
-    const newSnapshotHeight = allowedSnapshotHeight / transformScale;
+    const newSnapshotHeight = allowedSnapshotHeight / transformScale;*/
+    
+    const transformScale = snapshotWidth / pageWidth;
+    const newSnapshotWidth = snapshotWidth / transformScale;
+    const newSnapshotHeight = snapshotHeight / transformScale;
 
     $(iframeElement).css('width', `${newSnapshotWidth}px`);
     $(iframeElement).css('height', `${newSnapshotHeight}px`);
@@ -261,21 +267,25 @@ function scaleToElement(selectorElement, iframeElement, iframeDocument, transfor
     const currentElementWidth = selectorElement.getBoundingClientRect().width;
     const currentElementHeight = selectorElement.getBoundingClientRect().height;
 
-    const paddingTotalHoriz = parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-left')) + parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-right'));
+    /*const paddingTotalHoriz = parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-left')) + parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-right'));
     const tooltipWidthWithoutPadding = document.querySelector(".tooltip").getBoundingClientRect().width - paddingTotalHoriz;
-    const allowedSnapshotWidth = tooltipWidthWithoutPadding/2;
+    const allowedSnapshotWidth = tooltipWidthWithoutPadding/2;*/
     
-    const paddingTotalVert = parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-top')) + parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-bottom'));
+    /*const paddingTotalVert = parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-top')) + parseFloat(window.getComputedStyle(document.querySelector(".tooltip"), null).getPropertyValue('padding-bottom'));
     const tooltipHeightWithoutPadding = document.querySelector(".tooltip").getBoundingClientRect().height - paddingTotalVert;
-    const allowedSnapshotHeight = tooltipHeightWithoutPadding;
+    const allowedSnapshotHeight = tooltipHeightWithoutPadding;*/
     
-    const transformOption1 = allowedSnapshotWidth / (3 * currentElementWidth); // want element to take up at most half of viewport width
-    const transformOption2 = allowedSnapshotHeight / (3 * currentElementHeight); // want element to take up at most half of viewport height
+    /*const transformOption1 = allowedSnapshotWidth / (3 * currentElementWidth); // want element to take up at most half of viewport width
+    const transformOption2 = allowedSnapshotHeight / (3 * currentElementHeight); // want element to take up at most half of viewport height*/
+    const transformOption1 = snapshotWidth / (3 * currentElementWidth); // want element to take up at most 1/3 of viewport width
+    const transformOption2 = snapshotHeight / (3 * currentElementHeight); // want element to take up at most 1/3 of viewport height
 
     const chosenTransformScale = Math.min(transformOption1, transformOption2);
 
-    const newSnapshotWidth = allowedSnapshotWidth / chosenTransformScale;
-    const newSnapshotHeight = allowedSnapshotHeight / chosenTransformScale;
+    /*const newSnapshotWidth = allowedSnapshotWidth / chosenTransformScale;
+    const newSnapshotHeight = allowedSnapshotHeight / chosenTransformScale;*/
+    const newSnapshotWidth = snapshotWidth / chosenTransformScale;
+    const newSnapshotHeight = snapshotHeight / chosenTransformScale;
 
     $(iframeElement).css('width', `${newSnapshotWidth}px`);
     $(iframeElement).css('height', `${newSnapshotHeight}px`);
