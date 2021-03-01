@@ -124,6 +124,8 @@ body {
     /*height: 125px;*/
     height: 260px;
     overflow-x: scroll;
+    background-color: white;
+    border: 1px solid gray;
     /*z-index: -1;*/
 }
 
@@ -135,6 +137,8 @@ body {
     grid-template-columns: 70px repeat(auto-fit, 250px);
     grid-template-rows: repeat(2, 125px);
     grid-auto-flow: column;
+    grid-column-gap: 10px;
+    grid-row-gap: 10px;
 }
 
 .beforeAfterLabel {
