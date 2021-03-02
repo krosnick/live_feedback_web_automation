@@ -150,6 +150,12 @@ body {
     height: 125px;
 }
 
+.snapshotContainer {
+    max-width: 250px;
+    width: min-content;
+    overflow: hidden;
+}
+
 .snapshots {
     border-left: 1px solid gray;
 }
@@ -188,7 +194,7 @@ body {
 #snapshots {
     position: absolute;
     display: grid;
-    grid-template-columns: repeat(auto-fit, 250px);
+    grid-template-columns: repeat(auto-fit, minmax(min-content, 250px));
     grid-template-rows: 20px 125px 20px 125px;
     grid-auto-flow: column;
     grid-column-gap: 10px;
@@ -201,4 +207,30 @@ body {
 
 .downArrow {
     text-align: center;
+    width: 250px;
 }
+
+.colHeader {
+    position: relative;
+    max-width: 250px;
+    min-width: 30px;
+}
+
+.runInfo {
+    position: absolute;
+    left: 0px;
+}
+
+.hideShowRun {
+    position: absolute;
+    right: 0px;
+}
+
+.showRun {
+    display: none;
+}
+
+/*.narrowHiddenSnapshot {
+    visibility: hidden;
+    width: 30px;
+}*/

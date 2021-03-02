@@ -147,12 +147,22 @@ function createSnapshot(lineNumber){
             const parametersString = JSON.stringify(lineObj.parametersString);
 
             newElement.find("#snapshots").append(`
-                <div class="runInfo" winID='${winID}'>
-                    ${parametersString}
+                <div class="colHeader" winID='${winID}'>
+                    <span class="fullViewContents">
+                        <span class="runInfo" winID='${winID}'>
+                            ${parametersString}
+                        </span>
+                        <button class="hideRun hideShowRun" winID='${winID}'>-</button>
+                    </span>
+                    <button class="showRun hideShowRun" winID='${winID}'>+</button>
                 </div>
-                <iframe winID='${winID}' class='snapshot beforeSnapshot'></iframe>
-                <div class="downArrow">&#8595;</div>
-                <iframe winID='${winID}' class='snapshot afterSnapshot'></iframe>
+                <div class="snapshotContainer" winID='${winID}'>
+                    <iframe winID='${winID}' class='snapshot beforeSnapshot'></iframe>
+                </div>
+                <div class="downArrow" winID='${winID}'>&#8595;</div>
+                <div class="snapshotContainer" winID='${winID}'>
+                    <iframe winID='${winID}' class='snapshot afterSnapshot'></iframe>
+                </div>
             `);
             newElement.find(`[winID='${winID}'].beforeSnapshot`).attr("srcdoc", beforeSnapshot);
             newElement.find(`[winID='${winID}'].afterSnapshot`).attr("srcdoc", afterSnapshot);
@@ -616,5 +626,35 @@ $(function(){
         if(currentLineNumber){
             createSnapshot(currentLineNumber);
         }
+    });
+
+    $("body").on("click", ".hideRun", function(e){
+        console.log("clicked .hideRun");
+        // Hide/show appropriate header elements
+        $(e.target).closest(".fullViewContents").hide();
+        $(e.target).closest(".colHeader").find(".showRun").show();
+
+        // Hide snapshots
+        const winID = $(e.target).attr("winID");
+        $(`.snapshot[winID=${winID}]`).css("visibility", "hidden");
+        $(`.snapshotContainer[winID=${winID}], .colHeader[winID=${winID}], .downArrow[winID=${winID}]`).animate({
+            width: "30px"
+        }, 500);
+        //$(`.snapshot[winID=${winID}]`).addClass("narrowHiddenSnapshot");
+    });
+
+    $("body").on("click", ".showRun", function(e){
+        console.log("clicked .showRun");
+        // Hide/show appropriate header elements
+        $(e.target).hide();
+        $(e.target).closest(".colHeader").find(".fullViewContents").show();
+
+        // Show snapshots
+        const winID = $(e.target).attr("winID");
+        $(`.snapshotContainer[winID=${winID}], .colHeader[winID=${winID}], .downArrow[winID=${winID}]`).animate({
+            width: "250px"
+        }, 500);
+        $(`.snapshot[winID=${winID}]`).css("visibility", "visible");
+        //$(`.snapshot[winID=${winID}]`).removeClass("narrowHiddenSnapshot");
     });
 });
