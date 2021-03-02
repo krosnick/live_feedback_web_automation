@@ -121,7 +121,7 @@ body {
     top: 0px;
     display: none;
     width: 570px;
-    height: 320px;
+    height: 360px;
     background-color: white;
     color: black;
     border: 1px solid gray;
@@ -140,7 +140,7 @@ body {
 
 .beforeAfterLabel {
     position: relative;
-    text-align: center;
+    /*text-align: center;*/
 }
 
 .snapshot {
@@ -148,6 +148,10 @@ body {
     position: relative;
     width: 250px;
     height: 125px;
+}
+
+.snapshots {
+    border-left: 1px solid gray;
 }
 
 .beforeSnapshot {
@@ -174,25 +178,25 @@ body {
     position: absolute;
     display: grid;
     grid-template-columns: 70px;
-    grid-template-rows: 160px 125px;
+    grid-template-rows: 200px 125px;
     grid-auto-flow: column;
     grid-column-gap: 10px;
     grid-row-gap: 10px;
-    height: 320px;
+    height: 360px;
 }
 
 #snapshots {
     position: absolute;
     display: grid;
     grid-template-columns: repeat(auto-fit, 250px);
-    grid-template-rows: 125px 20px 125px;
+    grid-template-rows: 20px 125px 20px 125px;
     grid-auto-flow: column;
     grid-column-gap: 10px;
     grid-row-gap: 10px;
     overflow-x: scroll;
     right: 0px;
     width: 520px;
-    height: 320px;
+    height: 360px;
 }
 
 .downArrow {

@@ -144,8 +144,12 @@ function createSnapshot(lineNumber){
         for(const [winID, lineObj] of Object.entries(snapshotLineToDOMSelectorData[lineNumber])){
             const beforeSnapshot = lineObj.beforeDomString;
             const afterSnapshot = lineObj.afterDomString;
+            const parametersString = JSON.stringify(lineObj.parametersString);
 
             newElement.find("#snapshots").append(`
+                <div class="runInfo" winID='${winID}'>
+                    ${parametersString}
+                </div>
                 <iframe winID='${winID}' class='snapshot beforeSnapshot'></iframe>
                 <div class="downArrow">&#8595;</div>
                 <iframe winID='${winID}' class='snapshot afterSnapshot'></iframe>
