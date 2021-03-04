@@ -212,7 +212,9 @@ function createSnapshots(lineNumber){
             newElement.find("#snapshots").append(clusterElement);
 
             // Now for each winID in this cluster, create an html string and append to clusterElement
-            for(winIDStr of cluster){
+            //for(winIDStr of cluster){
+            for(let winIDIndex = 0; winIDIndex < cluster.length; winIDIndex++){
+                const winIDStr = cluster[winIDIndex];
                 const winID = parseInt(winIDStr);
 
                 const lineObj = snapshotLineToDOMSelectorData[lineNumber][winID];
@@ -220,24 +222,46 @@ function createSnapshots(lineNumber){
                 const afterSnapshot = lineObj.afterDomString;
                 const parametersString = JSON.stringify(lineObj.parametersString);
 
-                clusterElement.append(`
-                    <div class="colHeader" winID='${winID}'>
-                        <span class="fullViewContents">
-                            <span class="runInfo" winID='${winID}'>
-                                ${parametersString}
+                // Show snapshots if it's the first winID; otherwise, hide
+                if(winIDIndex === 0){
+                    clusterElement.append(`
+                        <div class="colHeader" winID='${winID}'>
+                            <span class="fullViewContents">
+                                <span class="runInfo" winID='${winID}'>
+                                    ${parametersString}
+                                </span>
+                                <button class="hideRun hideShowRun" winID='${winID}'>-</button>
                             </span>
-                            <button class="hideRun hideShowRun" winID='${winID}'>-</button>
-                        </span>
-                        <button class="showRun hideShowRun" winID='${winID}'>+</button>
-                    </div>
-                    <div class="snapshotContainer" winID='${winID}'>
-                        <iframe winID='${winID}' class='snapshot beforeSnapshot'></iframe>
-                    </div>
-                    <div class="downArrow" winID='${winID}'>&#8595;</div>
-                    <div class="snapshotContainer" winID='${winID}'>
-                        <iframe winID='${winID}' class='snapshot afterSnapshot'></iframe>
-                    </div>
-                `);
+                            <button class="showRun hideShowRun" winID='${winID}'>+</button>
+                        </div>
+                        <div class="snapshotContainer" winID='${winID}'>
+                            <iframe winID='${winID}' class='snapshot beforeSnapshot'></iframe>
+                        </div>
+                        <div class="downArrow" winID='${winID}'>&#8595;</div>
+                        <div class="snapshotContainer" winID='${winID}'>
+                            <iframe winID='${winID}' class='snapshot afterSnapshot'></iframe>
+                        </div>
+                    `);
+                }else{
+                    clusterElement.append(`
+                        <div class="colHeader" winID='${winID}' style="width: 30px;">
+                            <span class="fullViewContents" style="display: none;">
+                                <span class="runInfo" winID='${winID}'>
+                                    ${parametersString}
+                                </span>
+                                <button class="hideRun hideShowRun" winID='${winID}'>-</button>
+                            </span>
+                            <button class="showRun hideShowRun" winID='${winID}' style="display: block;">+</button>
+                        </div>
+                        <div class="snapshotContainer" winID='${winID}' style="width: 30px;">
+                            <iframe winID='${winID}' class='snapshot beforeSnapshot' style="visibility: hidden;"></iframe>
+                        </div>
+                        <div class="downArrow" winID='${winID}' style="width: 30px;">&#8595;</div>
+                        <div class="snapshotContainer" winID='${winID}' style="width: 30px;">
+                            <iframe winID='${winID}' class='snapshot afterSnapshot' style="visibility: hidden;"></iframe>
+                        </div>
+                    `);
+                }
                 clusterElement.find(`[winID='${winID}'].beforeSnapshot`).attr("srcdoc", beforeSnapshot);
                 clusterElement.find(`[winID='${winID}'].afterSnapshot`).attr("srcdoc", afterSnapshot);
 
