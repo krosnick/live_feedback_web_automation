@@ -2,8 +2,10 @@ const { ipcRenderer } = require('electron');
 
 let decorations = [];
 let snapshotLineToDOMSelectorData;
-let lineNumToComponentsList;
 let errorData;
+let lastRunSnapshotLineToDOMSelectorData;
+let lastRunErrorData;
+let lineNumToComponentsList;
 let runtimeErrorModelMarkerData = {};
 let selectorSpecificModelMarkerData = {};
 let runtimeErrorMessagesStale = false;
@@ -143,6 +145,13 @@ function createSnapshots(lineNumber){
             </div>
         `).appendTo("#codePane");
 
+        // Create a cluster for last run (start with all winIDs minimized)
+        // (Maybe even have the cluster itself minimized?)
+        if(lastRunSnapshotLineToDOMSelectorData && lastRunSnapshotLineToDOMSelectorData[lineNumber]){
+            let cluster = Object.keys(lastRunSnapshotLineToDOMSelectorData[lineNumber]);
+            createCluster(cluster, "Last run", newElement, lastRunSnapshotLineToDOMSelectorData, lineNumber, lastRunErrorData);
+        }
+
         let clusterList = [];
         const winIDsForThisLine = Object.keys(snapshotLineToDOMSelectorData[lineNumber]);
         if(lineNumToComponentsList && lineNumToComponentsList[lineNumber]){
@@ -206,87 +215,7 @@ function createSnapshots(lineNumber){
         for(let index = 0; index < clusterList.length; index++){
             const cluster = clusterList[index];
             // cluster is of the form ["1", "2", "4"] (where "1" is a winID, etc)
-            const clusterElement = $(`
-                <div class="cluster" clusterIndex="${index}">
-                </div>
-            `);
-            newElement.find("#snapshots").append(clusterElement);
-
-            // Now for each winID in this cluster, create an html string and append to clusterElement
-            //for(winIDStr of cluster){
-            for(let winIDIndex = 0; winIDIndex < cluster.length; winIDIndex++){
-                const winIDStr = cluster[winIDIndex];
-                const winID = parseInt(winIDStr);
-
-                const lineObj = snapshotLineToDOMSelectorData[lineNumber][winID];
-                const beforeSnapshot = lineObj.beforeDomString;
-                const afterSnapshot = lineObj.afterDomString;
-                const parametersString = JSON.stringify(lineObj.parametersString);
-                //console.log("lineObj.parametersString", lineObj.parametersString);
-                let errorString = "";
-                //console.log("errorData", errorData);
-                const errorInfoForWin = errorData[winID];
-                if(errorInfoForWin){
-                    if(errorInfoForWin.errorLineNumber === lineNumber){
-                        // Check if lineObj.parametersString key/value are in errorInfoForWin.parameterValueSet
-                        const [key, value] = Object.entries(lineObj.parametersString)[0];
-                        if(errorInfoForWin.parameterValueSet[key] && errorInfoForWin.parameterValueSet[key] === value){
-                            // Show this error for this snapshot
-                            errorString = errorInfoForWin.errorMessage;
-                        }
-                    }
-                }
-                //console.log("errorData[lineNumber]", errorData[lineNumber][winID]);
-
-                // Show snapshots if it's the first winID; otherwise, hide
-                if(winIDIndex === 0 || errorString){
-                    clusterElement.append(`
-                        <div class="colHeader" winID='${winID}'>
-                            <span class="fullViewContents">
-                                <span class="runInfo" winID='${winID}'>
-                                    ${parametersString}
-                                    <span class="errorText">${errorString}</span>
-                                </span>
-                                <button class="hideRun hideShowRun" winID='${winID}'>-</button>
-                            </span>
-                            <button class="showRun hideShowRun" winID='${winID}'>+</button>
-                        </div>
-                        <div class="snapshotContainer" winID='${winID}'>
-                            <iframe winID='${winID}' class='snapshot beforeSnapshot'></iframe>
-                        </div>
-                        <div class="downArrow" winID='${winID}'>&#8595;</div>
-                        <div class="snapshotContainer" winID='${winID}'>
-                            <iframe winID='${winID}' class='snapshot afterSnapshot'></iframe>
-                        </div>
-                    `);
-                }else{
-                    clusterElement.append(`
-                        <div class="colHeader" winID='${winID}' style="width: 30px;">
-                            <span class="fullViewContents" style="display: none;">
-                                <span class="runInfo" winID='${winID}'>
-                                    ${parametersString}
-                                </span>
-                                <button class="hideRun hideShowRun" winID='${winID}'>-</button>
-                            </span>
-                            <button class="showRun hideShowRun" winID='${winID}' style="display: block;">+</button>
-                        </div>
-                        <div class="snapshotContainer" winID='${winID}' style="width: 30px;">
-                            <iframe winID='${winID}' class='snapshot beforeSnapshot' style="visibility: hidden;"></iframe>
-                        </div>
-                        <div class="downArrow" winID='${winID}' style="width: 30px;">&#8595;</div>
-                        <div class="snapshotContainer" winID='${winID}' style="width: 30px;">
-                            <iframe winID='${winID}' class='snapshot afterSnapshot' style="visibility: hidden;"></iframe>
-                        </div>
-                    `);
-                }
-                clusterElement.find(`[winID='${winID}'].beforeSnapshot`).attr("srcdoc", beforeSnapshot);
-                clusterElement.find(`[winID='${winID}'].afterSnapshot`).attr("srcdoc", afterSnapshot);
-
-                const beforeSnapshotIframe = document.querySelector(`[winID='${winID}'].beforeSnapshot`);
-                const afterSnapshotIframe = document.querySelector(`[winID='${winID}'].afterSnapshot`);
-                scaleIframe(beforeSnapshotIframe, lineObj, `left top`);
-                scaleIframe(afterSnapshotIframe, lineObj, `left top`);
-            }
+            createCluster(cluster, index, newElement, snapshotLineToDOMSelectorData, lineNumber, errorData);
         }
         
         //const element = document.querySelector("#paramEditor");
@@ -298,6 +227,86 @@ function createSnapshots(lineNumber){
         Popper.createPopper(tooltip, element, {
             placement: 'right'
         });
+    }
+}
+
+function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber, errorObj){
+    const clusterElement = $(`
+        <div class="cluster" clusterIndex="${indexOrName}">
+        </div>
+    `);
+    newElement.find("#snapshots").append(clusterElement);
+
+    // Now for each winID in this cluster, create an html string and append to clusterElement
+    for(let winIDIndex = 0; winIDIndex < cluster.length; winIDIndex++){
+        const winIDStr = cluster[winIDIndex];
+        const winID = parseInt(winIDStr);
+
+        const lineObj = snapshotObj[lineNumber][winID];
+        const beforeSnapshot = lineObj.beforeDomString;
+        const afterSnapshot = lineObj.afterDomString;
+        const parametersString = JSON.stringify(lineObj.parametersString);
+        let errorString = "";
+        const errorInfoForWin = errorObj[winID];
+        if(errorInfoForWin){
+            if(errorInfoForWin.errorLineNumber === lineNumber){
+                // Check if lineObj.parametersString key/value are in errorInfoForWin.parameterValueSet
+                const [key, value] = Object.entries(lineObj.parametersString)[0];
+                if(errorInfoForWin.parameterValueSet[key] && errorInfoForWin.parameterValueSet[key] === value){
+                    // Show this error for this snapshot
+                    errorString = errorInfoForWin.errorMessage;
+                }
+            }
+        }
+
+        // If last run, minimize all snapshots. Otherwise, show snapshots if it's the first winID or there's an error; otherwise, hide.
+        if((indexOrName !== "Last run") && (winIDIndex === 0 || errorString)){
+            clusterElement.append(`
+                <div class="colHeader" winID='${winID}'>
+                    <span class="fullViewContents">
+                        <span class="runInfo" winID='${winID}'>
+                            ${parametersString}
+                            <span class="errorText">${errorString}</span>
+                        </span>
+                        <button class="hideRun hideShowRun" winID='${winID}'>-</button>
+                    </span>
+                    <button class="showRun hideShowRun" winID='${winID}'>+</button>
+                </div>
+                <div class="snapshotContainer" winID='${winID}'>
+                    <iframe winID='${winID}' class='snapshot beforeSnapshot'></iframe>
+                </div>
+                <div class="downArrow" winID='${winID}'>&#8595;</div>
+                <div class="snapshotContainer" winID='${winID}'>
+                    <iframe winID='${winID}' class='snapshot afterSnapshot'></iframe>
+                </div>
+            `);
+        }else{
+            clusterElement.append(`
+                <div class="colHeader" winID='${winID}' style="width: 30px;">
+                    <span class="fullViewContents" style="display: none;">
+                        <span class="runInfo" winID='${winID}'>
+                            ${parametersString}
+                        </span>
+                        <button class="hideRun hideShowRun" winID='${winID}'>-</button>
+                    </span>
+                    <button class="showRun hideShowRun" winID='${winID}' style="display: block;">+</button>
+                </div>
+                <div class="snapshotContainer" winID='${winID}' style="width: 30px;">
+                    <iframe winID='${winID}' class='snapshot beforeSnapshot' style="visibility: hidden;"></iframe>
+                </div>
+                <div class="downArrow" winID='${winID}' style="width: 30px;">&#8595;</div>
+                <div class="snapshotContainer" winID='${winID}' style="width: 30px;">
+                    <iframe winID='${winID}' class='snapshot afterSnapshot' style="visibility: hidden;"></iframe>
+                </div>
+            `);
+        }
+        clusterElement.find(`[winID='${winID}'].beforeSnapshot`).attr("srcdoc", beforeSnapshot);
+        clusterElement.find(`[winID='${winID}'].afterSnapshot`).attr("srcdoc", afterSnapshot);
+
+        const beforeSnapshotIframe = document.querySelector(`[winID='${winID}'].beforeSnapshot`);
+        const afterSnapshotIframe = document.querySelector(`[winID='${winID}'].afterSnapshot`);
+        scaleIframe(beforeSnapshotIframe, lineObj, `left top`);
+        scaleIframe(afterSnapshotIframe, lineObj, `left top`);
     }
 }
 
@@ -620,12 +629,16 @@ $(function(){
         activeViewLine = $(e.target);
     });*/
     $("body").on("click", "#runCode", function(e){
+        // Store existing data as "last run"
+        lastRunSnapshotLineToDOMSelectorData = snapshotLineToDOMSelectorData;
+        lastRunErrorData = errorData;
         // Clear all existing puppeteer error markers and gutter bar decorations
         runtimeErrorModelMarkerData = {};
         selectorSpecificModelMarkerData = {};
         snapshotLineToDOMSelectorData = {};
-        lineNumToComponentsList = {};
         errorData = {};
+        lineNumToComponentsList = {};
+
         $(".tooltip").remove();
         monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList()); // just empty
         decorations = monacoEditor.deltaDecorations(decorations, []);
@@ -748,32 +761,42 @@ $(function(){
     });
 
     $("body").on("click", ".hideRun", function(e){
-        console.log("clicked .hideRun");
         // Hide/show appropriate header elements
         $(e.target).closest(".fullViewContents").hide();
         $(e.target).closest(".colHeader").find(".showRun").show();
 
         // Hide snapshots
         const winID = $(e.target).attr("winID");
-        $(`.snapshot[winID=${winID}]`).css("visibility", "hidden");
-        $(`.snapshotContainer[winID=${winID}], .colHeader[winID=${winID}], .downArrow[winID=${winID}]`).animate({
+        const clusterIndex = $(e.target).closest(".cluster").attr("clusterIndex");
+        $(`.cluster[clusterIndex="${clusterIndex}"] .snapshot[winID="${winID}"]`).css("visibility", "hidden");
+        $(`.cluster[clusterIndex="${clusterIndex}"] .snapshotContainer[winID="${winID}"]`).animate({
             width: "30px"
         }, 500);
-        //$(`.snapshot[winID=${winID}]`).addClass("narrowHiddenSnapshot");
+        $(`.cluster[clusterIndex="${clusterIndex}"] .colHeader[winID="${winID}"]`).animate({
+            width: "30px"
+        }, 500);
+        $(`.cluster[clusterIndex="${clusterIndex}"] .downArrow[winID="${winID}"]`).animate({
+            width: "30px"
+        }, 500);
     });
 
     $("body").on("click", ".showRun", function(e){
-        console.log("clicked .showRun");
         // Hide/show appropriate header elements
         $(e.target).hide();
         $(e.target).closest(".colHeader").find(".fullViewContents").show();
 
         // Show snapshots
         const winID = $(e.target).attr("winID");
-        $(`.snapshotContainer[winID=${winID}], .colHeader[winID=${winID}], .downArrow[winID=${winID}]`).animate({
+        const clusterIndex = $(e.target).closest(".cluster").attr("clusterIndex");
+        $(`.cluster[clusterIndex="${clusterIndex}"] .snapshotContainer[winID="${winID}"]`).animate({
             width: "250px"
         }, 500);
-        $(`.snapshot[winID=${winID}]`).css("visibility", "visible");
-        //$(`.snapshot[winID=${winID}]`).removeClass("narrowHiddenSnapshot");
+        $(`.cluster[clusterIndex="${clusterIndex}"] .colHeader[winID="${winID}"]`).animate({
+            width: "250px"
+        }, 500);
+        $(`.cluster[clusterIndex="${clusterIndex}"] .downArrow[winID="${winID}"]`).animate({
+            width: "250px"
+        }, 500);
+        $(`.cluster[clusterIndex="${clusterIndex}"] .snapshot[winID="${winID}"]`).css("visibility", "visible");
     });
 });
