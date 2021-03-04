@@ -231,6 +231,7 @@ function createSnapshots(lineNumber){
 }
 
 function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber, errorObj){
+    newElement.find("#snapshots").append(`<div class="clusterLabel">Label: ${indexOrName}</div>`);
     const clusterElement = $(`
         <div class="cluster" clusterIndex="${indexOrName}">
         </div>
