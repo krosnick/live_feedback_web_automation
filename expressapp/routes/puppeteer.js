@@ -332,6 +332,13 @@ const compareScreenshots = function(lineNum, lineObj){
         //console.log("bitmapObjList", bitmapObjList);
         const diff = new PNG({width: smallestWidth, height: smallestHeight});
         return Promise.all(bitmapObjList).then((values) => {
+            
+            // If bitmapWinIDList has only 1 winID in it, just return list with list of size 1 in it
+            if(bitmapWinIDList.length === 1){
+                const singleWinID = bitmapWinIDList[0];
+                return [ [singleWinID] ];
+            }
+            
             //console.log("values", values);
             // Compare each pair of screenshots
             const numDiffPixelsList = [];

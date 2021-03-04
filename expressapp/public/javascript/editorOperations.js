@@ -2,6 +2,7 @@ const { ipcRenderer } = require('electron');
 
 let decorations = [];
 let snapshotLineToDOMSelectorData;
+let lineNumToComponentsList;
 let runtimeErrorModelMarkerData = {};
 let selectorSpecificModelMarkerData = {};
 let runtimeErrorMessagesStale = false;
@@ -119,11 +120,11 @@ function editorOnDidChangeCursorPosition(e){
     
     // Only create/show snapshots if "Show" button (#showSnapshots) is currently hidden (meaning that snapshots should be shown)
     if($("#showSnapshots").is(":hidden")){
-        createSnapshot(lineNumber);
+        createSnapshots(lineNumber);
     }
 }
 
-function createSnapshot(lineNumber){
+function createSnapshots(lineNumber){
     // Should update the tooltip that's being shown
     // First delete all existing .tooltip elements
     $(".tooltip").remove();
@@ -141,36 +142,110 @@ function createSnapshot(lineNumber){
             </div>
         `).appendTo("#codePane");
 
-        for(const [winID, lineObj] of Object.entries(snapshotLineToDOMSelectorData[lineNumber])){
-            const beforeSnapshot = lineObj.beforeDomString;
-            const afterSnapshot = lineObj.afterDomString;
-            const parametersString = JSON.stringify(lineObj.parametersString);
+        let clusterList = [];
+        const winIDsForThisLine = Object.keys(snapshotLineToDOMSelectorData[lineNumber]);
+        if(lineNumToComponentsList && lineNumToComponentsList[lineNumber]){
+            const connectedComponents = Object.values(lineNumToComponentsList[lineNumber]);
 
-            newElement.find("#snapshots").append(`
-                <div class="colHeader" winID='${winID}'>
-                    <span class="fullViewContents">
-                        <span class="runInfo" winID='${winID}'>
-                            ${parametersString}
-                        </span>
-                        <button class="hideRun hideShowRun" winID='${winID}'>-</button>
-                    </span>
-                    <button class="showRun hideShowRun" winID='${winID}'>+</button>
-                </div>
-                <div class="snapshotContainer" winID='${winID}'>
-                    <iframe winID='${winID}' class='snapshot beforeSnapshot'></iframe>
-                </div>
-                <div class="downArrow" winID='${winID}'>&#8595;</div>
-                <div class="snapshotContainer" winID='${winID}'>
-                    <iframe winID='${winID}' class='snapshot afterSnapshot'></iframe>
+            // Create actual clusters
+
+            const winIDsWithoutAfterSnapshot = [];
+            const winIDsNotInConnectedComponents = [];
+
+            for(const winID of winIDsForThisLine){
+                let winIDFound = false;
+                const winIDStr = winID + "";
+                for(const component of connectedComponents){
+                    if(component.includes(winIDStr)){
+                        winIDFound = true;
+                    }
+                }
+                if(!winIDFound){
+                    winIDsNotInConnectedComponents.push(winIDStr);
+                }
+
+                if(!snapshotLineToDOMSelectorData[lineNumber][winID].afterDomString){
+                    winIDsWithoutAfterSnapshot.push(winIDStr);
+                }
+            }
+
+            // Start off using connectedComponents
+            if(connectedComponents.length > 0){
+                clusterList = clusterList.concat(connectedComponents);
+            }
+
+            // Cluster winIDsWithoutAfterSnapshot together as their own cluster
+            if(winIDsWithoutAfterSnapshot.length > 0){
+                clusterList.push(winIDsWithoutAfterSnapshot);
+            }
+
+            // For winIDsNotInConnectedComponents that are not in winIDsWithoutAfterSnapshot, keep each one separate
+            for(const winIDStr of winIDsNotInConnectedComponents){
+                if(!winIDsWithoutAfterSnapshot.includes(winIDStr)){
+                    // For some reason this winID wasn't included in a cluster, but it does have an afterSnapshot
+                    // Let's just keep it as a separate cluster
+                    clusterList.push([winIDStr]);
+                }
+            }
+        }else{
+            // No clusters were identified on the server. Likely means that no winIDs on
+                // this line had afterSnapshot.
+            // So let's just cluster all of the winIDs together
+            const cluster = [];
+            for(const winID of winIDsForThisLine){
+                const winIDStr = winID + "";
+                cluster.push(winIDStr);
+            }
+            clusterList.push(cluster);
+        }
+
+        console.log(`clusterList for lineNumber ${lineNumber}`, clusterList);
+
+        // Let's user clusterList now for grouping snapshots visually
+        for(let index = 0; index < clusterList.length; index++){
+            const cluster = clusterList[index];
+            // cluster is of the form ["1", "2", "4"] (where "1" is a winID, etc)
+            const clusterElement = $(`
+                <div class="cluster" clusterIndex="${index}">
                 </div>
             `);
-            newElement.find(`[winID='${winID}'].beforeSnapshot`).attr("srcdoc", beforeSnapshot);
-            newElement.find(`[winID='${winID}'].afterSnapshot`).attr("srcdoc", afterSnapshot);
+            newElement.find("#snapshots").append(clusterElement);
 
-            const beforeSnapshotIframe = document.querySelector(`[winID='${winID}'].beforeSnapshot`);
-            const afterSnapshotIframe = document.querySelector(`[winID='${winID}'].afterSnapshot`);
-            scaleIframe(beforeSnapshotIframe, lineObj, `left top`);
-            scaleIframe(afterSnapshotIframe, lineObj, `left top`);
+            // Now for each winID in this cluster, create an html string and append to clusterElement
+            for(winIDStr of cluster){
+                const winID = parseInt(winIDStr);
+
+                const lineObj = snapshotLineToDOMSelectorData[lineNumber][winID];
+                const beforeSnapshot = lineObj.beforeDomString;
+                const afterSnapshot = lineObj.afterDomString;
+                const parametersString = JSON.stringify(lineObj.parametersString);
+
+                clusterElement.append(`
+                    <div class="colHeader" winID='${winID}'>
+                        <span class="fullViewContents">
+                            <span class="runInfo" winID='${winID}'>
+                                ${parametersString}
+                            </span>
+                            <button class="hideRun hideShowRun" winID='${winID}'>-</button>
+                        </span>
+                        <button class="showRun hideShowRun" winID='${winID}'>+</button>
+                    </div>
+                    <div class="snapshotContainer" winID='${winID}'>
+                        <iframe winID='${winID}' class='snapshot beforeSnapshot'></iframe>
+                    </div>
+                    <div class="downArrow" winID='${winID}'>&#8595;</div>
+                    <div class="snapshotContainer" winID='${winID}'>
+                        <iframe winID='${winID}' class='snapshot afterSnapshot'></iframe>
+                    </div>
+                `);
+                clusterElement.find(`[winID='${winID}'].beforeSnapshot`).attr("srcdoc", beforeSnapshot);
+                clusterElement.find(`[winID='${winID}'].afterSnapshot`).attr("srcdoc", afterSnapshot);
+
+                const beforeSnapshotIframe = document.querySelector(`[winID='${winID}'].beforeSnapshot`);
+                const afterSnapshotIframe = document.querySelector(`[winID='${winID}'].afterSnapshot`);
+                scaleIframe(beforeSnapshotIframe, lineObj, `left top`);
+                scaleIframe(afterSnapshotIframe, lineObj, `left top`);
+            }
         }
         
         //const element = document.querySelector("#paramEditor");
@@ -508,6 +583,7 @@ $(function(){
         runtimeErrorModelMarkerData = {};
         selectorSpecificModelMarkerData = {};
         snapshotLineToDOMSelectorData = {};
+        lineNumToComponentsList = {};
         $(".tooltip").remove();
         monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList()); // just empty
         decorations = monacoEditor.deltaDecorations(decorations, []);
@@ -538,6 +614,7 @@ $(function(){
                 const errorData = data.errors;
                 const ranToCompletionData = data.ranToCompletion;
                 snapshotLineToDOMSelectorData = data.snapshotLineToDOMSelectorData;
+                lineNumToComponentsList = data.lineNumToComponentsList;
                 let errorLineNumbers = createSquigglyErrorMarkers(errorData);
                 if(errorLineNumbers.length > 0){
                     // There were errors. Let's put red decorations on these lines
@@ -624,7 +701,7 @@ $(function(){
         // Create a snapshot tooltip for the current cursor position in the editor
         const currentLineNumber = monacoEditor.getPosition().lineNumber;
         if(currentLineNumber){
-            createSnapshot(currentLineNumber);
+            createSnapshots(currentLineNumber);
         }
     });
 

@@ -121,7 +121,7 @@ body {
     top: 0px;
     display: none;
     width: 570px;
-    height: 360px;
+    height: 390px;
     background-color: white;
     color: black;
     border: 1px solid gray;
@@ -154,10 +154,6 @@ body {
     max-width: 250px;
     width: min-content;
     overflow: hidden;
-}
-
-.snapshots {
-    border-left: 1px solid gray;
 }
 
 .beforeSnapshot {
@@ -194,15 +190,13 @@ body {
 #snapshots {
     position: absolute;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min-content, 250px));
-    grid-template-rows: 20px 125px 20px 125px;
     grid-auto-flow: column;
-    grid-column-gap: 10px;
+    grid-column-gap: 30px;
     grid-row-gap: 10px;
     overflow-x: scroll;
     right: 0px;
     width: 520px;
-    height: 360px;
+    height: 400px;
 }
 
 .downArrow {
@@ -234,3 +228,15 @@ body {
     visibility: hidden;
     width: 30px;
 }*/
+
+.cluster {
+    border: 1px solid gray;
+    padding: 10px;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min-content, 250px));
+    grid-template-rows: 20px 125px 20px 125px;
+    grid-auto-flow: column;
+    grid-column-gap: 10px;
+    grid-row-gap: 10px;
+    height: 360px;
+}
