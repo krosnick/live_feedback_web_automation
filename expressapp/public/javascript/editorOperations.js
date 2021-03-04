@@ -239,7 +239,7 @@ function createSnapshots(lineNumber){
                 //console.log("errorData[lineNumber]", errorData[lineNumber][winID]);
 
                 // Show snapshots if it's the first winID; otherwise, hide
-                if(winIDIndex === 0){
+                if(winIDIndex === 0 || errorString){
                     clusterElement.append(`
                         <div class="colHeader" winID='${winID}'>
                             <span class="fullViewContents">
@@ -265,7 +265,6 @@ function createSnapshots(lineNumber){
                             <span class="fullViewContents" style="display: none;">
                                 <span class="runInfo" winID='${winID}'>
                                     ${parametersString}
-                                    <span class="errorText">${errorString}</span>
                                 </span>
                                 <button class="hideRun hideShowRun" winID='${winID}'>-</button>
                             </span>
