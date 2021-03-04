@@ -3,6 +3,7 @@ const { ipcRenderer } = require('electron');
 let decorations = [];
 let snapshotLineToDOMSelectorData;
 let lineNumToComponentsList;
+let errorData;
 let runtimeErrorModelMarkerData = {};
 let selectorSpecificModelMarkerData = {};
 let runtimeErrorMessagesStale = false;
@@ -221,6 +222,21 @@ function createSnapshots(lineNumber){
                 const beforeSnapshot = lineObj.beforeDomString;
                 const afterSnapshot = lineObj.afterDomString;
                 const parametersString = JSON.stringify(lineObj.parametersString);
+                //console.log("lineObj.parametersString", lineObj.parametersString);
+                let errorString = "";
+                //console.log("errorData", errorData);
+                const errorInfoForWin = errorData[winID];
+                if(errorInfoForWin){
+                    if(errorInfoForWin.errorLineNumber === lineNumber){
+                        // Check if lineObj.parametersString key/value are in errorInfoForWin.parameterValueSet
+                        const [key, value] = Object.entries(lineObj.parametersString)[0];
+                        if(errorInfoForWin.parameterValueSet[key] && errorInfoForWin.parameterValueSet[key] === value){
+                            // Show this error for this snapshot
+                            errorString = errorInfoForWin.errorMessage;
+                        }
+                    }
+                }
+                //console.log("errorData[lineNumber]", errorData[lineNumber][winID]);
 
                 // Show snapshots if it's the first winID; otherwise, hide
                 if(winIDIndex === 0){
@@ -229,6 +245,7 @@ function createSnapshots(lineNumber){
                             <span class="fullViewContents">
                                 <span class="runInfo" winID='${winID}'>
                                     ${parametersString}
+                                    <span class="errorText">${errorString}</span>
                                 </span>
                                 <button class="hideRun hideShowRun" winID='${winID}'>-</button>
                             </span>
@@ -248,6 +265,7 @@ function createSnapshots(lineNumber){
                             <span class="fullViewContents" style="display: none;">
                                 <span class="runInfo" winID='${winID}'>
                                     ${parametersString}
+                                    <span class="errorText">${errorString}</span>
                                 </span>
                                 <button class="hideRun hideShowRun" winID='${winID}'>-</button>
                             </span>
@@ -608,6 +626,7 @@ $(function(){
         selectorSpecificModelMarkerData = {};
         snapshotLineToDOMSelectorData = {};
         lineNumToComponentsList = {};
+        errorData = {};
         $(".tooltip").remove();
         monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList()); // just empty
         decorations = monacoEditor.deltaDecorations(decorations, []);
@@ -635,7 +654,7 @@ $(function(){
             }).done(function(data) {
                 runtimeErrorMessagesStale = false;
                 console.log("browserWindowFinishAndErrorData", data);
-                const errorData = data.errors;
+                errorData = data.errors;
                 const ranToCompletionData = data.ranToCompletion;
                 snapshotLineToDOMSelectorData = data.snapshotLineToDOMSelectorData;
                 lineNumToComponentsList = data.lineNumToComponentsList;
