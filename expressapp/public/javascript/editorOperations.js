@@ -49,14 +49,21 @@ function editorOnDidChangeContent(e){
     // Updating snapshotLineToDOMSelectorData and checking validity of selectors in current line
     //console.log("editorOnDidChangeContent event", e);
     let lowestLineNumber = undefined;
+    let isLowestLineNumberJustANewline;
     for(change of e.changes){
+        const position = monacoEditor.getModel().getPositionAt(change.rangeOffset);
+        const lineNumber = position.lineNumber;
+        const column = position.column;
+        const lineMaxColumn = monacoEditor.getModel().getLineMaxColumn(lineNumber);
         const startLineNumber = change.range.startLineNumber;
         if(lowestLineNumber === undefined || startLineNumber < lowestLineNumber){
             lowestLineNumber = startLineNumber;
+            isLowestLineNumberJustANewline = change.rangeLength === 0 && (column === lineMaxColumn);
         }
     }
 
-    if(snapshotLineToDOMSelectorData){
+    // Don't delete/change any snapshot or selector data if the change is just a newline
+    if(snapshotLineToDOMSelectorData && !isLowestLineNumberJustANewline){
         //console.log("before snapshotLineToDOMSelectorData", Object.keys(snapshotLineToDOMSelectorData).length);
         // Go through and remove all line numbers greater than lowestLineNumber
         // And for lowestLineNumber, remove it's afterSnapshots
