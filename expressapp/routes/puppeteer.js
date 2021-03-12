@@ -79,6 +79,9 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
             // Will be null if no selector found
             const selectorInfo = checkForSelector(node.expression, ancestors);
             if(selectorInfo){
+                const prevStatement = findPrevStatement(node.expression, ancestors[ancestors.length-2]);
+                const prevLineNumber = prevStatement.loc.start.line;
+                selectorInfo.prevLineNumber = prevLineNumber;
                 statementAndDeclarationData[node.end].selectorData = selectorInfo;
             }
         },
@@ -93,6 +96,9 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
                 // Will be null if no selector found
                 const selectorInfo = checkForSelector(node.declarations[0].init, ancestors);
                 if(selectorInfo){
+                    const prevStatement = findPrevStatement(node.declarations[0].init, ancestors[ancestors.length-2]);
+                    const prevLineNumber = prevStatement.loc.start.line;
+                    selectorInfo.prevLineNumber = prevLineNumber;
                     statementAndDeclarationData[node.end].selectorData = selectorInfo;
                 }
             }
@@ -243,10 +249,10 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
 
 router.post('/findSelectorsInLine', async function(req, res, next) {
     //console.log("findSelectorsInLine");
-    const codeLine = req.body.codeLine;
-
+    const lineNumber = parseInt(req.body.lineNumber);
+    const fullCode = req.body.fullCode;
     try {
-        const acornAST = acorn.parse(codeLine, {
+        const acornAST = acorn.parse(fullCode, {
             ecmaVersion: 2020,
             allowAwaitOutsideFunction: true,
             locations: true
@@ -254,23 +260,27 @@ router.post('/findSelectorsInLine', async function(req, res, next) {
         let selectorDataList = [];
         walk.ancestor(acornAST, {
             ExpressionStatement(node, ancestors) {
-                // Only include if this node doesn't have any "real" ancestors
-                if(ancestors.length <= 2){
+                // Look for the line number of interest
+                if(node.loc.start.line === lineNumber){
                     // Will be null if no selector found
                     const selectorInfo = checkForSelector(node.expression);
                     if(selectorInfo){
-                        //console.log("selectorInfo", selectorInfo);
+                        const prevStatement = findPrevStatement(node.expression, ancestors[ancestors.length-2]);
+                        const prevLineNumber = prevStatement.loc.start.line;
+                        selectorInfo.prevLineNumber = prevLineNumber;
                         selectorDataList.push(selectorInfo);
                     }
                 }
             },
             VariableDeclaration(node, ancestors) {
-                // Only include if this node doesn't have any "real" ancestors
-                if(ancestors.length <= 2){
+                // Look for the line number of interest
+                if(node.loc.start.line === lineNumber){
                     // Will be null if no selector found
                     const selectorInfo = checkForSelector(node.declarations[0].init);
                     if(selectorInfo){
-                        //console.log("selectorInfo", selectorInfo);
+                        const prevStatement = findPrevStatement(node.declarations[0].init, ancestors[ancestors.length-2]);
+                        const prevLineNumber = prevStatement.loc.start.line;
+                        selectorInfo.prevLineNumber = prevLineNumber;
                         selectorDataList.push(selectorInfo);
                     }
                 }
@@ -511,6 +521,42 @@ const findPrevSibling = function(expressionObj, parentObj){
                         }else if(prevStatement.type === "VariableDeclaration"){
                             return prevStatement.declarations[0].init;
                         }
+                    }
+                }
+            }
+        }
+    }
+    return null;
+};
+
+const findPrevStatement = function(expressionObj, parentObj){
+    // Check that parentObj has "body" attribute
+        // and that "body" is either a "BlockStatement" (with it's own "body" attribute)
+        // or that "body" is an array
+    if(parentObj.body){
+        let statementList;
+        if(Array.isArray(parentObj.body)){
+            statementList = parentObj.body;
+        }else if(parentObj.body.type === "BlockStatement"){
+            statementList = parentObj.body.body;
+        }
+        if(statementList){
+            // Find expressionObj in statementList
+            for(let i = 0; i < statementList.length; i++){
+                const statement = statementList[i];
+                let candidateExpression;
+                if(statement.type === "ExpressionStatement"){
+                    candidateExpression = statement.expression;
+                }else if(statement.type === "VariableDeclaration"){
+                    candidateExpression = statement.declarations[0].init;
+                }
+
+                if(candidateExpression && _.isEqual(expressionObj, candidateExpression)){
+                    // Found our own expression
+                    if(i > 0){
+                        // Now let's find the previous expression
+                        const prevStatement = statementList[i-1];
+                        return prevStatement;
                     }
                 }
             }
