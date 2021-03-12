@@ -490,43 +490,16 @@ const checkForSelector = function(expressionObj, ancestors){
 };
 
 const findPrevSibling = function(expressionObj, parentObj){
-    // Check that parentObj has "body" attribute
-        // and that "body" is either a "BlockStatement" (with it's own "body" attribute)
-        // or that "body" is an array
-    if(parentObj.body){
-        let statementList;
-        if(Array.isArray(parentObj.body)){
-            statementList = parentObj.body;
-        }else if(parentObj.body.type === "BlockStatement"){
-            statementList = parentObj.body.body;
+    const prevStatement = findPrevStatement(expressionObj, parentObj);
+    if(prevStatement){
+        if(prevStatement.type === "ExpressionStatement"){
+            return prevStatement.expression;
+        }else if(prevStatement.type === "VariableDeclaration"){
+            return prevStatement.declarations[0].init;
         }
-        if(statementList){
-            // Find expressionObj in statementList
-            for(let i = 0; i < statementList.length; i++){
-                const statement = statementList[i];
-                let candidateExpression;
-                if(statement.type === "ExpressionStatement"){
-                    candidateExpression = statement.expression;
-                }else if(statement.type === "VariableDeclaration"){
-                    candidateExpression = statement.declarations[0].init;
-                }
-
-                if(candidateExpression && _.isEqual(expressionObj, candidateExpression)){
-                    // Found our own expression
-                    if(i > 0){
-                        // Now let's find the previous expression
-                        const prevStatement = statementList[i-1];
-                        if(prevStatement.type === "ExpressionStatement"){
-                            return prevStatement.expression;
-                        }else if(prevStatement.type === "VariableDeclaration"){
-                            return prevStatement.declarations[0].init;
-                        }
-                    }
-                }
-            }
-        }
+    }else{
+        return prevStatement;
     }
-    return null;
 };
 
 const findPrevStatement = function(expressionObj, parentObj){
