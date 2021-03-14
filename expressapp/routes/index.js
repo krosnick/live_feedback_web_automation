@@ -296,7 +296,7 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
         borderView.webContents.send("updateBackForwardButtonsAndUrl", canGoBack, canGoForward, url);
         pageView.webContents.executeJavaScript(`
             const { ipcRenderer } = require('electron');
-            document.body.innerHTML = document.body.innerHTML + "<style> .blueBorder { border: 5px solid blue; border-radius: 10px; } </style>";
+            document.body.innerHTML = document.body.innerHTML + "<style> .blueBorder { border: 5px solid blue !important; border-radius: 10px !important; } </style>";
             function clearHighlightedElements(){
                 const highlightedElements = document.querySelectorAll(".blueBorder");
                 for(let element of highlightedElements){

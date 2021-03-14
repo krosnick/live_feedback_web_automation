@@ -542,7 +542,7 @@ function scaleIframe(iframeElement, lineObj, transformOriginString, currentSelec
         }
         // Otherwise, scale to page width
         scaleToPageWidth(iframeElement, iframeDocument, transformOriginString);
-    }, 500);
+    }, 1000);
     //});
 }
 
