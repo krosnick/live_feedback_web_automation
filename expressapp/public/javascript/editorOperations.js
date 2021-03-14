@@ -479,7 +479,7 @@ function addCursorAndBorder(iframeElement, selector){
         for(let element of elements){
             // Apply border only if this is an interactive widget,
                 // e.g., <button>, <input>, <a>, <select>, <option>, <textarea>
-            if(element.tagName === "BUTTON" || element.tagName === "INPUT" || element.tagName === "A" || element.tagName === "SELECT" || element.tagName === "OPTION" || element.tagName === "TEXTAREA"){
+            //if(element.tagName === "BUTTON" || element.tagName === "INPUT" || element.tagName === "A" || element.tagName === "SELECT" || element.tagName === "OPTION" || element.tagName === "TEXTAREA"){
                 // If a radio button or checkbox, let's add the border and mouse icon to its parent since checkboxes and radio buttons are small, won't be able to see border/mouse icon
                 if(element.tagName === "INPUT" && (element.type === "checkbox" || element.type === "radio")){
                     borderElement = element.parentNode;
@@ -507,7 +507,7 @@ function addCursorAndBorder(iframeElement, selector){
                     //imageElement.style.left = "50%";
                     //imageElement.style.top = "50%";
                 }
-            }
+            //}
         }
     }
     /*iframeContentDocument.body.innerHTML = iframeContentDocument.body.innerHTML +
