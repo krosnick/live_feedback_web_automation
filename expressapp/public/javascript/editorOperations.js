@@ -88,41 +88,31 @@ function editorOnDidChangeContent(e){
 
         // For lowestLineNumber, see if it has any selectors. If so, check if that selector exists in beforeSnapshot
             // Might need to give server the line of code to analyze it's AST and get selector
-        $.ajax({
-            method: "POST",
-            url: "/puppeteer/findSelectorsInLine",
-            data: {
-                lineNumber: lowestLineNumber,
-                fullCode: monacoEditor.getValue()
+        const selectorDataList = findSelector(lowestLineNumber);
+        
+        // Also need to remove all line numbers >= lowestLineNumber from selectorSpecificModelMarkerData
+        // so that we don't have stale selector squiggles
+        const modelMarkerLineNumbers = Object.keys(selectorSpecificModelMarkerData);
+        for(lineNumberStr of modelMarkerLineNumbers){
+            if(parseInt(lineNumberStr) >= lowestLineNumber){
+                delete selectorSpecificModelMarkerData[lineNumberStr];
             }
-        }).done(function(data){
-            // Also need to remove all line numbers >= lowestLineNumber from selectorSpecificModelMarkerData
-            // so that we don't have stale selector squiggles
-            const modelMarkerLineNumbers = Object.keys(selectorSpecificModelMarkerData);
-            for(lineNumberStr of modelMarkerLineNumbers){
-                if(parseInt(lineNumberStr) >= lowestLineNumber){
-                    delete selectorSpecificModelMarkerData[lineNumberStr];
-                }
-            }
-            
-            //console.log("findSelectorsInLine data", data);
-            if(data){
-                const selectorDataList = data.selectorDataList;
-                // For each obj in array, check the selector against beforeSnapshot; and show squiggle for it at the given location
-                // Can probably reuse some code from earlier
-                for(selectorDataItem of selectorDataList){
-                    // Update selectorDataItem; it's line numbers are wrong, because we sent over only a single line of code (not the whole code),
-                        // which actually isn't correct, should be lowestLineNumber
-                    const numLines = selectorDataItem.selectorLocation.end.line - selectorDataItem.selectorLocation.start.line; // should be 0?
-                    selectorDataItem.selectorLocation.start.line = lowestLineNumber;
-                    selectorDataItem.selectorLocation.end.line = lowestLineNumber + numLines;
-                    identifyAndCreateSelectorSquiggleData(lowestLineNumber, selectorDataItem);
-                }
-                // Update model markers
-                monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList());
-            }
-        });
+        }
 
+        if(selectorDataList){
+            // For each obj in array, check the selector against beforeSnapshot; and show squiggle for it at the given location
+            // Can probably reuse some code from earlier
+            for(selectorDataItem of selectorDataList){
+                // Update selectorDataItem; it's line numbers are wrong, because we sent over only a single line of code (not the whole code),
+                    // which actually isn't correct, should be lowestLineNumber
+                const numLines = selectorDataItem.selectorLocation.end.line - selectorDataItem.selectorLocation.start.line; // should be 0?
+                selectorDataItem.selectorLocation.start.line = lowestLineNumber;
+                selectorDataItem.selectorLocation.end.line = lowestLineNumber + numLines;
+                identifyAndCreateSelectorSquiggleData(lowestLineNumber, selectorDataItem);
+            }
+            // Update model markers
+            monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList());
+        }
     }
 }
 

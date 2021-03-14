@@ -247,51 +247,6 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     /*});*/
 });
 
-router.post('/findSelectorsInLine', async function(req, res, next) {
-    //console.log("findSelectorsInLine");
-    const lineNumber = parseInt(req.body.lineNumber);
-    const fullCode = req.body.fullCode;
-    try {
-        const acornAST = acorn.parse(fullCode, {
-            ecmaVersion: 2020,
-            allowAwaitOutsideFunction: true,
-            locations: true
-        });
-        let selectorDataList = [];
-        walk.ancestor(acornAST, {
-            ExpressionStatement(node, ancestors) {
-                // Look for the line number of interest
-                if(node.loc.start.line === lineNumber){
-                    // Will be null if no selector found
-                    const selectorInfo = checkForSelector(node.expression);
-                    if(selectorInfo){
-                        const prevStatement = findPrevStatement(node.expression, ancestors[ancestors.length-2]);
-                        const prevLineNumber = prevStatement.loc.start.line;
-                        selectorInfo.prevLineNumber = prevLineNumber;
-                        selectorDataList.push(selectorInfo);
-                    }
-                }
-            },
-            VariableDeclaration(node, ancestors) {
-                // Look for the line number of interest
-                if(node.loc.start.line === lineNumber){
-                    // Will be null if no selector found
-                    const selectorInfo = checkForSelector(node.declarations[0].init);
-                    if(selectorInfo){
-                        const prevStatement = findPrevStatement(node.declarations[0].init, ancestors[ancestors.length-2]);
-                        const prevLineNumber = prevStatement.loc.start.line;
-                        selectorInfo.prevLineNumber = prevLineNumber;
-                        selectorDataList.push(selectorInfo);
-                    }
-                }
-            }
-        });
-        res.send({ selectorDataList: selectorDataList });
-    } catch (error) {
-        res.end();
-    }
-});
-
 const compareScreenshots = function(lineNum, lineObj){
     const winIDs = Object.keys(lineObj);
     
