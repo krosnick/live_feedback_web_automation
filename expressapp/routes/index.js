@@ -117,6 +117,11 @@ const addExampleWindows = function(req, paramSets){
 };
 
 const resetExampleWindows = function(req, startingUrl){
+    // First, clear #windowSelectMenu in windowSelection view
+    req.app.locals.windowSelectionView.webContents.send("clear");
+    // Clear winID list in editor UI
+    req.app.locals.editorBrowserView.webContents.send("clearWindowList");
+
     req.app.locals.targetPageListReady = false;
     // First remove all existing BrowserViews (except for editor browser view and window selection view)
     const browserViews = req.app.locals.win.getBrowserViews();
@@ -289,10 +294,68 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
         const canGoForward = pageView.webContents.canGoForward();
         const url = pageView.webContents.getURL();
         borderView.webContents.send("updateBackForwardButtonsAndUrl", canGoBack, canGoForward, url);
+        pageView.webContents.executeJavaScript(`
+            const { ipcRenderer } = require('electron');
+            document.body.innerHTML = document.body.innerHTML + "<style> .blueBorder { border: 5px solid blue; border-radius: 10px; } </style>";
+            function clearHighlightedElements(){
+                const highlightedElements = document.querySelectorAll(".blueBorder");
+                for(let element of highlightedElements){
+                    element.classList.remove("blueBorder");
+                }
+            }
+            ipcRenderer.on('highlightUIElements', function(event, selector){
+                console.log('highlightUIElements message received');
+                clearHighlightedElements();
+                const elements = document.querySelectorAll(selector);
+                console.log("elements", elements);
+                for(let element of elements){
+                    // Apply border only if this is an interactive widget,
+                        // e.g., <button>, <input>, <a>, <select>, <option>, <textarea>
+                    if(element.tagName === "BUTTON" || element.tagName === "INPUT" || element.tagName === "A" || element.tagName === "SELECT" || element.tagName === "OPTION" || element.tagName === "TEXTAREA"){
+                        // If a radio button or checkbox, let's add the border and mouse icon to its parent since checkboxes and radio buttons are small, won't be able to see border/mouse icon
+                        if(element.tagName === "INPUT" && (element.type === "checkbox" || element.type === "radio")){
+                            borderElement = element.parentNode;
+                        }else{
+                            borderElement = element;
+                        }
+                        /*borderElement.style.border = "5px solid blue";
+                        borderElement.style.borderRadius = "10px";*/
+                        borderElement.classList.add("blueBorder");
+        
+                        // Append mouse icon img if element is semantically "clickable",
+                            // e.g., button, link, radio button, checkbox, but NOT textfield etc
+                        if(element.tagName === "BUTTON" || element.tagName === "A" || element.tagName === "SELECT" || element.tagName === "OPTION" || (element.tagName === "INPUT" && (element.type === "button" || element.type === "checkbox" || element.type === "color" || element.type === "file" || element.type === "radio" || element.type === "range" || element.type === "submit"))){
+                            const imageElement = document.createElement('img');
+                            borderElement.appendChild(imageElement);
+                            
+                            // Should change this to a local file
+                            imageElement.src = "https://cdn2.iconfinder.com/data/icons/design-71/32/Design_design_cursor_pointer_arrow_mouse-512.png";
+                            imageElement.width = 20;
+                            imageElement.height = 20;
+                            //imageElement.maxWidth = "50%";
+                            //imageElement.maxHeight = "50%";
+                            imageElement.style.position = "absolute";
+                            imageElement.style.left = "calc(50% - 10px)";
+                            imageElement.style.top = "calc(50% - 10px)";
+                            //imageElement.style.left = "50%";
+                            //imageElement.style.top = "50%";
+                        }
+                    }
+                }
+            });
+            
+            ipcRenderer.on('clearHighlightedUIElements', function(event, selector){
+                console.log('clearHighlightedUIElements message received');
+                clearHighlightedElements();
+            });
+        `);
     });
     pageView.webContents.loadURL(addHttpsIfNeeded(startingUrl));
     pageView.webContents.openDevTools({mode: "bottom"});
-
+    req.app.locals.editorBrowserView.webContents.send("newWindowAlert", pageView.webContents.id);
+    req.app.locals.editorBrowserView.webContents.on('did-finish-load', () => {
+        req.app.locals.editorBrowserView.webContents.send("newWindowAlert", pageView.webContents.id);
+    });
     /*// Only show the BrowserViews if this is the first param set
     if(Object.keys(req.app.locals.windowMetadata).length === 0){
         req.app.locals.win.addBrowserView(borderView);

@@ -3,6 +3,7 @@ const acorn = require("acorn");
 const walk = require("acorn-walk");
 
 let decorations = [];
+let winIDList = {};
 let snapshotLineToDOMSelectorData;
 let errorData;
 let lastRunSnapshotLineToDOMSelectorData;
@@ -255,6 +256,19 @@ function editorOnDidChangeCursorPosition(e){
     let currentSelector = null;
     if(selectorDataList.length > 0){
         currentSelector = selectorDataList[0].selectorString;
+    }
+
+    console.log("winIDList", winIDList);
+    if(currentSelector){
+        // For each winID, tell BrowserViews to highlight currentSelector on their page
+        for(let winID of Object.keys(winIDList)){
+            ipcRenderer.sendTo(parseInt(winID), "highlightUIElements", currentSelector);
+        }
+    }else{
+        // For each winID, tell BrowserViews to clear 
+        for(let winID of Object.keys(winIDList)){
+            ipcRenderer.sendTo(parseInt(winID), "clearHighlightedUIElements", currentSelector);
+        }
     }
 
     // Only create/show snapshots if "Show" button (#showSnapshots) is currently hidden (meaning that snapshots should be shown)
@@ -958,4 +972,16 @@ $(function(){
         }, 500);
         $(`.cluster[clusterIndex="${clusterIndex}"] .snapshot[winID="${winID}"]`).css("visibility", "visible");
     });
+});
+
+ipcRenderer.on('newWindowAlert', function(event, pageWinID){
+    console.log("newWindowAlert");
+    // Add to winIDList
+    winIDList[pageWinID] = 1;
+});
+
+ipcRenderer.on('clearWindowList', function(event){
+    console.log("clearWindowList");
+    // Clear winIDList
+    winIDList = {};
 });

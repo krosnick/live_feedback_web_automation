@@ -73,9 +73,6 @@ router.post('/showFile/:fileID', function(req, res, next) {
                     const paramCodeString = fileToShowObj.paramCodeString;
                     const startingUrl = fileToShowObj.startingUrl;
 
-                    // First, clear #windowSelectMenu in windowSelection view
-                    req.app.locals.windowSelectionView.webContents.send("clear");
-
                     // Showing different file, so just completely reload example windows
                     resetExampleWindows(req, startingUrl);
                     
