@@ -1,4 +1,6 @@
 const { ipcRenderer } = require('electron');
+const acorn = require("acorn");
+const walk = require("acorn-walk");
 
 let decorations = [];
 let snapshotLineToDOMSelectorData;
@@ -11,7 +13,8 @@ let selectorSpecificModelMarkerData = {};
 let runtimeErrorMessagesStale = false;
 const snapshotWidth = 250;
 const snapshotHeight = 125;
-
+const puppeteerMethodsWithSelectorArg = [ "$", "$$", "$$eval", "$eval", "click", "focus", "hover", "select", "tap", "type", "waitForSelector", "waitFor" ];
+const puppeteerKeyboardMethods = ["down", "press", "sendCharacter", "type", "up"];
 //let activeViewLine;
 
 function editorOnDidChangeContent(e){
@@ -123,18 +126,154 @@ function editorOnDidChangeContent(e){
     }
 }
 
+function checkForSelector(expressionObj, ancestors){
+    // Return selector string and the line/col location
+    // Or, if no selector in expression, return null
+
+    // Check if this is an Await expression, then check that it has Puppeteer method call, and that the method takes a selector or that it is a keyboard action
+    if(expressionObj.type === "AwaitExpression"){
+        if(expressionObj.argument && expressionObj.argument.callee && expressionObj.argument.callee.object && expressionObj.argument.callee.object.name === "page"){
+            // Is a Puppeteer page method. Checking if takes a selector
+            if(expressionObj.argument.callee.property){
+                const methodName = expressionObj.argument.callee.property.name;
+                if(puppeteerMethodsWithSelectorArg.includes(methodName)){
+                    // This method does/may have a selector as the arg
+                    const selector = expressionObj.argument.arguments[0].value;
+
+                    // Have to confirm it's a string (because "waitFor" could take function or number instead)
+                    if(typeof(selector) === "string"){
+                        // It is a selector
+                        const loc = expressionObj.argument.arguments[0].loc;
+                        return {
+                            method: methodName,
+                            isSelectorOwn: true,
+                            selectorString: selector,
+                            selectorLocation: loc
+                        };
+                    }
+                }
+            }
+        }else if(expressionObj.argument && expressionObj.argument.callee && expressionObj.argument.callee.object && expressionObj.argument.callee.object.object && expressionObj.argument.callee.object.object.name === "page" && expressionObj.argument.callee.object.property && expressionObj.argument.callee.object.property.name === "keyboard"){
+            // Is Puppeteer page.keyboard; let's check that it's a method, i.e., in puppeteerKeyboardMethods
+            if(expressionObj.argument.callee.property){
+                const methodName = expressionObj.argument.callee.property.name;
+                if(puppeteerKeyboardMethods.includes(methodName)){
+                    // This is a page.keyboard method. We now need to get expressionObj's prev sibling, and see if it has a selector (and only then return that info)
+                    // So we need to find expressionObj within ancestors[ancestors.length-2], so that we can then find it's prev sibling
+                    if(ancestors){
+                        const prevSiblingExpressionObj = findPrevSibling(expressionObj, ancestors[ancestors.length-2]);
+                        if(prevSiblingExpressionObj){
+                            const siblingSelectorInfo = checkForSelector(prevSiblingExpressionObj, null);
+                            if(siblingSelectorInfo){
+                                return {
+                                    method: "keyboard." + methodName,
+                                    isSelectorOwn: false, // So client knows to not try setting a selector validity message for this line
+                                    selectorString: siblingSelectorInfo.selectorString,
+                                    selectorLocation: siblingSelectorInfo.selectorLocation
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    return null;
+};
+
+function findPrevStatement(expressionObj, parentObj){
+    // Check that parentObj has "body" attribute
+        // and that "body" is either a "BlockStatement" (with it's own "body" attribute)
+        // or that "body" is an array
+    if(parentObj.body){
+        let statementList;
+        if(Array.isArray(parentObj.body)){
+            statementList = parentObj.body;
+        }else if(parentObj.body.type === "BlockStatement"){
+            statementList = parentObj.body.body;
+        }
+        if(statementList){
+            // Find expressionObj in statementList
+            for(let i = 0; i < statementList.length; i++){
+                const statement = statementList[i];
+                let candidateExpression;
+                if(statement.type === "ExpressionStatement"){
+                    candidateExpression = statement.expression;
+                }else if(statement.type === "VariableDeclaration"){
+                    candidateExpression = statement.declarations[0].init;
+                }
+
+                if(candidateExpression && _.isEqual(expressionObj, candidateExpression)){
+                    // Found our own expression
+                    if(i > 0){
+                        // Now let's find the previous expression
+                        const prevStatement = statementList[i-1];
+                        return prevStatement;
+                    }
+                }
+            }
+        }
+    }
+    return null;
+};
+
+function findSelector(lineNumber){
+    const fullCode = monacoEditor.getValue();
+    const acornAST = acorn.parse(fullCode, {
+        ecmaVersion: 2020,
+        allowAwaitOutsideFunction: true,
+        locations: true
+    });
+    let selectorDataList = [];
+    walk.ancestor(acornAST, {
+        ExpressionStatement(node, ancestors) {
+            // Look for the line number of interest
+            if(node.loc.start.line === lineNumber){
+                // Will be null if no selector found
+                const selectorInfo = checkForSelector(node.expression);
+                if(selectorInfo){
+                    const prevStatement = findPrevStatement(node.expression, ancestors[ancestors.length-2]);
+                    const prevLineNumber = prevStatement.loc.start.line;
+                    selectorInfo.prevLineNumber = prevLineNumber;
+                    selectorDataList.push(selectorInfo);
+                }
+            }
+        },
+        VariableDeclaration(node, ancestors) {
+            // Look for the line number of interest
+            if(node.loc.start.line === lineNumber){
+                // Will be null if no selector found
+                const selectorInfo = checkForSelector(node.declarations[0].init);
+                if(selectorInfo){
+                    const prevStatement = findPrevStatement(node.declarations[0].init, ancestors[ancestors.length-2]);
+                    const prevLineNumber = prevStatement.loc.start.line;
+                    selectorInfo.prevLineNumber = prevLineNumber;
+                    selectorDataList.push(selectorInfo);
+                }
+            }
+        }
+    });
+    
+    return selectorDataList;
+}
+
 function editorOnDidChangeCursorPosition(e){
     //console.log("editorOnDidChangeCursorPosition");
     const lineNumber = e.position.lineNumber;
-    //console.log("lineNumber", lineNumber);
-    
+    const selectorDataList = findSelector(lineNumber);
+    // Assuming at most 1 selector per line
+    let currentSelector = null;
+    if(selectorDataList.length > 0){
+        currentSelector = selectorDataList[0].selectorString;
+    }
+
     // Only create/show snapshots if "Show" button (#showSnapshots) is currently hidden (meaning that snapshots should be shown)
     if($("#showSnapshots").is(":hidden")){
-        createSnapshots(lineNumber);
+        createSnapshots(lineNumber, currentSelector);
     }
 }
 
-function createSnapshots(lineNumber){
+function createSnapshots(lineNumber, currentSelector){
     // Should update the tooltip that's being shown
     // First delete all existing .tooltip elements
     $(".tooltip").remove();
@@ -156,7 +295,7 @@ function createSnapshots(lineNumber){
         // (Maybe even have the cluster itself minimized?)
         if(lastRunSnapshotLineToDOMSelectorData && lastRunSnapshotLineToDOMSelectorData[lineNumber]){
             let cluster = Object.keys(lastRunSnapshotLineToDOMSelectorData[lineNumber]);
-            createCluster(cluster, "Last run", newElement, lastRunSnapshotLineToDOMSelectorData, lineNumber, lastRunErrorData);
+            createCluster(cluster, "Last run", newElement, lastRunSnapshotLineToDOMSelectorData, lineNumber, lastRunErrorData, currentSelector);
         }
 
         let clusterList = [];
@@ -222,7 +361,7 @@ function createSnapshots(lineNumber){
         for(let index = 0; index < clusterList.length; index++){
             const cluster = clusterList[index];
             // cluster is of the form ["1", "2", "4"] (where "1" is a winID, etc)
-            createCluster(cluster, index, newElement, snapshotLineToDOMSelectorData, lineNumber, errorData);
+            createCluster(cluster, index, newElement, snapshotLineToDOMSelectorData, lineNumber, errorData, currentSelector);
         }
         
         //const element = document.querySelector("#paramEditor");
@@ -237,7 +376,7 @@ function createSnapshots(lineNumber){
     }
 }
 
-function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber, errorObj){
+function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber, errorObj, currentSelector){
     newElement.find("#snapshots").append(`<div class="clusterLabel">Label: ${indexOrName}</div>`);
     const clusterElement = $(`
         <div class="cluster" clusterIndex="${indexOrName}">
@@ -313,80 +452,84 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
 
         const beforeSnapshotIframe = document.querySelector(`[winID='${winID}'].beforeSnapshot`);
         const afterSnapshotIframe = document.querySelector(`[winID='${winID}'].afterSnapshot`);
-        scaleIframe(beforeSnapshotIframe, lineObj, `left top`);
-        scaleIframe(afterSnapshotIframe, lineObj, `left top`);
+        scaleIframe(beforeSnapshotIframe, lineObj, `left top`, currentSelector);
+        scaleIframe(afterSnapshotIframe, lineObj, `left top`, currentSelector);
     }
 }
 
-function addCursorAndBorder(iframeElement, methodType, selector){
+//function addCursorAndBorder(iframeElement, methodType, selector){
+function addCursorAndBorder(iframeElement, selector){
     const iframeContentDocument = iframeElement.contentDocument;
     
     const targetSelector = selector;
-    const eventType = methodType;
+    //const eventType = methodType;
 
     if(targetSelector){
         const iframeDocBody = iframeElement.contentWindow.document.body;
         console.log("iframeDocBody", iframeDocBody);
         //console.log("iframeDocBody", iframeDocBody);
-        const element = iframeDocBody.querySelector(targetSelector);
+        //const element = iframeDocBody.querySelector(targetSelector);
+        const elements = iframeDocBody.querySelectorAll(targetSelector);
+        console.log("addCursorAndBorder elements", elements);
         console.log("targetSelector", targetSelector);
-        console.log("element", element);
-        //console.log("element", element);
-        // Apply border only if this is an interactive widget,
-            // e.g., <button>, <input>, <a>, <select>, <option>, <textarea>
-        if(element.tagName === "BUTTON" || element.tagName === "INPUT" || element.tagName === "A" || element.tagName === "SELECT" || element.tagName === "OPTION" || element.tagName === "TEXTAREA"){
-            // If a radio button or checkbox, let's add the border and mouse icon to its parent since checkboxes and radio buttons are small, won't be able to see border/mouse icon
-            if(element.tagName === "INPUT" && (element.type === "checkbox" || element.type === "radio")){
-                borderElement = element.parentNode;
-            }else{
-                borderElement = element;
-            }
-            borderElement.style.border = "5px solid blue";
-            borderElement.style.borderRadius = "10px";
+        for(let element of elements){
+            // Apply border only if this is an interactive widget,
+                // e.g., <button>, <input>, <a>, <select>, <option>, <textarea>
+            if(element.tagName === "BUTTON" || element.tagName === "INPUT" || element.tagName === "A" || element.tagName === "SELECT" || element.tagName === "OPTION" || element.tagName === "TEXTAREA"){
+                // If a radio button or checkbox, let's add the border and mouse icon to its parent since checkboxes and radio buttons are small, won't be able to see border/mouse icon
+                if(element.tagName === "INPUT" && (element.type === "checkbox" || element.type === "radio")){
+                    borderElement = element.parentNode;
+                }else{
+                    borderElement = element;
+                }
+                borderElement.style.border = "5px solid blue";
+                borderElement.style.borderRadius = "10px";
 
-            // Append mouse icon img if element is semantically "clickable",
-                // e.g., button, link, radio button, checkbox, but NOT textfield etc
-            if(element.tagName === "BUTTON" || element.tagName === "A" || element.tagName === "SELECT" || element.tagName === "OPTION" || (element.tagName === "INPUT" && (element.type === "button" || element.type === "checkbox" || element.type === "color" || element.type === "file" || element.type === "radio" || element.type === "range" || element.type === "submit"))){
-                const imageElement = document.createElement('img');
-                borderElement.appendChild(imageElement);
-                
-                // Should change this to a local file
-                imageElement.src = "https://cdn2.iconfinder.com/data/icons/design-71/32/Design_design_cursor_pointer_arrow_mouse-512.png";
-                imageElement.width = 20;
-                imageElement.height = 20;
-                //imageElement.maxWidth = "50%";
-                //imageElement.maxHeight = "50%";
-                imageElement.style.position = "absolute";
-                imageElement.style.left = "calc(50% - 10px)";
-                imageElement.style.top = "calc(50% - 10px)";
-                //imageElement.style.left = "50%";
-                //imageElement.style.top = "50%";
+                // Append mouse icon img if element is semantically "clickable",
+                    // e.g., button, link, radio button, checkbox, but NOT textfield etc
+                if(element.tagName === "BUTTON" || element.tagName === "A" || element.tagName === "SELECT" || element.tagName === "OPTION" || (element.tagName === "INPUT" && (element.type === "button" || element.type === "checkbox" || element.type === "color" || element.type === "file" || element.type === "radio" || element.type === "range" || element.type === "submit"))){
+                    const imageElement = document.createElement('img');
+                    borderElement.appendChild(imageElement);
+                    
+                    // Should change this to a local file
+                    imageElement.src = "https://cdn2.iconfinder.com/data/icons/design-71/32/Design_design_cursor_pointer_arrow_mouse-512.png";
+                    imageElement.width = 20;
+                    imageElement.height = 20;
+                    //imageElement.maxWidth = "50%";
+                    //imageElement.maxHeight = "50%";
+                    imageElement.style.position = "absolute";
+                    imageElement.style.left = "calc(50% - 10px)";
+                    imageElement.style.top = "calc(50% - 10px)";
+                    //imageElement.style.left = "50%";
+                    //imageElement.style.top = "50%";
+                }
             }
         }
     }
-    iframeContentDocument.body.innerHTML = iframeContentDocument.body.innerHTML +
+    /*iframeContentDocument.body.innerHTML = iframeContentDocument.body.innerHTML +
     `<style>
         .selectorReferenceInlineDecoration {
             background-color: lightsalmon;
         }
-    </style>`;
+    </style>`;*/
 }
 
-function scaleIframe(iframeElement, lineObj, transformOriginString){
+function scaleIframe(iframeElement, lineObj, transformOriginString, currentSelector){
     //beforeSnapshotIframeDocument.addEventListener('DOMFrameContentLoaded', (event) => {
     // Using setTimeout for now, to wait 500ms and hope that's enough for the DOM to be loaded so that
         // we know the dimensions we're accessing are stable (i.e., that the elements exist and they're not just size 0)
         // Prev tried using .onload or DOMFrameContentLoaded or DOMContentLoaded but these didn't work
     setTimeout(function(){
         const iframeDocument = iframeElement.contentWindow.document;
-        if(lineObj.selectorData){
-            const selector = lineObj.selectorData.selectorString;
-            const selectorElement = iframeDocument.querySelector(selector);
+        if(currentSelector){
+            //const selector = lineObj.selectorData.selectorString;
+            const selectorElement = iframeDocument.querySelector(currentSelector);
             
             // Zoom to selector element if it is present in DOM
             if(selectorElement){
                 scaleToElement(selectorElement, iframeElement, iframeDocument, transformOriginString);
-                addCursorAndBorder(iframeElement, lineObj.selectorData.method, lineObj.selectorData.selectorString);
+                //addCursorAndBorder(iframeElement, lineObj.selectorData.method, lineObj.selectorData.selectorString);
+                addCursorAndBorder(iframeElement, currentSelector);
                 return;
             }else{
                 // TODO - Check if this is a keyboard command and if the prior command had a selector it was operating on
@@ -776,7 +919,13 @@ $(function(){
         // Create a snapshot tooltip for the current cursor position in the editor
         const currentLineNumber = monacoEditor.getPosition().lineNumber;
         if(currentLineNumber){
-            createSnapshots(currentLineNumber);
+            const selectorDataList = findSelector(currentLineNumber);
+            // Assuming at most 1 selector per line
+            let currentSelector = null;
+            if(selectorDataList.length > 0){
+                currentSelector = selectorDataList[0].selectorString;
+            }
+            createSnapshots(currentLineNumber, currentSelector);
         }
     });
 
