@@ -36,7 +36,7 @@ let snapshotLineToDOMSelectorData = {}
 let currentCodeString = undefined;
 
 let userRequestedStop = false;
-let userRequestedStopLineNumber = undefined;
+let winIDToUserRequestedStopLineNumber = {};
 
 router.post('/stop', async function(req, res, next) {
     userRequestedStop = true;
@@ -52,6 +52,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     };
     snapshotLineToDOMSelectorData = {};
     userRequestedStop = false;
+    winIDToUserRequestedStopLineNumber = {};
     //let updatedCodeString = code.replace(/await page/gi, 'await webviewTargetPage');
     //console.log("updatedRunFuncString", updatedRunFuncString);
     
@@ -125,7 +126,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         data = statementAndDeclarationData[endIndex];
         const startLineNumber = data.lineObj;
         const selectorData = data.selectorData;
-        instrumentedCodeString += `; snapshotCaptured = false; try { beforePageContent = await page.content(); snapshotCaptured = true; } catch(e){ } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; beforePageContent = null; } snapshotCaptured = false; } if(userRequestedStop){ if(userRequestedStopLineNumber){ userRequestedStopLineNumber = Math.min(userRequestedStopLineNumber, ${startLineNumber}); }else{ userRequestedStopLineNumber = ${startLineNumber}; } return; }`;
+        instrumentedCodeString += `; snapshotCaptured = false; try { beforePageContent = await page.content(); snapshotCaptured = true; } catch(e){ } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; beforePageContent = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ }`;
         if(i === 0){
             // Substring from beginning of string
             instrumentedCodeString += code.substring(0, endIndex);
@@ -135,7 +136,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         }
         //instrumentedCodeString += `; await page.waitFor(500); pageContent = await page.content(); lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { domString: pageContent, selectorData: ${JSON.stringify(selectorData)} }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj;`;
         //instrumentedCodeString += `; afterPageContent = await page.content(); lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, afterDomString: afterPageContent, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj;`;
-        instrumentedCodeString += `; snapshotCaptured = false; try { afterPageContent = await page.content(); afterPageScreenshot = await page.screenshot({ fullPage: false, clip: { x: 0, y: 0, width: 500, height: 500 } } ); snapshotCaptured = true; } catch(e){ } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; if(!(lineObj[winID])){ lineObj[winID] = {}; } lineObj[winID].afterDomString = afterPageContent; lineObj[winID].afterScreenshotBuffer = afterPageScreenshot; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; afterPageContent = null; afterPageScreenshot = null; } snapshotCaptured = false; } if(userRequestedStop){ if(userRequestedStopLineNumber){ userRequestedStopLineNumber = Math.min(userRequestedStopLineNumber, ${startLineNumber}); }else{ userRequestedStopLineNumber = ${startLineNumber}; } return; }`;
+        instrumentedCodeString += `; snapshotCaptured = false; try { afterPageContent = await page.content(); afterPageScreenshot = await page.screenshot({ fullPage: false, clip: { x: 0, y: 0, width: 500, height: 500 } } ); snapshotCaptured = true; } catch(e){ } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; if(!(lineObj[winID])){ lineObj[winID] = {}; } lineObj[winID].afterDomString = afterPageContent; lineObj[winID].afterScreenshotBuffer = afterPageScreenshot; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; afterPageContent = null; afterPageScreenshot = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ }`;
     }
     console.log("instrumentedCodeString", instrumentedCodeString);
 
@@ -212,7 +213,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
                 }
                 browserWindowFinishAndErrorData.snapshotLineToDOMSelectorData = snapshotLineToDOMSelectorData;
                 browserWindowFinishAndErrorData.lineNumToComponentsList = lineNumToComponentsList;
-                browserWindowFinishAndErrorData.userRequestedStopLineNumber = userRequestedStopLineNumber;
+                browserWindowFinishAndErrorData.winIDToUserRequestedStopLineNumber = winIDToUserRequestedStopLineNumber;
                 currentRes.send(browserWindowFinishAndErrorData);
             });
         }

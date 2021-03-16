@@ -115,6 +115,11 @@ body {
 	margin-left: 3px;
 }
 
+.yellowLineDecoration {
+    background: rgb(195, 197, 89);
+	width: 5px !important;
+	margin-left: 3px;
+}
 
 .tooltip {
     /*background-color: #333;*/

@@ -863,13 +863,34 @@ $(function(){
                 const ranToCompletionData = data.ranToCompletion;
                 snapshotLineToDOMSelectorData = data.snapshotLineToDOMSelectorData;
                 lineNumToComponentsList = data.lineNumToComponentsList;
+
+                let rangeList = [];
+
+                let lineCount = monacoEditor.getModel().getLineCount();
+                let winIDToUserRequestedStopLineNumber = data.winIDToUserRequestedStopLineNumber;
+                if(Object.keys(winIDToUserRequestedStopLineNumber).length > 0){
+                    // Adjust lineCount to be lowest line number minus 1 in winIDToUserRequestedStopLineNumber
+                    const stopLineNumbersOrig = Object.values(winIDToUserRequestedStopLineNumber);
+                    let stopLineNumbers = [];
+                    stopLineNumbersOrig.forEach(element => stopLineNumbers.push(parseInt(element)));
+                    stopLineNumbers.sort((a, b) => a - b);
+                    const lowestLineNumber = stopLineNumbers[0];
+                    console.log("lowestLineNumber", lowestLineNumber);
+                    lineCount = lowestLineNumber-1;
+
+                    let highestLineNumber = stopLineNumbers[stopLineNumbers.length - 1];
+                    console.log("highestLineNumber", highestLineNumber);
+                    
+                    // Create yellow(?) decorations for range of line numbers in winIDToUserRequestedStopLineNumber
+                    rangeList.push({ range: new monaco.Range(lowestLineNumber,1,highestLineNumber,1), options: { isWholeLine: true, linesDecorationsClassName: 'yellowLineDecoration' }});
+                }
+
                 let errorLineNumbers = createSquigglyErrorMarkers(errorData);
                 if(errorLineNumbers.length > 0){
                     // There were errors. Let's put red decorations on these lines
                     // First, sort
                     errorLineNumbers.sort((a, b) => a - b);
 
-                    let rangeList = [];
                     // Green decoration from beginning until first line with error
                     rangeList.push({ range: new monaco.Range(1,1,errorLineNumbers[0]-1,1), options: { isWholeLine: true, linesDecorationsClassName: 'greenLineDecoration' }});
 
@@ -886,18 +907,15 @@ $(function(){
 
                     // Check if at least 1 example ran to completion; if so, show gray decoration until end of editor
                     if(Object.keys(ranToCompletionData).length > 0){
-                        const lineCount = monacoEditor.getModel().getLineCount();
                         rangeList.push({ range: new monaco.Range(errorLineNumbers[errorLineNumbers.length-1]+1,1,lineCount,1), options: { isWholeLine: true, linesDecorationsClassName: 'grayLineDecoration' }});
                     }
-                    decorations = monacoEditor.deltaDecorations(decorations, rangeList);
                 }
                 
                 if(Object.keys(ranToCompletionData).length > 0){
                     // Show green decoration for all lines
-                    const lineCount = monacoEditor.getModel().getLineCount();
-                    decorations = monacoEditor.deltaDecorations(decorations, [{ range: new monaco.Range(1,1,lineCount,1), options: { isWholeLine: true, linesDecorationsClassName: 'greenLineDecoration' }}]);
+                    rangeList.push({ range: new monaco.Range(1,1,lineCount,1), options: { isWholeLine: true, linesDecorationsClassName: 'greenLineDecoration' }});
                 }
-
+                decorations = monacoEditor.deltaDecorations(decorations, rangeList);
                 // For all lines in snapshotLineToDOMSelectorData, for each line that has a selector,
                     // check against the beforeSnapshot to confirm it's in DOM, and also check for it's uniqueness.
                     // Create appropriate squiggles.
