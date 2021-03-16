@@ -796,6 +796,10 @@ $(function(){
         activeViewLine = $(e.target);
     });*/
     $("body").on("click", "#runCode", function(e){
+        
+        // Disable "Run" button
+        $("#runCode").prop("disabled",true);
+        
         // Store existing data as "last run"
         lastRunSnapshotLineToDOMSelectorData = snapshotLineToDOMSelectorData;
         lastRunErrorData = errorData;
@@ -884,6 +888,9 @@ $(function(){
                     }
                 }
                 monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList());
+                
+                // Enable "Run" button
+                $("#runCode").prop("disabled",false);
             });
         });
     });
