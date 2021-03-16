@@ -11,6 +11,7 @@ async function setupPuppeteer() {
     const debugEndpoint = await response.json();
     //console.log("debugEndpoints", debugEndpoint);
 
+    await puppeteer.defaultArgs({ devtools: true });
     puppeteerBrowser = await puppeteer.connect({
         browserWSEndpoint: debugEndpoint.webSocketDebuggerUrl,
         defaultViewport: null

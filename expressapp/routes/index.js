@@ -72,13 +72,13 @@ router.get('/windowSelection', function(req, res, next) {
 router.post('/hideShowWindows', function(req, res, next) {
     const pageWinIDToHide = req.body.oldPageWinID;
     const pageWinIDToShow = req.body.newPageWinID;
-    console.log("pageWinIDToHide", pageWinIDToHide);
-    console.log("pageWinIDToShow", pageWinIDToShow);
+    //console.log("pageWinIDToHide", pageWinIDToHide);
+    //console.log("pageWinIDToShow", pageWinIDToShow);
 
-    console.log("req.app.locals.windowMetadata", req.app.locals.windowMetadata);
+    //console.log("req.app.locals.windowMetadata", req.app.locals.windowMetadata);
     // Hide the page and border BrowserViews corresponding to pageWinIDToHide
     const toHideBrowserViewsObj = req.app.locals.windowMetadata[pageWinIDToHide].browserViews;
-    console.log("toHideBrowserViewsObj", toHideBrowserViewsObj);
+    //console.log("toHideBrowserViewsObj", toHideBrowserViewsObj);
     /*req.app.locals.win.removeBrowserView(toHideBrowserViewsObj.pageView);
     req.app.locals.win.removeBrowserView(toHideBrowserViewsObj.borderView);*/
     movePageWindowOutOfView(toHideBrowserViewsObj.pageView);
@@ -86,7 +86,7 @@ router.post('/hideShowWindows', function(req, res, next) {
 
     // Show the page and border BrowserViews corresponding to pageWinIDToShow
     const toShowBrowserViewObj = req.app.locals.windowMetadata[pageWinIDToShow].browserViews;
-    console.log("toShowBrowserViewObj", toShowBrowserViewObj);
+    //console.log("toShowBrowserViewObj", toShowBrowserViewObj);
     /*req.app.locals.win.addBrowserView(toShowBrowserViewObj.pageView);
     req.app.locals.win.addBrowserView(toShowBrowserViewObj.borderView);*/
     movePageWindowIntoView(toShowBrowserViewObj.pageView);
@@ -158,11 +158,11 @@ const resetExampleWindows = function(req, startingUrl){
         }).toArray(function(error, docs){
             const paramCodeString = docs[0].paramCodeString;
             parameterValueSets = _.uniqWith(JSON.parse(paramCodeString), _.isEqual);
-            console.log("parameterValueSets", parameterValueSets);
+            //console.log("parameterValueSets", parameterValueSets);
             if(parameterValueSets.length === 0){
                 parameterValueSets = [ null ];
             }
-            console.log("updated parameterValueSets", parameterValueSets);
+            //console.log("updated parameterValueSets", parameterValueSets);
 
             for(let i = 0; i < parameterValueSets.length; i++){
                 const paramSet = parameterValueSets[i];
@@ -177,22 +177,22 @@ const resetExampleWindows = function(req, startingUrl){
 };
 
 const moveBorderWindowIntoView = function(borderView){
-    console.log("moveBorderWindowIntoView");
+    //console.log("moveBorderWindowIntoView");
     borderView.setBounds({ x: 780, y: 30, width: 920, height: 900 });
 };
 
 const moveBorderWindowOutOfView = function(borderView){
-    console.log("moveBorderWindowOutOfView");
+    //console.log("moveBorderWindowOutOfView");
     borderView.setBounds({ x: 780, y: 1000, width: 920, height: 900 });
 };
 
 const movePageWindowIntoView = function(pageView){
-    console.log("movePageWindowIntoView");
+    //console.log("movePageWindowIntoView");
     pageView.setBounds({ x: 800, y: 60, width: 860, height: 820 });
 };
 
 const movePageWindowOutOfView = function(pageView){
-    console.log("movePageWindowOutOfView");
+    //console.log("movePageWindowOutOfView");
     pageView.setBounds({ x: 800, y: 1000, width: 860, height: 820 });
 };
 
