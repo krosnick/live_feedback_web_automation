@@ -44,8 +44,10 @@ router.put('/update/', function(req, res, next) {
                     //console.log("paramSetsRemoved", paramSetsRemoved);
                     const paramSetsAdded = _.differenceWith(newParamSetList, oldParamSetList, _.isEqual);
                     //console.log("paramSetsAdded", paramSetsAdded);
-
-                    if(paramSetsAdded.length >= paramSetsRemoved.length){
+                    if(paramSetsAdded.length === 0 && paramSetsRemoved.length === 0){
+                        console.log("No changes");
+                        res.end();
+                    }else if(paramSetsAdded.length >= paramSetsRemoved.length){
                         // Can reuse existing windows and replace param sets
                         let i;
                         for(i = 0; i < paramSetsRemoved.length; i++){
@@ -54,8 +56,8 @@ router.put('/update/', function(req, res, next) {
                             // Find removedParamSet in req.app.locals.windowMetadata; replace it with a new param set, and update page/border BrowserViews appropriately
                             for (const item of Object.entries(req.app.locals.windowMetadata)) {
                                 const pageWinID = item[0];
-                                console.log("item[1]", item[1]);
-                                console.log("item[1].correspondingBorderWinID", item[1].correspondingBorderWinID);
+                                //console.log("item[1]", item[1]);
+                                //console.log("item[1].correspondingBorderWinID", item[1].correspondingBorderWinID);
                                 const borderWinID = item[1].correspondingBorderWinID;
                                 const oldParamSet = item[1].parameterValueSet;
                                 if(_.isEqual(removedParamSet, oldParamSet)){

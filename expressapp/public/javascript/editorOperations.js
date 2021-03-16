@@ -18,25 +18,29 @@ const puppeteerMethodsWithSelectorArg = [ "$", "$$", "$$eval", "$eval", "click",
 const puppeteerKeyboardMethods = ["down", "press", "sendCharacter", "type", "up"];
 //let activeViewLine;
 
+function sendUpdatedCodeToServer(){
+    const updatedCode = monacoEditor.getValue();
+    console.log("updatedCode", updatedCode);
+    // Send the updated code value to the server
+    $.ajax({
+        method: "PUT",
+        url: "/code/update",
+        data: {
+            updatedFileContents: updatedCode
+        }
+    });
+}
+
 function editorOnDidChangeContent(e){
     clearTimeout(codeChangeSetTimeout);
     codeChangeSetTimeout = setTimeout(() => {
-        const updatedCode = monacoEditor.getValue();
-        console.log("updatedCode", updatedCode);
-
-        // Send the updated code value to the server
-        $.ajax({
-            method: "PUT",
-            url: "/code/update",
-            data: {
-                updatedFileContents: updatedCode
-            }
-        }).done(function(data){
-            /*console.log("browserWindowFinishAndErrorData", data);
-            const errorData = data.errors;
-            //const ranToCompletionData = data.ranToCompletion;
-            createSquigglyErrorMarkers(errorData);*/
-        });
+        // Check if script is currently running; if so, don't send code to server now - send updated code to server afterwards
+        if($("#runCode").is(':visible')){
+            //console.log("Can send updated code to server");
+            sendUpdatedCodeToServer();
+        }else{
+            //console.log("CANNOT send updated code to server");
+        }
     }, 1000);
 
     if(runtimeErrorMessagesStale === false){
@@ -928,6 +932,10 @@ $(function(){
                 monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList());
                 
                 updateUIForEndingCodeRun();
+
+                // Send code and params to server now, in case any code/param edits happened while script was running (that we didn't save)
+                sendUpdatedCodeToServer();
+                sendUpdatedParamsToServer();
             });
         });
     });
