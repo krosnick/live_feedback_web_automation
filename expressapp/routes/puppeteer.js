@@ -40,6 +40,8 @@ let winIDToUserRequestedStopLineNumber = {};
 
 router.post('/stop', async function(req, res, next) {
     userRequestedStop = true;
+    capcon.stopCapture(process.stdout);
+    capcon.stopCapture(process.stderr);
     res.end();
 });
 

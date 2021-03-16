@@ -875,11 +875,9 @@ $(function(){
                     stopLineNumbersOrig.forEach(element => stopLineNumbers.push(parseInt(element)));
                     stopLineNumbers.sort((a, b) => a - b);
                     const lowestLineNumber = stopLineNumbers[0];
-                    console.log("lowestLineNumber", lowestLineNumber);
                     lineCount = lowestLineNumber-1;
 
                     let highestLineNumber = stopLineNumbers[stopLineNumbers.length - 1];
-                    console.log("highestLineNumber", highestLineNumber);
                     
                     // Create yellow(?) decorations for range of line numbers in winIDToUserRequestedStopLineNumber
                     rangeList.push({ range: new monaco.Range(lowestLineNumber,1,highestLineNumber,1), options: { isWholeLine: true, linesDecorationsClassName: 'yellowLineDecoration' }});
