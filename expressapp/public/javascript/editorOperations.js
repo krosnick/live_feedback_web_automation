@@ -789,17 +789,39 @@ const createUniqueListOfErrorObjects = function(errorObjectMap){
     return uniqueErrorObjList;
 };
 
+const updateUIForStartingCodeRun = function(){
+    // Update buttons
+    $("#runCode").hide();
+    $("#stopRunning").show();
+
+    // Make editors gray
+    monaco.editor.setTheme('themeWhileScriptRunning');
+};
+
+const updateUIForEndingCodeRun = function(){
+    // Update buttons
+    $("#runCode").show();
+    $("#stopRunning").hide();
+
+    // Return to original (white background) theme
+    monaco.editor.setTheme("vs");
+};
+
 $(function(){
     /*// For some reason not capturing key events, so for now just listening for clicks
     $("body").on("click", "#codeEditor .view-line", function(e){
         console.log("#codeEditor .view-line", e);
         activeViewLine = $(e.target);
     });*/
+    $("body").on("click", "#stopRunning", function(e){
+        $.ajax({
+            method: "POST",
+            url: "/puppeteer/stop"
+        });
+    });
+
     $("body").on("click", "#runCode", function(e){
-        
-        // Disable "Run" button
-        $("#runCode").prop("disabled",true);
-        
+        updateUIForStartingCodeRun();
         // Store existing data as "last run"
         lastRunSnapshotLineToDOMSelectorData = snapshotLineToDOMSelectorData;
         lastRunErrorData = errorData;
@@ -889,8 +911,7 @@ $(function(){
                 }
                 monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList());
                 
-                // Enable "Run" button
-                $("#runCode").prop("disabled",false);
+                updateUIForEndingCodeRun();
             });
         });
     });

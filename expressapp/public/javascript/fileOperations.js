@@ -5,6 +5,17 @@ let monacoEditor;
 let paramEditor;
 $(function(){
     setTimeout(function(){
+        // To be used later
+        monaco.editor.defineTheme('themeWhileScriptRunning', {
+            base: 'vs',
+            inherit: true,
+            rules: [{ background: 'e6e6e6' }],
+            colors: {
+                'editor.foreground': '#000000',
+                'editor.background': '#e6e6e6'
+            }
+        });
+        
         monacoEditor = monaco.editor.create(document.getElementById("codeEditor"), {
             value: "",
             language: "javascript",
