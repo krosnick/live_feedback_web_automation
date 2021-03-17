@@ -90,10 +90,6 @@ function editorOnDidChangeContent(e){
             }
         }
         //console.log("after snapshotLineToDOMSelectorData", Object.keys(snapshotLineToDOMSelectorData).length);
-
-        // For lowestLineNumber, see if it has any selectors. If so, check if that selector exists in beforeSnapshot
-            // Might need to give server the line of code to analyze it's AST and get selector
-        const selectorDataList = findSelector(lowestLineNumber);
         
         // Also need to remove all line numbers >= lowestLineNumber from selectorSpecificModelMarkerData
         // so that we don't have stale selector squiggles
@@ -104,19 +100,26 @@ function editorOnDidChangeContent(e){
             }
         }
 
-        if(selectorDataList){
-            // For each obj in array, check the selector against beforeSnapshot; and show squiggle for it at the given location
-            // Can probably reuse some code from earlier
-            for(selectorDataItem of selectorDataList){
-                // Update selectorDataItem; it's line numbers are wrong, because we sent over only a single line of code (not the whole code),
-                    // which actually isn't correct, should be lowestLineNumber
-                const numLines = selectorDataItem.selectorLocation.end.line - selectorDataItem.selectorLocation.start.line; // should be 0?
-                selectorDataItem.selectorLocation.start.line = lowestLineNumber;
-                selectorDataItem.selectorLocation.end.line = lowestLineNumber + numLines;
-                identifyAndCreateSelectorSquiggleData(lowestLineNumber, selectorDataItem);
+        const codeValidityResult = checkValidity(monacoEditor.getValue());
+        //console.log("codeValidityResult", codeValidityResult);
+        // If syntax error, don't update any squiggles
+        if(codeValidityResult === "valid"){
+            // For lowestLineNumber, see if it has any selectors. If so, check if that selector exists in beforeSnapshot
+            const selectorDataList = findSelector(lowestLineNumber);
+            if(selectorDataList){
+                // For each obj in array, check the selector against beforeSnapshot; and show squiggle for it at the given location
+                // Can probably reuse some code from earlier
+                for(selectorDataItem of selectorDataList){
+                    // Update selectorDataItem; it's line numbers are wrong, because we sent over only a single line of code (not the whole code),
+                        // which actually isn't correct, should be lowestLineNumber
+                    const numLines = selectorDataItem.selectorLocation.end.line - selectorDataItem.selectorLocation.start.line; // should be 0?
+                    selectorDataItem.selectorLocation.start.line = lowestLineNumber;
+                    selectorDataItem.selectorLocation.end.line = lowestLineNumber + numLines;
+                    identifyAndCreateSelectorSquiggleData(lowestLineNumber, selectorDataItem);
+                }
+                // Update model markers
+                monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList());
             }
-            // Update model markers
-            monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList());
         }
     }
 }
