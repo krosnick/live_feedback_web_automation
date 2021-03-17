@@ -811,6 +811,42 @@ const updateUIForEndingCodeRun = function(){
     monaco.editor.setTheme("vs");
 };
 
+const checkValidity = function(codeString){
+    const surroundedWithFuncStr = `async function testValidityFunc(){${codeString}}`;
+    try{
+        eval(surroundedWithFuncStr);
+    }catch(error){
+        return error;
+    }
+    return "valid";
+};
+
+const addTextToPuppeteerConsole = function(stdOutOrErr, isError){
+    let className = "";
+    if(isError){
+        className = "errorText";
+    }
+
+    // Need to split stdOutOrErr by \n, so then we print each line individually
+    const itemsToPrint = stdOutOrErr.split('\n');
+    itemsToPrint.forEach(function(str){
+        //const escapedString = str.replaceAll(/'/ig, "\\'");
+        // create a new div element
+        newDiv = document.createElement('div');
+        newPre = document.createElement('pre');
+        // and give it some content
+        //newContent = document.createTextNode(escapedString);
+        newContent = document.createTextNode(str);
+        // add the text node to the newly created div
+        newPre.appendChild(newContent);
+        newDiv.appendChild(newPre);
+        newDiv.className = className;
+        puppeteerTerminalElement = document.querySelector('#puppeteerTerminal');
+        puppeteerTerminalElement.appendChild(newDiv);
+        puppeteerTerminalElement.scrollIntoView(false);
+    });  
+};
+
 $(function(){
     /*// For some reason not capturing key events, so for now just listening for clicks
     $("body").on("click", "#codeEditor .view-line", function(e){
@@ -825,119 +861,130 @@ $(function(){
     });
 
     $("body").on("click", "#runCode", function(e){
-        updateUIForStartingCodeRun();
-        // Store existing data as "last run"
-        lastRunSnapshotLineToDOMSelectorData = snapshotLineToDOMSelectorData;
-        lastRunErrorData = errorData;
-        // Clear all existing puppeteer error markers and gutter bar decorations
-        runtimeErrorModelMarkerData = {};
-        selectorSpecificModelMarkerData = {};
-        snapshotLineToDOMSelectorData = {};
-        errorData = {};
-        lineNumToComponentsList = {};
+        // First check if the code syntax is valid; if it isn't, then show error in console
+            // and do nothing else
+        const code = monacoEditor.getValue();
+        const codeValidityResult = checkValidity(code);
+        //console.log("codeValidityResult", codeValidityResult);
+        if(codeValidityResult === "valid"){
+            updateUIForStartingCodeRun();
+            // Store existing data as "last run"
+            lastRunSnapshotLineToDOMSelectorData = snapshotLineToDOMSelectorData;
+            lastRunErrorData = errorData;
+            // Clear all existing puppeteer error markers and gutter bar decorations
+            runtimeErrorModelMarkerData = {};
+            selectorSpecificModelMarkerData = {};
+            snapshotLineToDOMSelectorData = {};
+            errorData = {};
+            lineNumToComponentsList = {};
 
-        $(".tooltip").remove();
-        monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList()); // just empty
-        decorations = monacoEditor.deltaDecorations(decorations, []);
+            $(".tooltip").remove();
+            monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList()); // just empty
+            decorations = monacoEditor.deltaDecorations(decorations, []);
 
-        // Need to ask server for border BrowserView IDs
-        $.ajax({
-            method: "POST",
-            url: "/windowData/getBorderWinIDs"
-        }).done(function(borderWinIDList) {
-
-            // Clear red border and error messages from the border BrowserViews
-            for(borderWinID of borderWinIDList){
-                ipcRenderer.sendTo(borderWinID, "clear");
-            }
-
-            // Get the current code, send it to the server,
-            // and execute it in the Puppeteer context
-            const code = monacoEditor.getValue();
+            // Need to ask server for border BrowserView IDs
             $.ajax({
                 method: "POST",
-                url: "/puppeteer/runPuppeteerCode",
-                data: {
-                    code: code
-                }
-            }).done(function(data) {
-                runtimeErrorMessagesStale = false;
-                console.log("browserWindowFinishAndErrorData", data);
-                errorData = data.errors;
-                const ranToCompletionData = data.ranToCompletion;
-                snapshotLineToDOMSelectorData = data.snapshotLineToDOMSelectorData;
-                lineNumToComponentsList = data.lineNumToComponentsList;
+                url: "/windowData/getBorderWinIDs"
+            }).done(function(borderWinIDList) {
 
-                let rangeList = [];
-
-                let lineCount = monacoEditor.getModel().getLineCount();
-                let winIDToUserRequestedStopLineNumber = data.winIDToUserRequestedStopLineNumber;
-                if(Object.keys(winIDToUserRequestedStopLineNumber).length > 0){
-                    // Adjust lineCount to be lowest line number minus 1 in winIDToUserRequestedStopLineNumber
-                    const stopLineNumbersOrig = Object.values(winIDToUserRequestedStopLineNumber);
-                    let stopLineNumbers = [];
-                    stopLineNumbersOrig.forEach(element => stopLineNumbers.push(parseInt(element)));
-                    stopLineNumbers.sort((a, b) => a - b);
-                    const lowestLineNumber = stopLineNumbers[0];
-                    lineCount = lowestLineNumber-1;
-
-                    let highestLineNumber = stopLineNumbers[stopLineNumbers.length - 1];
-                    
-                    // Create yellow(?) decorations for range of line numbers in winIDToUserRequestedStopLineNumber
-                    rangeList.push({ range: new monaco.Range(lowestLineNumber,1,highestLineNumber,1), options: { isWholeLine: true, linesDecorationsClassName: 'yellowLineDecoration' }});
+                // Clear red border and error messages from the border BrowserViews
+                for(borderWinID of borderWinIDList){
+                    ipcRenderer.sendTo(borderWinID, "clear");
                 }
 
-                let errorLineNumbers = createSquigglyErrorMarkers(errorData);
-                if(errorLineNumbers.length > 0){
-                    // There were errors. Let's put red decorations on these lines
-                    // First, sort
-                    errorLineNumbers.sort((a, b) => a - b);
+                // Get the current code, send it to the server,
+                // and execute it in the Puppeteer context
+                $.ajax({
+                    method: "POST",
+                    url: "/puppeteer/runPuppeteerCode",
+                    data: {
+                        code: code
+                    }
+                }).done(function(data) {
+                    runtimeErrorMessagesStale = false;
+                    console.log("browserWindowFinishAndErrorData", data);
+                    errorData = data.errors;
+                    const ranToCompletionData = data.ranToCompletion;
+                    snapshotLineToDOMSelectorData = data.snapshotLineToDOMSelectorData;
+                    lineNumToComponentsList = data.lineNumToComponentsList;
 
-                    // Green decoration from beginning until first line with error
-                    rangeList.push({ range: new monaco.Range(1,1,errorLineNumbers[0]-1,1), options: { isWholeLine: true, linesDecorationsClassName: 'greenLineDecoration' }});
+                    let rangeList = [];
 
-                    for(let i = 0; i < errorLineNumbers.length; i++){
-                        const errorNum = errorLineNumbers[i];
-                        // Have gray decorations for all lines in between error lines
-                        if(i > 0){
-                            const prevErrorNum = errorLineNumbers[i-1];
-                            rangeList.push({ range: new monaco.Range(prevErrorNum+1,1,errorNum-1,1), options: { isWholeLine: true, linesDecorationsClassName: 'grayLineDecoration' }});
+                    let lineCount = monacoEditor.getModel().getLineCount();
+                    let winIDToUserRequestedStopLineNumber = data.winIDToUserRequestedStopLineNumber;
+                    if(Object.keys(winIDToUserRequestedStopLineNumber).length > 0){
+                        // Adjust lineCount to be lowest line number minus 1 in winIDToUserRequestedStopLineNumber
+                        const stopLineNumbersOrig = Object.values(winIDToUserRequestedStopLineNumber);
+                        let stopLineNumbers = [];
+                        stopLineNumbersOrig.forEach(element => stopLineNumbers.push(parseInt(element)));
+                        stopLineNumbers.sort((a, b) => a - b);
+                        const lowestLineNumber = stopLineNumbers[0];
+                        lineCount = lowestLineNumber-1;
+
+                        let highestLineNumber = stopLineNumbers[stopLineNumbers.length - 1];
+                        
+                        // Create yellow(?) decorations for range of line numbers in winIDToUserRequestedStopLineNumber
+                        rangeList.push({ range: new monaco.Range(lowestLineNumber,1,highestLineNumber,1), options: { isWholeLine: true, linesDecorationsClassName: 'yellowLineDecoration' }});
+                    }
+
+                    let errorLineNumbers = createSquigglyErrorMarkers(errorData);
+                    if(errorLineNumbers.length > 0){
+                        // There were errors. Let's put red decorations on these lines
+                        // First, sort
+                        errorLineNumbers.sort((a, b) => a - b);
+
+                        // Green decoration from beginning until first line with error
+                        rangeList.push({ range: new monaco.Range(1,1,errorLineNumbers[0]-1,1), options: { isWholeLine: true, linesDecorationsClassName: 'greenLineDecoration' }});
+
+                        for(let i = 0; i < errorLineNumbers.length; i++){
+                            const errorNum = errorLineNumbers[i];
+                            // Have gray decorations for all lines in between error lines
+                            if(i > 0){
+                                const prevErrorNum = errorLineNumbers[i-1];
+                                rangeList.push({ range: new monaco.Range(prevErrorNum+1,1,errorNum-1,1), options: { isWholeLine: true, linesDecorationsClassName: 'grayLineDecoration' }});
+                            }
+                            // Red decoration for line with error
+                            rangeList.push({ range: new monaco.Range(errorNum,1,errorNum,1), options: { isWholeLine: true, linesDecorationsClassName: 'redLineDecoration' }});
                         }
-                        // Red decoration for line with error
-                        rangeList.push({ range: new monaco.Range(errorNum,1,errorNum,1), options: { isWholeLine: true, linesDecorationsClassName: 'redLineDecoration' }});
-                    }
 
-                    // Check if at least 1 example ran to completion; if so, show gray decoration until end of editor
+                        // Check if at least 1 example ran to completion; if so, show gray decoration until end of editor
+                        if(Object.keys(ranToCompletionData).length > 0){
+                            rangeList.push({ range: new monaco.Range(errorLineNumbers[errorLineNumbers.length-1]+1,1,lineCount,1), options: { isWholeLine: true, linesDecorationsClassName: 'grayLineDecoration' }});
+                        }
+                    }
+                    
                     if(Object.keys(ranToCompletionData).length > 0){
-                        rangeList.push({ range: new monaco.Range(errorLineNumbers[errorLineNumbers.length-1]+1,1,lineCount,1), options: { isWholeLine: true, linesDecorationsClassName: 'grayLineDecoration' }});
+                        // Show green decoration for all lines
+                        rangeList.push({ range: new monaco.Range(1,1,lineCount,1), options: { isWholeLine: true, linesDecorationsClassName: 'greenLineDecoration' }});
                     }
-                }
-                
-                if(Object.keys(ranToCompletionData).length > 0){
-                    // Show green decoration for all lines
-                    rangeList.push({ range: new monaco.Range(1,1,lineCount,1), options: { isWholeLine: true, linesDecorationsClassName: 'greenLineDecoration' }});
-                }
-                decorations = monacoEditor.deltaDecorations(decorations, rangeList);
-                // For all lines in snapshotLineToDOMSelectorData, for each line that has a selector,
-                    // check against the beforeSnapshot to confirm it's in DOM, and also check for it's uniqueness.
-                    // Create appropriate squiggles.
-                const lineNumbers = Object.keys(snapshotLineToDOMSelectorData);
-                for(lineNumber of lineNumbers){
-                    // selectorData (string and location) is the same regardless of window
-                    const selectorData = Object.values(snapshotLineToDOMSelectorData[lineNumber])[0].selectorData;
-                    if(selectorData){
-                        identifyAndCreateSelectorSquiggleData(lineNumber, selectorData);
+                    decorations = monacoEditor.deltaDecorations(decorations, rangeList);
+                    // For all lines in snapshotLineToDOMSelectorData, for each line that has a selector,
+                        // check against the beforeSnapshot to confirm it's in DOM, and also check for it's uniqueness.
+                        // Create appropriate squiggles.
+                    const lineNumbers = Object.keys(snapshotLineToDOMSelectorData);
+                    for(lineNumber of lineNumbers){
+                        // selectorData (string and location) is the same regardless of window
+                        const selectorData = Object.values(snapshotLineToDOMSelectorData[lineNumber])[0].selectorData;
+                        if(selectorData){
+                            identifyAndCreateSelectorSquiggleData(lineNumber, selectorData);
+                        }
                     }
-                }
-                monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList());
-                
-                updateUIForEndingCodeRun();
+                    monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList());
+                    
+                    updateUIForEndingCodeRun();
 
-                // Send code and params to server now, in case any code/param edits happened while script was running (that we didn't save)
-                sendUpdatedCodeToServer();
-                sendUpdatedParamsToServer();
+                    // Send code and params to server now, in case any code/param edits happened while script was running (that we didn't save)
+                    sendUpdatedCodeToServer();
+                    sendUpdatedParamsToServer();
+                });
             });
-        });
+        }else{
+            // Append error to console in app
+            addTextToPuppeteerConsole(codeValidityResult.name + ': ' + codeValidityResult.message , true);
+            //addTextToPuppeteerConsole(`${codeValidityResult.name} at line ${codeValidityResult.lineNumber}: ${codeValidityResult.message}`, true);
+            //addTextToPuppeteerConsole(codeValidityResult.stack, true);
+        }
     });
 
     $("body").on("click", "#puppeteerTerminalClearButton", function(e){
