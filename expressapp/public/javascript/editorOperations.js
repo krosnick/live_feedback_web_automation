@@ -257,12 +257,18 @@ function findSelector(lineNumber){
 
 function editorOnDidChangeCursorPosition(e){
     //console.log("editorOnDidChangeCursorPosition");
-    const lineNumber = e.position.lineNumber;
-    const selectorDataList = findSelector(lineNumber);
     // Assuming at most 1 selector per line
     let currentSelector = null;
-    if(selectorDataList.length > 0){
-        currentSelector = selectorDataList[0].selectorString;
+    const lineNumber = e.position.lineNumber;
+    
+    const codeValidityResult = checkValidity(monacoEditor.getValue());
+    //console.log("codeValidityResult", codeValidityResult);
+    // If syntax error, don't try checking for selectors
+    if(codeValidityResult === "valid"){
+        const selectorDataList = findSelector(lineNumber);
+        if(selectorDataList.length > 0){
+            currentSelector = selectorDataList[0].selectorString;
+        }
     }
 
     console.log("winIDList", winIDList);
@@ -274,7 +280,7 @@ function editorOnDidChangeCursorPosition(e){
     }else{
         // For each winID, tell BrowserViews to clear 
         for(let winID of Object.keys(winIDList)){
-            ipcRenderer.sendTo(parseInt(winID), "clearHighlightedUIElements", currentSelector);
+            ipcRenderer.sendTo(parseInt(winID), "clearHighlightedUIElements");
         }
     }
 

@@ -344,7 +344,7 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
                 }
             });
             
-            ipcRenderer.on('clearHighlightedUIElements', function(event, selector){
+            ipcRenderer.on('clearHighlightedUIElements', function(event){
                 console.log('clearHighlightedUIElements message received');
                 clearHighlightedElements();
             });
