@@ -1031,11 +1031,16 @@ $(function(){
         // Create a snapshot tooltip for the current cursor position in the editor
         const currentLineNumber = monacoEditor.getPosition().lineNumber;
         if(currentLineNumber){
-            const selectorDataList = findSelector(currentLineNumber);
-            // Assuming at most 1 selector per line
             let currentSelector = null;
-            if(selectorDataList.length > 0){
-                currentSelector = selectorDataList[0].selectorString;
+            const codeValidityResult = checkValidity(monacoEditor.getValue());
+            //console.log("codeValidityResult", codeValidityResult);
+            // If syntax error, don't try checking for selectors
+            if(codeValidityResult === "valid"){
+                const selectorDataList = findSelector(currentLineNumber);
+                // Assuming at most 1 selector per line
+                if(selectorDataList.length > 0){
+                    currentSelector = selectorDataList[0].selectorString;
+                }
             }
             createSnapshots(currentLineNumber, currentSelector);
         }
