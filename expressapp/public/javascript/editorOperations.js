@@ -80,13 +80,16 @@ function editorOnDidChangeContent(e){
         for(lineNumberStr of lineNumbers){
             if(parseInt(lineNumberStr) > lowestLineNumber){
                 delete snapshotLineToDOMSelectorData[lineNumberStr];
+                // Tell snapshots view to delete this
+                ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "deleteAllSnapshotsForLine", lineNumberStr);
+
             }
             if(parseInt(lineNumberStr) === lowestLineNumber){
                 const lineObj = snapshotLineToDOMSelectorData[lineNumberStr];
                 for(data of Object.values(lineObj)){
-                    //console.log("before data", data);
                     delete data["afterDomString"];
-                    //console.log("after data", data);
+                    // Tell snapshots view to delete this
+                    ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "deleteAfterDomStringForLine", lineNumberStr);
                 }
             }
         }

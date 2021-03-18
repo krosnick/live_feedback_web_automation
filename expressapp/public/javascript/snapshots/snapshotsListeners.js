@@ -65,6 +65,17 @@ ipcRenderer.on("showLineNumber", function(event, lineNumber, selector){
     createSnapshots(lineNumber, selector);
 });
 
+ipcRenderer.on("deleteAllSnapshotsForLine", function(event, lineNumberStr){
+    delete snapshotLineToDOMSelectorData[lineNumberStr];
+});
+
+ipcRenderer.on("deleteAfterDomStringForLine", function(event, lineNumberStr){
+    const lineObj = snapshotLineToDOMSelectorData[lineNumberStr];
+    for(data of Object.values(lineObj)){
+        delete data["afterDomString"];
+    }
+});
+
 function createSnapshots(lineNumber, currentSelector){
     // Should update the tooltip that's being shown
     // First delete all existing .tooltip elements
