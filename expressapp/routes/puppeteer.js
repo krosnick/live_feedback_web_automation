@@ -216,6 +216,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
                 browserWindowFinishAndErrorData.snapshotLineToDOMSelectorData = snapshotLineToDOMSelectorData;
                 browserWindowFinishAndErrorData.lineNumToComponentsList = lineNumToComponentsList;
                 browserWindowFinishAndErrorData.winIDToUserRequestedStopLineNumber = winIDToUserRequestedStopLineNumber;
+                currentReq.app.locals.snapshotsBrowserView.webContents.send("newSnapshots", snapshotLineToDOMSelectorData, lineNumToComponentsList, browserWindowFinishAndErrorData.errors);
                 currentRes.send(browserWindowFinishAndErrorData);
             });
         }

@@ -6,6 +6,8 @@ const _ = require('lodash');
 const path = require('path');
 const { resetTargetPages, addTargetPages } = require('./puppeteer');
 
+let currentlySelectedWindowID;
+
 /* GET home page. */
 router.get('/', function(req, res, next) {
 
@@ -53,6 +55,7 @@ router.get('/', function(req, res, next) {
             currentFileName: fileObj.fileName,
             currentFileContents: fileObj.fileContents,
             fileIDNamePairs: fileIDNamePairs,
+            snapshotsBrowserViewID: req.app.locals.snapshotsBrowserViewID,
             routesRoot: __dirname // e.g., /Users/rkros/Desktop/desktop/PhD/web_automation/expressapp/routes
         });
     });
@@ -69,9 +72,53 @@ router.get('/windowSelection', function(req, res, next) {
     });
 });
 
+router.get('/snapshots', function(req, res, next) {
+    res.render('layouts/snapshots', {
+        layout: 'snapshotsLayout'
+    });
+});
+
+router.post('/showSnapshotView', function(req, res, next) {
+    // Move the rest out of the page and border BrowserViews out of view
+    const windowData = Object.values(req.app.locals.windowMetadata);
+    for(let windowDataItem of windowData){
+        const browserViews = windowDataItem.browserViews;
+        const pageView = browserViews.pageView;
+        const borderView = browserViews.borderView;
+        movePageWindowOutOfView(pageView);
+        moveBorderWindowOutOfView(borderView);
+    }
+
+    // Move snapshots BrowserView into view
+    req.app.locals.snapshotsBrowserView.setBounds({ x: 780, y: 0, width: 920, height: 930 });
+    
+    res.end();
+});
+
+router.post('/showPageView', function(req, res, next) {
+    // Hide snapshot view
+    req.app.locals.snapshotsBrowserView.setBounds({ x: 780, y: 1000, width: 920, height: 930 });
+
+    // Show currentlySelectedWindowID the page views
+    let windowDataItem;
+    if(currentlySelectedWindowID){
+        windowDataItem = req.app.locals.windowMetadata[currentlySelectedWindowID];
+    }else{
+        windowDataItem = Object.values(req.app.locals.windowMetadata)[0];
+    }
+    const browserViews = windowDataItem.browserViews;
+    const pageView = browserViews.pageView;
+    const borderView = browserViews.borderView;
+    movePageWindowIntoView(pageView);
+    moveBorderWindowIntoView(borderView);
+
+    res.end();
+});
+
 router.post('/hideShowWindows', function(req, res, next) {
     const pageWinIDToHide = req.body.oldPageWinID;
     const pageWinIDToShow = req.body.newPageWinID;
+    currentlySelectedWindowID = pageWinIDToShow;
     //console.log("pageWinIDToHide", pageWinIDToHide);
     //console.log("pageWinIDToShow", pageWinIDToShow);
 
@@ -126,7 +173,7 @@ const resetExampleWindows = function(req, startingUrl){
     // First remove all existing BrowserViews (except for editor browser view and window selection view)
     const browserViews = req.app.locals.win.getBrowserViews();
     for(let browserView of browserViews){
-        if((browserView.webContents.id !== req.app.locals.editorBrowserViewID) && (browserView.webContents.id !== req.app.locals.windowSelectionViewID)){
+        if((browserView.webContents.id !== req.app.locals.editorBrowserViewID) && (browserView.webContents.id !== req.app.locals.windowSelectionViewID) && (browserView.webContents.id !== req.app.locals.snapshotsBrowserViewID)){
             // Since when choosing puppeteer targets later we identify based on the url,
                 // we want to ensure this BrowserView's url is cleared (in case it's actually the same/similar to future url)
             browserView.webContents.loadURL("");
@@ -265,6 +312,7 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
     if(isFirstWindow){
         // First param set; show it
         movePageWindowIntoView(pageView);
+        currentlySelectedWindowID = pageView.webContents.id;
     }else{
         // Not the first param set; render it outside viewport
         movePageWindowOutOfView(pageView);

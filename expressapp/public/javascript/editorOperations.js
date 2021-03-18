@@ -17,6 +17,7 @@ const snapshotHeight = 125;
 const puppeteerMethodsWithSelectorArg = [ "$", "$$", "$$eval", "$eval", "click", "focus", "hover", "select", "tap", "type", "waitForSelector", "waitFor" ];
 const puppeteerKeyboardMethods = ["down", "press", "sendCharacter", "type", "up"];
 //let activeViewLine;
+let snapshotsBrowserViewID;
 
 function sendUpdatedCodeToServer(){
     const updatedCode = monacoEditor.getValue();
@@ -284,9 +285,24 @@ function editorOnDidChangeCursorPosition(e){
         }
     }
 
-    // Only create/show snapshots if "Show" button (#showSnapshots) is currently hidden (meaning that snapshots should be shown)
+    /*// Only create/show snapshots if "Show" button (#showSnapshots) is currently hidden (meaning that snapshots should be shown)
     if($("#showSnapshots").is(":hidden")){
         createSnapshots(lineNumber, currentSelector);
+    }*/
+    ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "showLineNumber", lineNumber, currentSelector);
+
+    if(snapshotLineToDOMSelectorData && snapshotLineToDOMSelectorData[lineNumber]){
+        // Tell server to put snapshotsBrowserView in view
+        $.ajax({
+            method: "POST",
+            url: "/showSnapshotView"
+        });
+    }else{
+        // Tell server to show border and page views
+        $.ajax({
+            method: "POST",
+            url: "/showPageView"
+        });
     }
 }
 
@@ -857,6 +873,8 @@ const addTextToPuppeteerConsole = function(stdOutOrErr, isError){
 };
 
 $(function(){
+    snapshotsBrowserViewID = $("#snapshotsBrowserViewID").attr("snapshotsBrowserViewID");
+    //console.log("snapshotsBrowserViewID", snapshotsBrowserViewID);
     /*// For some reason not capturing key events, so for now just listening for clicks
     $("body").on("click", "#codeEditor .view-line", function(e){
         console.log("#codeEditor .view-line", e);

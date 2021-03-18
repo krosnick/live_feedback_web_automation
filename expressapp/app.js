@@ -290,6 +290,18 @@ function createWindow () {
     expressApp.locals.editorBrowserView = editorBrowserView;
     expressApp.locals.editorBrowserViewID = editorBrowserView.webContents.id;
 
+    const snapshotsBrowserView = new BrowserView({webPreferences: {zoomFactor: 1.0, nodeIntegration: true, webSecurity: false} });
+    win.addBrowserView(snapshotsBrowserView);
+    // Set offscreen for now
+    snapshotsBrowserView.setBounds({ x: 780, y: 1000, width: 920, height: 930 });
+    //snapshotsBrowserView.setBounds({ x: 800, y: 0, width: 860, height: 820 });
+    snapshotsBrowserView.webContents.loadURL('http://localhost:3000/snapshots');
+    if(expressApp.locals.devMode){
+        snapshotsBrowserView.webContents.openDevTools({mode: "detach"});
+    }
+    expressApp.locals.snapshotsBrowserView = snapshotsBrowserView;
+    expressApp.locals.snapshotsBrowserViewID = snapshotsBrowserView.webContents.id;
+
     setupPuppeteer();
 
     // Emitted when the window is closed.
