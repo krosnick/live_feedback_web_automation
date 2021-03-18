@@ -62,6 +62,7 @@ ipcRenderer.on("newSnapshots", function(event, snapshotsData, componentsData, er
 
 ipcRenderer.on("showLineNumber", function(event, lineNumber, selector){
     console.log("showLineNumber");
+    $("#lineNumber").text(lineNumber);
     createSnapshots(lineNumber, selector);
 });
 
