@@ -18,6 +18,8 @@ const puppeteerMethodsWithSelectorArg = [ "$", "$$", "$$eval", "$eval", "click",
 const puppeteerKeyboardMethods = ["down", "press", "sendCharacter", "type", "up"];
 //let activeViewLine;
 let snapshotsBrowserViewID;
+let mightBeOutOfSync = false;
+let showSnapshotsView = true; // default
 
 function sendUpdatedCodeToServer(){
     const updatedCode = monacoEditor.getValue();
@@ -294,18 +296,17 @@ function editorOnDidChangeCursorPosition(e){
     }*/
     ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "showLineNumber", lineNumber, currentSelector);
 
-    if(snapshotLineToDOMSelectorData && snapshotLineToDOMSelectorData[lineNumber]){
-        // Tell server to put snapshotsBrowserView in view
-        $.ajax({
-            method: "POST",
-            url: "/showSnapshotView"
-        });
-    }else{
-        // Tell server to show border and page views
-        $.ajax({
-            method: "POST",
-            url: "/showPageView"
-        });
+    if(mightBeOutOfSync){
+        mightBeOutOfSync = false;
+        
+        // Depending on hide/show snapshots button status, tell server to /showSnapshotView
+        if(showSnapshotsView){
+            // Tell server to show UI snapshots view
+            $.ajax({
+                method: "POST",
+                url: "/showSnapshotView"
+            });
+        }
     }
 }
 
@@ -898,6 +899,13 @@ $(function(){
         //console.log("codeValidityResult", codeValidityResult);
         if(codeValidityResult === "valid"){
             updateUIForStartingCodeRun();
+            
+            // Tell server to show border and page views (don't want snapshots view showing)
+            $.ajax({
+                method: "POST",
+                url: "/showPageView"
+            });
+
             // Store existing data as "last run"
             lastRunSnapshotLineToDOMSelectorData = snapshotLineToDOMSelectorData;
             lastRunErrorData = errorData;
@@ -1002,6 +1010,8 @@ $(function(){
                     }
                     monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList());
                     
+                    mightBeOutOfSync = true;
+
                     updateUIForEndingCodeRun();
 
                     // Send code and params to server now, in case any code/param edits happened while script was running (that we didn't save)
@@ -1032,7 +1042,7 @@ $(function(){
         $(".tooltip").css("opacity", 0.5);
     });
 
-    $("body").on("click", "#hideSnapshots", function(e){
+    /*$("body").on("click", "#hideSnapshots", function(e){
         // Hide snapshots div (.tooltip)
         $(".tooltip").hide();
 
@@ -1065,7 +1075,7 @@ $(function(){
             }
             createSnapshots(currentLineNumber, currentSelector);
         }
-    });
+    });*/
 
     $("body").on("click", ".hideRun", function(e){
         // Hide/show appropriate header elements
@@ -1118,4 +1128,12 @@ ipcRenderer.on('clearWindowList', function(event){
     console.log("clearWindowList");
     // Clear winIDList
     winIDList = {};
+});
+
+ipcRenderer.on('updateHideShowSnapshotsViewStatus', function(event, hideOrShow){
+    if(hideOrShow === "hide"){
+        showSnapshotsView = false;
+    }else{
+        showSnapshotsView = true;
+    }
 });

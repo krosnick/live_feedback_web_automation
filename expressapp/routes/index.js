@@ -68,7 +68,8 @@ router.get('/border/:id', function(req, res, next) {
 
 router.get('/windowSelection', function(req, res, next) {
     res.render('layouts/windowSelection', {
-        layout: 'windowSelectionLayout'
+        layout: 'windowSelectionLayout',
+        editorBrowserViewID: req.app.locals.editorBrowserViewID
     });
 });
 
@@ -90,14 +91,14 @@ router.post('/showSnapshotView', function(req, res, next) {
     }
 
     // Move snapshots BrowserView into view
-    req.app.locals.snapshotsBrowserView.setBounds({ x: 780, y: 0, width: 920, height: 930 });
+    req.app.locals.snapshotsBrowserView.setBounds({ x: 780, y: 30, width: 920, height: 905 });
     
     res.end();
 });
 
 router.post('/showPageView', function(req, res, next) {
     // Hide snapshot view
-    req.app.locals.snapshotsBrowserView.setBounds({ x: 780, y: 1000, width: 920, height: 930 });
+    req.app.locals.snapshotsBrowserView.setBounds({ x: 780, y: 1000, width: 920, height: 905 });
 
     // Show currentlySelectedWindowID the page views
     let windowDataItem;
@@ -225,22 +226,22 @@ const resetExampleWindows = function(req, startingUrl){
 
 const moveBorderWindowIntoView = function(borderView){
     //console.log("moveBorderWindowIntoView");
-    borderView.setBounds({ x: 780, y: 30, width: 920, height: 900 });
+    borderView.setBounds({ x: 780, y: 55, width: 920, height: 875 });
 };
 
 const moveBorderWindowOutOfView = function(borderView){
     //console.log("moveBorderWindowOutOfView");
-    borderView.setBounds({ x: 780, y: 1000, width: 920, height: 900 });
+    borderView.setBounds({ x: 780, y: 1000, width: 920, height: 875 });
 };
 
 const movePageWindowIntoView = function(pageView){
     //console.log("movePageWindowIntoView");
-    pageView.setBounds({ x: 800, y: 60, width: 860, height: 820 });
+    pageView.setBounds({ x: 800, y: 85, width: 860, height: 795 });
 };
 
 const movePageWindowOutOfView = function(pageView){
     //console.log("movePageWindowOutOfView");
-    pageView.setBounds({ x: 800, y: 1000, width: 860, height: 820 });
+    pageView.setBounds({ x: 800, y: 1000, width: 860, height: 795 });
 };
 
 const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUrl){

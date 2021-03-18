@@ -1,6 +1,8 @@
 const { ipcRenderer } = require('electron');
 let oldPageWinID;
+let editorBrowserViewID;
 $(function(){
+    editorBrowserViewID = $("#editorBrowserViewID").attr("editorBrowserViewID");
     $("body").on("change", "#windowSelectMenu", function(e){
         const newPageWinID = $(e.target).val();
         
@@ -80,6 +82,34 @@ $(function(){
         }
         // And regardless, enable #left
         $("#left").prop("disabled",false);
+    });
+
+    $("body").on("click", "#hideSnapshots", function(e){
+        // Tell server to hide snapshots view and show last shown page/border views
+        $.ajax({
+            method: "POST",
+            url: "/showPageView"
+        });
+        // Update status in editor view
+        ipcRenderer.sendTo(parseInt(editorBrowserViewID), "updateHideShowSnapshotsViewStatus", "hide");
+
+        // Hide this button and show #showSnapshots button
+        $("#hideSnapshots").hide();
+        $("#showSnapshots").show();
+    });
+
+    $("body").on("click", "#showSnapshots", function(e){
+        // Tell server to hide page/border views and show snapshots view
+        $.ajax({
+            method: "POST",
+            url: "/showSnapshotView"
+        });
+        // Update status in editor view
+        ipcRenderer.sendTo(parseInt(editorBrowserViewID), "updateHideShowSnapshotsViewStatus", "show");
+
+        // Hide this button and show #hideSnapshots button
+        $("#hideSnapshots").show();
+        $("#showSnapshots").hide();
     });
 });
 

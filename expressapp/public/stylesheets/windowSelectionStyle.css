@@ -5,3 +5,23 @@
 #windowSelectMenu {
     max-width: 700px;
 }
+
+#showSnapshots {
+    display: none;
+}
+
+#hideShowSnapshotsButtons {
+    position: absolute;
+    top: 0px;
+    right: 0px;
+}
+
+#container {
+    position: relative;
+}
+
+#selectionArea {
+    position: absolute;
+    top: 25px;
+    left: 0px;
+}
