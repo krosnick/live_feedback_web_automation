@@ -84,34 +84,42 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     let statementAndDeclarationData = {};
     walk.ancestor(acornAST, {
         ExpressionStatement(node, ancestors) {
-            statementAndDeclarationData[node.end] = {
-                lineObj: node.loc.start.line
-            };
-            //console.log("node.loc.start.line", node.loc.start.line);
-            // Will be null if no selector found
-            const selectorInfo = checkForSelector(node.expression, ancestors);
-            if(selectorInfo){
-                const prevStatement = findPrevStatement(node.expression, ancestors[ancestors.length-2]);
-                const prevLineNumber = prevStatement.loc.start.line;
-                selectorInfo.prevLineNumber = prevLineNumber;
-                statementAndDeclarationData[node.end].selectorData = selectorInfo;
+            const hasEvaluateAncestor = isInsideEvaluateOrEvaluateHandle(node, ancestors);
+            // Don't take snapshot here, because we're inside of an "evaluate" or "evaluateHandle", so doesn't make sense
+            if(!hasEvaluateAncestor){
+                statementAndDeclarationData[node.end] = {
+                    lineObj: node.loc.start.line
+                };
+                //console.log("node.loc.start.line", node.loc.start.line);
+                // Will be null if no selector found
+                const selectorInfo = checkForSelector(node.expression, ancestors);
+                if(selectorInfo){
+                    const prevStatement = findPrevStatement(node.expression, ancestors[ancestors.length-2]);
+                    const prevLineNumber = prevStatement.loc.start.line;
+                    selectorInfo.prevLineNumber = prevLineNumber;
+                    statementAndDeclarationData[node.end].selectorData = selectorInfo;
+                }
             }
         },
         VariableDeclaration(node, ancestors) {
             // Exclude if it is a variable declaration within for loop, e.g., (for(let i = 0; ...))
             const parentType = ancestors[ancestors.length-2].type;
             if(parentType !== "ForStatement" && parentType !== "ForInStatement"){
-                statementAndDeclarationData[node.end] = {
-                    lineObj: node.loc.start.line
-                };
-                //console.log("node.loc.start.line", node.loc.start.line);
-                // Will be null if no selector found
-                const selectorInfo = checkForSelector(node.declarations[0].init, ancestors);
-                if(selectorInfo){
-                    const prevStatement = findPrevStatement(node.declarations[0].init, ancestors[ancestors.length-2]);
-                    const prevLineNumber = prevStatement.loc.start.line;
-                    selectorInfo.prevLineNumber = prevLineNumber;
-                    statementAndDeclarationData[node.end].selectorData = selectorInfo;
+                const hasEvaluateAncestor = isInsideEvaluateOrEvaluateHandle(node, ancestors);
+                // Don't take snapshot here, because we're inside of an "evaluate" or "evaluateHandle", so doesn't make sense
+                if(!hasEvaluateAncestor){
+                    statementAndDeclarationData[node.end] = {
+                        lineObj: node.loc.start.line
+                    };
+                    //console.log("node.loc.start.line", node.loc.start.line);
+                    // Will be null if no selector found
+                    const selectorInfo = checkForSelector(node.declarations[0].init, ancestors);
+                    if(selectorInfo){
+                        const prevStatement = findPrevStatement(node.declarations[0].init, ancestors[ancestors.length-2]);
+                        const prevLineNumber = prevStatement.loc.start.line;
+                        selectorInfo.prevLineNumber = prevLineNumber;
+                        statementAndDeclarationData[node.end].selectorData = selectorInfo;
+                    }
                 }
             }
         }
@@ -260,6 +268,19 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     }, 200, wrappedCodeString);
     /*});*/
 });
+
+const isInsideEvaluateOrEvaluateHandle = function(node, ancestors){
+    // Loop through backwards to check and see if there is an "evaluate" or "evaluateHandle" function call
+    for(let i = ancestors.length-1; i >= 0; i--){
+        const ancestor = ancestors[i];
+        if(ancestor.type === "CallExpression"){
+            if(ancestor.callee && ancestor.callee.property && ancestor.callee.property.name && (ancestor.callee.property.name === "evaluate" || ancestor.callee.property.name === "evaluateHandle")){
+                return true;
+            }
+        }
+    }
+    return false;
+};
 
 const compareScreenshots = function(lineNum, lineObj){
     const winIDs = Object.keys(lineObj);
