@@ -122,32 +122,21 @@ body {
 }
 
 .tooltip {
-    /*background-color: #333;*/
     color: white;
-    /*padding: 5px 10px;*/
-    padding: 10px;
     border-radius: 4px;
     font-size: 13px;
     position: absolute;
-    right: 0px;
-    top: 0px;
+    right: 20px;
     display: none;
-    width: 570px;
-    height: 420px;
-    background-color: white;
     color: black;
-    border: 1px solid gray;
-    /*z-index: -1;*/
+}
+
+#codeEditor .line-numbers {
+    transform: none !important;
 }
 
 .tooltip[data-show] {
     display: block;
-    /*display: grid;
-    grid-template-columns: 70px repeat(auto-fit, 250px);
-    grid-template-rows: repeat(2, 125px);
-    grid-auto-flow: column;
-    grid-column-gap: 10px;
-    grid-row-gap: 10px;*/
 }
 
 .beforeAfterLabel {

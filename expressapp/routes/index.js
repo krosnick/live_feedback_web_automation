@@ -56,6 +56,7 @@ router.get('/', function(req, res, next) {
             currentFileContents: fileObj.fileContents,
             fileIDNamePairs: fileIDNamePairs,
             snapshotsBrowserViewID: req.app.locals.snapshotsBrowserViewID,
+            windowSelectionViewID: req.app.locals.windowSelectionViewID,
             routesRoot: __dirname // e.g., /Users/rkros/Desktop/desktop/PhD/web_automation/expressapp/routes
         });
     });

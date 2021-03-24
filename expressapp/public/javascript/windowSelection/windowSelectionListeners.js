@@ -150,3 +150,9 @@ ipcRenderer.on('updateParameters', function(event, pageWinID, paramString){
 ipcRenderer.on('clear', function(event){
     document.querySelector('#windowSelectMenu').innerHTML = "";
 });
+ipcRenderer.on('hideUISnapshots', function(event){
+    $("#hideSnapshots").trigger("click");
+});
+ipcRenderer.on('showUISnapshots', function(event){
+    $("#showSnapshots").trigger("click");
+});
