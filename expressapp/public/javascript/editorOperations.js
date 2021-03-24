@@ -288,11 +288,6 @@ function editorOnDidChangeCursorPosition(e){
             ipcRenderer.sendTo(parseInt(winID), "clearHighlightedUIElements");
         }
     }
-
-    /*// Only create/show snapshots if "Show" button (#showSnapshots) is currently hidden (meaning that snapshots should be shown)
-    if($("#showSnapshots").is(":hidden")){
-        createSnapshots(lineNumber, currentSelector);
-    }*/
     ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "showLineNumber", lineNumber, currentSelector);
 
     if(mightBeOutOfSync){
@@ -760,11 +755,11 @@ $(function(){
     });
 
     $("body").on("click", "#hideUISnapshots", function(e){
-        // Hide this button and show #showSnapshots button
+        // Hide this button and show #showUISnapshots button
         $("#hideUISnapshots").hide();
         $("#showUISnapshots").show();
 
-        // Tell windowSelectionView to click the appropriate button (#showSnapshots or #hideSnapshots)
+        // Tell windowSelectionView to click the appropriate button (#showUISnapshots or #hideSnapshots)
         ipcRenderer.sendTo(parseInt(windowSelectionViewID), "hideUISnapshots");
     });
 
@@ -773,7 +768,7 @@ $(function(){
         $("#hideUISnapshots").show();
         $("#showUISnapshots").hide();
 
-        // Tell windowSelectionView to click the appropriate button (#showSnapshots or #hideSnapshots)
+        // Tell windowSelectionView to click the appropriate button (#showUISnapshots or #hideSnapshots)
         ipcRenderer.sendTo(parseInt(windowSelectionViewID), "showUISnapshots");
     });
 });
