@@ -1,5 +1,5 @@
 const express = require('express');
-const capcon = require('capture-console');
+//const capcon = require('capture-console');
 const acorn = require("acorn");
 const _ = require("lodash");
 const walk = require("acorn-walk");
@@ -40,8 +40,8 @@ let winIDToUserRequestedStopLineNumber = {};
 
 router.post('/stop', async function(req, res, next) {
     userRequestedStop = true;
-    capcon.stopCapture(process.stdout);
-    capcon.stopCapture(process.stderr);
+    /*capcon.stopCapture(process.stdout);
+    capcon.stopCapture(process.stderr);*/
     res.end();
 });
 
@@ -148,6 +148,12 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         //instrumentedCodeString += `; afterPageContent = await page.content(); lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, afterDomString: afterPageContent, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj;`;
         instrumentedCodeString += `; snapshotCaptured = false; try { afterPageContent = await page.content(); afterPageScreenshot = await page.screenshot({ fullPage: false, clip: { x: 0, y: 0, width: 500, height: 500 } } ); snapshotCaptured = true; } catch(e){ } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; if(!(lineObj[winID])){ lineObj[winID] = {}; } lineObj[winID].afterDomString = afterPageContent; lineObj[winID].afterScreenshotBuffer = afterPageScreenshot; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; afterPageContent = null; afterPageScreenshot = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ }`;
     }
+
+    instrumentedCodeString = instrumentedCodeString.replaceAll(/(console.log)\s*\(/g, "updateClientSideTerminalLog(winID,");
+    instrumentedCodeString = instrumentedCodeString.replaceAll(/(console.warn)\s*\(/g, "updateClientSideTerminalWarn(winID,");
+    instrumentedCodeString = instrumentedCodeString.replaceAll(/(console.error)\s*\(/g, "updateClientSideTerminalError(winID,");
+    instrumentedCodeString = instrumentedCodeString.replaceAll(/(console.info)\s*\(/g, "updateClientSideTerminalInfo(winID,");
+
     console.log("instrumentedCodeString", instrumentedCodeString);
 
     // Let's split the code by semicolons(;)
@@ -174,7 +180,8 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     + instrumentedCodeString +
     `} catch (error) {
         errorMessage = error.name + ": " + error.message;
-        console.error(error);
+        //console.error(error);
+        updateClientSideTerminal([error.stack], winID, "error");
 
         // Find line number where error occurred
         errorLineNumber = parseInt(findPuppeteerErrorLineNumber(error.stack));
@@ -191,8 +198,8 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
             // All windows have finished executing now
             numBrowserWindowsFinishedCodeExecution = 0; // reset
             // Stop captures and send blank response 
-            capcon.stopCapture(process.stdout);
-            capcon.stopCapture(process.stderr);
+            //capcon.stopCapture(process.stdout);
+            //capcon.stopCapture(process.stderr);
             //console.log("snapshotLineToDOMSelectorData", snapshotLineToDOMSelectorData);
             // Do some extra processing of snapshotLineToDOMSelectorData here
                 // Per line, compare each pair of afterScreenshotBuffers and create pixelDiff attribute
@@ -544,12 +551,12 @@ const findPuppeteerErrorLineNumber = function(errorStackString){
 
 const evaluateCodeOnAllPages = function(wrappedCodeString){
     console.log("evaluateCodeOnAllPages");
-    capcon.startCapture(process.stdout, function (stdout) {
+    /*capcon.startCapture(process.stdout, function (stdout) {
         updateClientSideTerminal(stdout, false);
     });
     capcon.startCapture(process.stderr, function (stderr) {
         updateClientSideTerminal(stderr, true);
-    });
+    });*/
     const pageWinIDs = Object.keys(currentReq.app.locals.windowMetadata);
     let numPageWinIDs = [];
     pageWinIDs.forEach(element => numPageWinIDs.push(parseInt(element)));
@@ -573,17 +580,60 @@ const evaluateCodeOnAllPages = function(wrappedCodeString){
     }
 };
 
-const updateClientSideTerminal = function(stdOutOrErr, isError){
+const updateClientSideTerminalLog = function(winID, ...consoleArguments){
+    try{
+        updateClientSideTerminal(consoleArguments, winID, "log");
+    }catch(error){
+        // For inside evaluate, evaluateHandle
+        console.log(consoleArguments);
+    }
+};
+
+const updateClientSideTerminalWarn = function(winID, ...consoleArguments){
+    try{
+        updateClientSideTerminal(consoleArguments, winID, "warn");
+    }catch(error){
+        // For inside evaluate, evaluateHandle
+        console.warn(consoleArguments);
+    }
+};
+
+const updateClientSideTerminalError = function(winID, ...consoleArguments){
+    try{
+        updateClientSideTerminal(consoleArguments, winID, "error");
+    }catch(error){
+        // For inside evaluate, evaluateHandle
+        console.error(consoleArguments);
+    }
+};
+
+const updateClientSideTerminalInfo = function(winID, ...consoleArguments){
+    try{
+        updateClientSideTerminal(consoleArguments, winID, "info");
+    }catch(error){
+        // For inside evaluate, evaluateHandle
+        console.info(consoleArguments);
+    }
+};
+
+const updateClientSideTerminal = function(consoleArguments, pageWinID, logType){
+    let text = "";
+    for(let i = 0; i < consoleArguments.length; i++){
+        text += consoleArguments[i] + " ";
+    }
+    
     // Add new output/error to client-side terminal
     const editorBrowserViewWebContents = currentReq.app.locals.editorBrowserView.webContents;
 
     let className = "";
-    if(isError){
+    if(logType === "error"){
         className = "errorText";
+    }else if(logType === "warning"){
+        className = "warningText";
     }
 
     // Need to split stdOutOrErr by \n, so then we print each line individually
-    const itemsToPrint = stdOutOrErr.split('\n');
+    const itemsToPrint = text.split('\n');
     itemsToPrint.forEach(function(str){
         const escapedString = str.replaceAll(/'/ig, "\\'");
         const codeToRun = `
@@ -596,7 +646,8 @@ const updateClientSideTerminal = function(stdOutOrErr, isError){
         newPre.appendChild(newContent);
         newDiv.appendChild(newPre);
         newDiv.className = '${className}';
-        puppeteerTerminalElement = document.querySelector('#puppeteerTerminal');
+        //puppeteerTerminalElement = document.querySelector('#puppeteerTerminal');
+        puppeteerTerminalElement = document.querySelector('.puppeteerTerminal[winID="${pageWinID}"]');
         puppeteerTerminalElement.appendChild(newDiv);
         puppeteerTerminalElement.scrollIntoView(false);
         0

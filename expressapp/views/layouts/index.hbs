@@ -6,9 +6,20 @@
     <button id="stopRunning" class="clickableButton">Stop Running</button>
     <div id="paramEditor"></div>
     <div id="codeEditor"></div>
-    <div id="puppeteerTerminalArea">
-        <button id="puppeteerTerminalClearButton" class="clickableButton">Clear</button>
-        <div id="puppeteerTerminal"></div>
+    <div id="selectionAndTerminal">
+        <div id="selectionArea">
+            <select id="windowSelectMenu">
+            </select>
+            <button id="left" class="clickableButton" disabled>&lt;</button>
+            <button id="right" class="clickableButton" disabled>&gt;</button>
+        </div>
+        <div id="puppeteerTerminalArea">
+            <button id="puppeteerTerminalClearButton" class="clickableButton">Clear</button>
+            <div id="puppeteerTerminals">
+
+            </div>
+            <!--<div id="puppeteerTerminal"></div>-->
+        </div>
     </div>
     <div id="routesRoot" routesRoot="{{routesRoot}}"></div>
     <div id="snapshotsBrowserViewID" snapshotsBrowserViewID="{{snapshotsBrowserViewID}}"></div>

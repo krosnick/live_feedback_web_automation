@@ -321,6 +321,7 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
     }
     pageView.webContents.once('did-frame-finish-load', () => {
         req.app.locals.windowSelectionView.webContents.send("addWindow", pageView.webContents.id, paramString, isFirstWindow);
+        req.app.locals.editorBrowserView.webContents.send("addWindow", pageView.webContents.id, paramString, isFirstWindow);
 
         /*if(req.app.locals.windowMetadata[pageView.webContents.id].browserViews){
             req.app.locals.windowMetadata[pageView.webContents.id].browserViews.borderView = borderView;

@@ -581,9 +581,14 @@ const addTextToPuppeteerConsole = function(stdOutOrErr, isError){
         newPre.appendChild(newContent);
         newDiv.appendChild(newPre);
         newDiv.className = className;
-        puppeteerTerminalElement = document.querySelector('#puppeteerTerminal');
-        puppeteerTerminalElement.appendChild(newDiv);
-        puppeteerTerminalElement.scrollIntoView(false);
+        //puppeteerTerminalElement = document.querySelector('#puppeteerTerminal');
+        //puppeteerTerminalElement = document.querySelector(`.puppeteerTerminal[winID="${pageWinID}"]`);
+        puppeteerTerminalElements = document.querySelectorAll('.puppeteerTerminal');
+        for(let i = 0; i < puppeteerTerminalElements.length; i++){
+            const puppeteerTerminalElement = puppeteerTerminalElements[i];
+            puppeteerTerminalElement.appendChild(newDiv);
+            puppeteerTerminalElement.scrollIntoView(false);
+        }
     });  
 };
 
@@ -741,7 +746,8 @@ $(function(){
 
     $("body").on("click", "#puppeteerTerminalClearButton", function(e){
         // Should empty #puppeteerTerminal of all children
-        $("#puppeteerTerminal").empty();
+        //$("#puppeteerTerminal").empty();
+        $(".puppeteerTerminal").empty();
     });
 
     $("body").on("mouseenter", ".tooltip", function(e){
@@ -791,4 +797,39 @@ ipcRenderer.on('updateHideShowSnapshotsViewStatus', function(event, hideOrShow){
     }else{
         showSnapshotsView = true;
     }
+});
+
+ipcRenderer.on('addWindow', function(event, pageWinID, paramString, isFirstWindow){
+    console.log('addWindow occurred');
+    
+    // Create terminal div
+    $("#puppeteerTerminals").append(`<div class="puppeteerTerminal" winID="${pageWinID}"></div>`);
+
+    // Adding to selection menu
+    let selectMenu = document.querySelector('#windowSelectMenu');
+    let optionNode = document.createElement("option");
+    optionNode.setAttribute("value", pageWinID);
+    // If the window for this paramset was the first one created, then it's being shown and so this <option> should be selected
+    if(isFirstWindow){
+        optionNode.setAttribute("selected", "");
+    }
+    optionNode.textContent = paramString;
+    selectMenu.append(optionNode);
+
+    const currentValue = $("#windowSelectMenu").val();
+    const currentOptionNode = $('option[value="' + currentValue + '"');
+    // Check and see if after this addition, if the currently selected <option> has prev and next siblings (set left/right buttons disabled as appropriate)
+    if(currentOptionNode.prev().length === 0){
+        $("#left").prop("disabled",true);
+    }else{
+        $("#left").prop("disabled",false);
+    }
+    if(currentOptionNode.next().length === 0){
+        $("#right").prop("disabled",true);
+    }else{
+        $("#right").prop("disabled",false);
+    }
+    
+    /*// Set this variable to keep track of value
+    oldPageWinID = pageWinID;*/
 });
