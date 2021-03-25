@@ -75,8 +75,92 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
 
     const middleStringToWrap = updatedRunFuncString.substring(indexOfOpeningCurlyBrace + 1, indexOfClosingCurlyBrace);*/
 
+    // Process original string to replace console statements with updateClientSideTerminal calls
+        // (making sure to include winID arg), but skipping this for console statements that
+        // are inside of an evaluate or evaluateHandle
+
+    const originalCodeAST = acorn.parse(code, {
+        ecmaVersion: 2020,
+        allowAwaitOutsideFunction: true,
+        locations: true
+    });
+    let consoleCallsToReplace = [];
+    walk.ancestor(originalCodeAST, {
+        CallExpression(node, ancestors) {
+            //console.log("node", node);
+            //console.log("node.callee", node.callee);
+            if(node.callee && node.callee.object && node.callee.object.name === "console"){
+                //console.log("node.callee", node.callee);
+                if(node.callee.property && (node.callee.property.name === "log" || node.callee.property.name === "warn" || node.callee.property.name === "error" || node.callee.property.name === "info")){
+                    const method = node.callee.property.name;
+                    // Check to make sure it doesn't have evaluate or evaluateHandle ancestor
+                    const hasEvaluateAncestor = isInsideEvaluateOrEvaluateHandle(node, ancestors);
+                    if(!hasEvaluateAncestor){
+                        // Capture and store info in consoleCallsToReplace
+                        const consoleObj = {
+                            start: node.start,
+                            end: node.end,
+                            method: method
+                        }
+                        
+                        // If no arguments, then nothing to print actually, so can just ignore
+                        if(node.arguments && node.arguments.length > 0){
+                            const argumentsStartIndex = node.arguments[0].start;
+                            const argumentsEndIndex = node.arguments[node.arguments.length-1].end;
+                            consoleCallsToReplace.push({
+                                start: node.start,
+                                end: node.end,
+                                argumentsStartIndex: argumentsStartIndex,
+                                argumentsEndIndex: argumentsEndIndex,
+                                method: method
+                            });
+                        }
+                    }
+                }
+            }
+        }
+    });
+    // Sort from smallest 'start' to largest
+    consoleCallsToReplace.sort((a, b) => a.start - b.start);
+    console.log("consoleCallsToReplace", consoleCallsToReplace);
+
+    // Use consoleCallsToReplace to construct new code string (codeWithConsolesReplaced)
+    let codeWithConsolesReplaced = "";
+    // Take bits of original code string "code". For the parts that are in consoleCallsToReplace,
+        // replace appropriate parts with updateClientSideTerminal func calls
+    for(i = 0; i < consoleCallsToReplace.length; i++){
+        const obj = consoleCallsToReplace[i];
+        const thisStart = obj.start;
+        const thisEnd = obj.end;
+        const method = obj.method;
+        const argumentsStartIndex = obj.argumentsStartIndex;
+        const argumentsEndIndex = obj.argumentsEndIndex;
+        if(i === 0){
+            // Substring from very beginning of string
+            codeWithConsolesReplaced += code.substring(0, thisStart);
+        }
+
+        // Now, fix this console instance
+        codeWithConsolesReplaced += "updateClientSideTerminal([";
+        codeWithConsolesReplaced += code.substring(argumentsStartIndex, argumentsEndIndex);
+        codeWithConsolesReplaced += `], winID, "${method}")`;
+
+        // Now, take rest of string until next console obj
+        if(i === consoleCallsToReplace.length - 1){
+            // This is final obj. Take string until very end.
+            codeWithConsolesReplaced += code.substring(thisEnd);
+        }else{
+            // Next console obj
+            const nextStart = consoleCallsToReplace[i+1].start;
+            codeWithConsolesReplaced += code.substring(thisEnd, nextStart);
+        }
+    }
+
+    console.log("codeWithConsolesReplaced", codeWithConsolesReplaced);
+
+    // Process new string and instrument to take snapshots, etc
     // AST processing
-    const acornAST = acorn.parse(code, {
+    const acornAST = acorn.parse(codeWithConsolesReplaced, {
         ecmaVersion: 2020,
         allowAwaitOutsideFunction: true,
         locations: true
@@ -139,20 +223,15 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         instrumentedCodeString += `; snapshotCaptured = false; try { beforePageContent = await page.content(); snapshotCaptured = true; } catch(e){ } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; beforePageContent = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ }`;
         if(i === 0){
             // Substring from beginning of string
-            instrumentedCodeString += code.substring(0, endIndex);
+            instrumentedCodeString += codeWithConsolesReplaced.substring(0, endIndex);
         }else{
             const priorEndIndex = endIndices[i-1];
-            instrumentedCodeString += code.substring(priorEndIndex, endIndex);
+            instrumentedCodeString += codeWithConsolesReplaced.substring(priorEndIndex, endIndex);
         }
         //instrumentedCodeString += `; await page.waitFor(500); pageContent = await page.content(); lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { domString: pageContent, selectorData: ${JSON.stringify(selectorData)} }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj;`;
         //instrumentedCodeString += `; afterPageContent = await page.content(); lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, afterDomString: afterPageContent, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj;`;
         instrumentedCodeString += `; snapshotCaptured = false; try { afterPageContent = await page.content(); afterPageScreenshot = await page.screenshot({ fullPage: false, clip: { x: 0, y: 0, width: 500, height: 500 } } ); snapshotCaptured = true; } catch(e){ } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; if(!(lineObj[winID])){ lineObj[winID] = {}; } lineObj[winID].afterDomString = afterPageContent; lineObj[winID].afterScreenshotBuffer = afterPageScreenshot; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; afterPageContent = null; afterPageScreenshot = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ }`;
     }
-
-    instrumentedCodeString = instrumentedCodeString.replaceAll(/(console.log)\s*\(/g, "updateClientSideTerminalLog(winID,");
-    instrumentedCodeString = instrumentedCodeString.replaceAll(/(console.warn)\s*\(/g, "updateClientSideTerminalWarn(winID,");
-    instrumentedCodeString = instrumentedCodeString.replaceAll(/(console.error)\s*\(/g, "updateClientSideTerminalError(winID,");
-    instrumentedCodeString = instrumentedCodeString.replaceAll(/(console.info)\s*\(/g, "updateClientSideTerminalInfo(winID,");
 
     console.log("instrumentedCodeString", instrumentedCodeString);
 
@@ -577,42 +656,6 @@ const evaluateCodeOnAllPages = function(wrappedCodeString){
         updatedCodeString = `const parametersString = ${JSON.stringify(paramSetObj)};` + pageVarCode + allParamsVarCode + updatedCodeString + `; runUserCode(${pageWinID});`;
         //updatedCodeString += ` x(${borderWinID});`;
         eval(updatedCodeString);
-    }
-};
-
-const updateClientSideTerminalLog = function(winID, ...consoleArguments){
-    try{
-        updateClientSideTerminal(consoleArguments, winID, "log");
-    }catch(error){
-        // For inside evaluate, evaluateHandle
-        console.log(consoleArguments);
-    }
-};
-
-const updateClientSideTerminalWarn = function(winID, ...consoleArguments){
-    try{
-        updateClientSideTerminal(consoleArguments, winID, "warn");
-    }catch(error){
-        // For inside evaluate, evaluateHandle
-        console.warn(consoleArguments);
-    }
-};
-
-const updateClientSideTerminalError = function(winID, ...consoleArguments){
-    try{
-        updateClientSideTerminal(consoleArguments, winID, "error");
-    }catch(error){
-        // For inside evaluate, evaluateHandle
-        console.error(consoleArguments);
-    }
-};
-
-const updateClientSideTerminalInfo = function(winID, ...consoleArguments){
-    try{
-        updateClientSideTerminal(consoleArguments, winID, "info");
-    }catch(error){
-        // For inside evaluate, evaluateHandle
-        console.info(consoleArguments);
     }
 };
 
