@@ -168,6 +168,7 @@ const addExampleWindows = function(req, paramSets){
 const resetExampleWindows = function(req, startingUrl){
     // First, clear #windowSelectMenu in windowSelection view
     req.app.locals.windowSelectionView.webContents.send("clear");
+    req.app.locals.editorBrowserView.webContents.send("clear");
     // Clear winID list in editor UI
     req.app.locals.editorBrowserView.webContents.send("clearWindowList");
 

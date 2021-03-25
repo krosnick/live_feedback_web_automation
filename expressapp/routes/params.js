@@ -70,6 +70,7 @@ router.put('/update/', function(req, res, next) {
                                     webContents.fromId(borderWinID).send("updateParameters", paramString);
                                     // Update paramsets listed in dropdown menu
                                     req.app.locals.windowSelectionView.webContents.send("updateParameters", pageWinID, paramString);
+                                    req.app.locals.editorBrowserView.webContents.send("updateParameters", pageWinID, paramString);
                                 }
                             }
                         }

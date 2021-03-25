@@ -906,3 +906,14 @@ ipcRenderer.on('addWindow', function(event, pageWinID, paramString, isFirstWindo
     /*// Set this variable to keep track of value
     oldPageWinID = pageWinID;*/
 });
+
+ipcRenderer.on('updateParameters', function(event, pageWinID, paramString){
+    console.log('updateParameters occurred');
+    const selector = '#windowSelectMenu option[value="' + pageWinID + '"]';
+    document.querySelector(selector).textContent = paramString;
+});
+
+ipcRenderer.on('clear', function(event){
+    document.querySelector('#windowSelectMenu').innerHTML = "";
+    $("#puppeteerTerminals").empty();
+});
