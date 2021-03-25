@@ -802,9 +802,6 @@ ipcRenderer.on('updateHideShowSnapshotsViewStatus', function(event, hideOrShow){
 ipcRenderer.on('addWindow', function(event, pageWinID, paramString, isFirstWindow){
     console.log('addWindow occurred');
     
-    // Create terminal div
-    $("#puppeteerTerminals").append(`<div class="puppeteerTerminal" winID="${pageWinID}"></div>`);
-
     // Adding to selection menu
     let selectMenu = document.querySelector('#windowSelectMenu');
     let optionNode = document.createElement("option");
@@ -812,6 +809,11 @@ ipcRenderer.on('addWindow', function(event, pageWinID, paramString, isFirstWindo
     // If the window for this paramset was the first one created, then it's being shown and so this <option> should be selected
     if(isFirstWindow){
         optionNode.setAttribute("selected", "");
+        // Create terminal div and show it
+        $("#puppeteerTerminals").append(`<div class="puppeteerTerminal" winID="${pageWinID}"></div>`);
+    }else{
+        // Create terminal div and hide it
+        $("#puppeteerTerminals").append(`<div class="puppeteerTerminal" winID="${pageWinID}" style="display:none"></div>`);
     }
     optionNode.textContent = paramString;
     selectMenu.append(optionNode);
