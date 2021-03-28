@@ -296,9 +296,8 @@ function createWindow () {
     snapshotsBrowserView.setBounds({ x: 780, y: 1000, width: 920, height: 905 });
     //snapshotsBrowserView.setBounds({ x: 800, y: 0, width: 860, height: 820 });
     snapshotsBrowserView.webContents.loadURL('http://localhost:3000/snapshots');
-    if(expressApp.locals.devMode){
-        snapshotsBrowserView.webContents.openDevTools({mode: "detach"});
-    }
+    // Render devtools within app UI, so that users can inspect snapshot DOMs if they want to
+    snapshotsBrowserView.webContents.openDevTools({mode: "bottom"});
     expressApp.locals.snapshotsBrowserView = snapshotsBrowserView;
     expressApp.locals.snapshotsBrowserViewID = snapshotsBrowserView.webContents.id;
 
