@@ -60,7 +60,7 @@ $(function(){
 
     $("body").on("click", ".zoomIn", function(e){
         // Find the iframe element that should be zoomed
-        const iframeElement = $(e.target).closest(".outerSnapshotContainer").find("iframe");
+        const iframeElement = $(e.target).closest(".moreOuterSnapshotContainer").find("iframe");
         // Adjust transform
         const currentTransformString = iframeElement.css("transform");
         const scaleNum = getScaleNum(currentTransformString);
@@ -72,7 +72,7 @@ $(function(){
 
     $("body").on("click", ".zoomOut", function(e){
         // Find the iframe element that should be zoomed
-        const iframeElement = $(e.target).closest(".outerSnapshotContainer").find("iframe");
+        const iframeElement = $(e.target).closest(".moreOuterSnapshotContainer").find("iframe");
         // Adjust transform
         const currentTransformString = iframeElement.css("transform");
         const scaleNum = getScaleNum(currentTransformString);
@@ -269,23 +269,27 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
                             ${parametersString}
                             <span class="errorText">${errorString}</span>
                         </span>
-                        <button class="hideRun hideShowRun" winID='${winID}'>Hide</button>
+                        <button class="hideRun hideShowRun clickableButton" winID='${winID}'>Hide</button>
                     </span>
-                    <button class="showRun hideShowRun" winID='${winID}'>Show</button>
+                    <button class="showRun hideShowRun clickableButton" winID='${winID}'>Show</button>
                 </div>
-                <div class="outerSnapshotContainer" winID='${winID}'>
-                    <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn">+</button>
-                    <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut">-</button>
-                    <div class="snapshotContainer" winID='${winID}'>
-                        <iframe winID='${winID}' class='snapshot beforeSnapshot'></iframe>
+                <div class="moreOuterSnapshotContainer" winID='${winID}'>
+                    <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn clickableButton">+</button>
+                    <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut clickableButton">-</button>
+                    <div class="outerSnapshotContainer" winID='${winID}'>
+                        <div class="snapshotContainer" winID='${winID}'>
+                            <iframe winID='${winID}' class='snapshot beforeSnapshot'></iframe>
+                        </div>
                     </div>
                 </div>
                 <div class="downArrow" winID='${winID}'>&#8595;</div>
-                <div class="outerSnapshotContainer" winID='${winID}'>
-                    <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn">+</button>
-                    <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut">-</button>
-                    <div class="snapshotContainer" winID='${winID}'>
-                        <iframe winID='${winID}' class='snapshot afterSnapshot'></iframe>
+                <div class="moreOuterSnapshotContainer" winID='${winID}'>
+                    <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn clickableButton">+</button>
+                    <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut clickableButton">-</button>
+                    <div class="outerSnapshotContainer" winID='${winID}'>
+                        <div class="snapshotContainer" winID='${winID}'>
+                            <iframe winID='${winID}' class='snapshot afterSnapshot'></iframe>
+                        </div>
                     </div>
                 </div>
             `);
@@ -296,23 +300,27 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
                         <span class="runInfo" winID='${winID}'>
                             ${parametersString}
                         </span>
-                        <button class="hideRun hideShowRun" winID='${winID}'>Hide</button>
+                        <button class="hideRun hideShowRun clickableButton" winID='${winID}'>Hide</button>
                     </span>
-                    <button class="showRun hideShowRun" winID='${winID}' style="display: block;">Show</button>
+                    <button class="showRun hideShowRun clickableButton" winID='${winID}' style="display: block;">Show</button>
                 </div>
-                <div class="outerSnapshotContainer" winID='${winID}' style="width: 50px; resize: none;">
-                    <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn" style="visibility: hidden;">+</button>
-                    <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut" style="visibility: hidden;">-</button>
-                    <div class="snapshotContainer" winID='${winID}' style="width: 50px;">
-                        <iframe winID='${winID}' class='snapshot beforeSnapshot' style="visibility: hidden;"></iframe>
+                <div class="moreOuterSnapshotContainer" winID='${winID}'>
+                    <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn clickableButton" style="visibility: hidden;">+</button>
+                    <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut clickableButton" style="visibility: hidden;">-</button>
+                    <div class="outerSnapshotContainer" winID='${winID}' style="width: 50px; resize: none;">
+                        <div class="snapshotContainer" winID='${winID}' style="width: 50px;">
+                            <iframe winID='${winID}' class='snapshot beforeSnapshot' style="visibility: hidden;"></iframe>
+                        </div>
                     </div>
                 </div>
                 <div class="downArrow" winID='${winID}' style="width: 50px;">&#8595;</div>
-                <div class="outerSnapshotContainer" winID='${winID}' style="width: 50px; resize: none;">
-                    <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn" style="visibility: hidden;">+</button>
-                    <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut" style="visibility: hidden;">-</button>
-                    <div class="snapshotContainer" winID='${winID}' style="width: 50px;">
-                        <iframe winID='${winID}' class='snapshot afterSnapshot' style="visibility: hidden;"></iframe>
+                <div class="moreOuterSnapshotContainer" winID='${winID}'>
+                    <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn clickableButton" style="visibility: hidden;">+</button>
+                    <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut clickableButton" style="visibility: hidden;">-</button>
+                    <div class="outerSnapshotContainer" winID='${winID}' style="width: 50px; resize: none;">
+                        <div class="snapshotContainer" winID='${winID}' style="width: 50px;">
+                            <iframe winID='${winID}' class='snapshot afterSnapshot' style="visibility: hidden;"></iframe>
+                        </div>
                     </div>
                 </div>
             `);

@@ -125,6 +125,14 @@ body {
     resize: both;
 }
 
+.moreOuterSnapshotContainer {
+    min-width: min-content;
+    min-height: min-content;
+    max-width: min-content;
+    max-height: min-content;
+    position: relative;
+}
+
 .runInfo {
     position: absolute;
     left: 0px;
@@ -148,6 +156,7 @@ body {
     position: relative;
     width: 250px;
     height: 125px;
+    transform: scale(1.0); /* Default, in case JS doesn't set it */
 }
 
 .beforeSnapshot {
@@ -178,4 +187,8 @@ body {
 .zoomOut {
     top: 0px;
     right: 0px;
+}
+
+.clickableButton {
+    cursor: pointer;
 }
