@@ -17,14 +17,15 @@ $(function(){
         const winID = $(e.target).attr("winID");
         const clusterIndex = $(e.target).closest(".cluster").attr("clusterIndex");
         $(`.cluster[clusterIndex="${clusterIndex}"] .snapshot[winID="${winID}"]`).css("visibility", "hidden");
+        $(`.cluster[clusterIndex="${clusterIndex}"] .zoomButton[winID="${winID}"]`).css("visibility", "hidden");
         $(`.cluster[clusterIndex="${clusterIndex}"] .snapshotContainer[winID="${winID}"]`).animate({
-            width: "30px"
+            width: "50px"
         }, 500);
         $(`.cluster[clusterIndex="${clusterIndex}"] .colHeader[winID="${winID}"]`).animate({
-            width: "30px"
+            width: "50px"
         }, 500);
         $(`.cluster[clusterIndex="${clusterIndex}"] .downArrow[winID="${winID}"]`).animate({
-            width: "30px"
+            width: "50px"
         }, 500);
     });
 
@@ -45,6 +46,7 @@ $(function(){
         $(`.cluster[clusterIndex="${clusterIndex}"] .downArrow[winID="${winID}"]`).animate({
             width: "250px"
         }, 500);
+        $(`.cluster[clusterIndex="${clusterIndex}"] .zoomButton[winID="${winID}"]`).css("visibility", "visible");
         $(`.cluster[clusterIndex="${clusterIndex}"] .snapshot[winID="${winID}"]`).css("visibility", "visible");
     });
 });
@@ -219,35 +221,43 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
                             ${parametersString}
                             <span class="errorText">${errorString}</span>
                         </span>
-                        <button class="hideRun hideShowRun" winID='${winID}'>-</button>
+                        <button class="hideRun hideShowRun" winID='${winID}'>Hide</button>
                     </span>
-                    <button class="showRun hideShowRun" winID='${winID}'>+</button>
+                    <button class="showRun hideShowRun" winID='${winID}'>Show</button>
                 </div>
                 <div class="snapshotContainer" winID='${winID}'>
                     <iframe winID='${winID}' class='snapshot beforeSnapshot'></iframe>
+                    <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn">+</button>
+                    <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut">-</button>
                 </div>
                 <div class="downArrow" winID='${winID}'>&#8595;</div>
                 <div class="snapshotContainer" winID='${winID}'>
                     <iframe winID='${winID}' class='snapshot afterSnapshot'></iframe>
+                    <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn">+</button>
+                    <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut">-</button>
                 </div>
             `);
         }else{
             clusterElement.append(`
-                <div class="colHeader" winID='${winID}' style="width: 30px;">
+                <div class="colHeader" winID='${winID}' style="width: 50px;">
                     <span class="fullViewContents" style="display: none;">
                         <span class="runInfo" winID='${winID}'>
                             ${parametersString}
                         </span>
-                        <button class="hideRun hideShowRun" winID='${winID}'>-</button>
+                        <button class="hideRun hideShowRun" winID='${winID}'>Hide</button>
                     </span>
-                    <button class="showRun hideShowRun" winID='${winID}' style="display: block;">+</button>
+                    <button class="showRun hideShowRun" winID='${winID}' style="display: block;">Show</button>
                 </div>
-                <div class="snapshotContainer" winID='${winID}' style="width: 30px;">
+                <div class="snapshotContainer" winID='${winID}' style="width: 50px;">
                     <iframe winID='${winID}' class='snapshot beforeSnapshot' style="visibility: hidden;"></iframe>
+                    <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn" style="visibility: hidden;">+</button>
+                    <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut" style="visibility: hidden;">-</button>
                 </div>
-                <div class="downArrow" winID='${winID}' style="width: 30px;">&#8595;</div>
-                <div class="snapshotContainer" winID='${winID}' style="width: 30px;">
+                <div class="downArrow" winID='${winID}' style="width: 50px;">&#8595;</div>
+                <div class="snapshotContainer" winID='${winID}' style="width: 50px;">
                     <iframe winID='${winID}' class='snapshot afterSnapshot' style="visibility: hidden;"></iframe>
+                    <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn" style="visibility: hidden;">+</button>
+                    <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut" style="visibility: hidden;">-</button>
                 </div>
             `);
         }
