@@ -3,7 +3,7 @@ body {
 }
 
 #container {
-    border: 1px solid gray;
+    /*border: 1px solid gray;*/
     padding: 5px;
     position: relative !important;
     transform: none !important;
@@ -26,7 +26,7 @@ body {
     height: 420px;
     background-color: white;
     color: black;
-    border: 1px solid gray;
+    /*border: 1px solid gray;*/
     /*z-index: -1;*/
 }
 
@@ -57,7 +57,8 @@ body {
     /*position: relative;*/
     display: grid;
     grid-auto-flow: column;
-    grid-template-rows: 20px 360px;
+    /*grid-template-rows: 20px 360px;*/
+    grid-template-rows: 20px auto;
     grid-column-gap: 30px;
     grid-row-gap: 10px;
     overflow-x: scroll;
@@ -65,7 +66,8 @@ body {
     left: 70px;
     /*width: 520px;*/
     width: calc(100% - 70px);
-    height: 430px;
+    /*height: 430px;*/
+    height: min-content;
 }
 
 .beforeAfterLabel {
@@ -78,11 +80,14 @@ body {
     padding: 10px;
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(min-content, 250px));
-    grid-template-rows: 20px 125px 20px 125px;
+    /*grid-template-rows: 20px 125px 20px 125px;*/
+    grid-template-rows: 20px auto 20px auto;
+    /*grid-template-rows: 20px min-content 20px min-content;*/
     grid-auto-flow: column;
     grid-column-gap: 10px;
     grid-row-gap: 10px;
-    height: 360px;
+    /*height: 360px;*/
+    height: min-content;
 }
 
 .downArrow {
@@ -97,19 +102,27 @@ body {
 }
 
 .snapshotContainer {
-    max-width: 250px;
-    width: min-content;
+    /*max-width: 250px;*/
+    /*width: min-content;
+    height: min-content;*/
+    min-width: min-content;
+    min-height: min-content;
     /*overflow: hidden;*/
     overflow-x: scroll;
     overflow-y: hidden;
-    position: relative;
+    /*position: relative;*/
+    position: absolute;
 }
 
 .outerSnapshotContainer {
-    max-width: 250px;
-    width: min-content;
+    /*max-width: 250px;*/
+    /*width: min-content;*/
+    width: 250px;
+    height: 125px;
     position: relative;
-    overflow: hidden;
+    /*overflow: hidden;*/
+    overflow: scroll;
+    resize: both;
 }
 
 .runInfo {

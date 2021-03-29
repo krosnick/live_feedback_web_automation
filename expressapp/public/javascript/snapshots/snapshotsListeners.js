@@ -18,6 +18,10 @@ $(function(){
         const clusterIndex = $(e.target).closest(".cluster").attr("clusterIndex");
         $(`.cluster[clusterIndex="${clusterIndex}"] .snapshot[winID="${winID}"]`).css("visibility", "hidden");
         $(`.cluster[clusterIndex="${clusterIndex}"] .zoomButton[winID="${winID}"]`).css("visibility", "hidden");
+        $(`.cluster[clusterIndex="${clusterIndex}"] .outerSnapshotContainer[winID="${winID}"]`).css("resize", "none");
+        $(`.cluster[clusterIndex="${clusterIndex}"] .outerSnapshotContainer[winID="${winID}"]`).animate({
+            width: "50px"
+        }, 500);
         $(`.cluster[clusterIndex="${clusterIndex}"] .snapshotContainer[winID="${winID}"]`).animate({
             width: "50px"
         }, 500);
@@ -46,6 +50,10 @@ $(function(){
         $(`.cluster[clusterIndex="${clusterIndex}"] .downArrow[winID="${winID}"]`).animate({
             width: "250px"
         }, 500);
+        $(`.cluster[clusterIndex="${clusterIndex}"] .outerSnapshotContainer[winID="${winID}"]`).animate({
+            width: "250px"
+        }, 500);
+        $(`.cluster[clusterIndex="${clusterIndex}"] .outerSnapshotContainer[winID="${winID}"]`).css("resize", "both");
         $(`.cluster[clusterIndex="${clusterIndex}"] .zoomButton[winID="${winID}"]`).css("visibility", "visible");
         $(`.cluster[clusterIndex="${clusterIndex}"] .snapshot[winID="${winID}"]`).css("visibility", "visible");
     });
@@ -292,7 +300,7 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
                     </span>
                     <button class="showRun hideShowRun" winID='${winID}' style="display: block;">Show</button>
                 </div>
-                <div class="outerSnapshotContainer" winID='${winID}'>
+                <div class="outerSnapshotContainer" winID='${winID}' style="width: 50px; resize: none;">
                     <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn" style="visibility: hidden;">+</button>
                     <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut" style="visibility: hidden;">-</button>
                     <div class="snapshotContainer" winID='${winID}' style="width: 50px;">
@@ -300,7 +308,7 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
                     </div>
                 </div>
                 <div class="downArrow" winID='${winID}' style="width: 50px;">&#8595;</div>
-                <div class="outerSnapshotContainer" winID='${winID}'>
+                <div class="outerSnapshotContainer" winID='${winID}' style="width: 50px; resize: none;">
                     <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn" style="visibility: hidden;">+</button>
                     <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut" style="visibility: hidden;">-</button>
                     <div class="snapshotContainer" winID='${winID}' style="width: 50px;">
