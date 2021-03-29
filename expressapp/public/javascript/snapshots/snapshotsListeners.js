@@ -49,6 +49,30 @@ $(function(){
         $(`.cluster[clusterIndex="${clusterIndex}"] .zoomButton[winID="${winID}"]`).css("visibility", "visible");
         $(`.cluster[clusterIndex="${clusterIndex}"] .snapshot[winID="${winID}"]`).css("visibility", "visible");
     });
+
+    $("body").on("click", ".zoomIn", function(e){
+        // Find the iframe element that should be zoomed
+        const iframeElement = $(e.target).closest(".outerSnapshotContainer").find("iframe");
+        // Adjust transform
+        const currentTransformString = iframeElement.css("transform");
+        const scaleNum = getScaleNum(currentTransformString);
+        if(scaleNum !== null){
+            const newScaleNum = scaleNum + 0.1;
+            iframeElement.css("transform", `scale(${newScaleNum})`);
+        }
+    });
+
+    $("body").on("click", ".zoomOut", function(e){
+        // Find the iframe element that should be zoomed
+        const iframeElement = $(e.target).closest(".outerSnapshotContainer").find("iframe");
+        // Adjust transform
+        const currentTransformString = iframeElement.css("transform");
+        const scaleNum = getScaleNum(currentTransformString);
+        if(scaleNum !== null){
+            const newScaleNum = Math.max(scaleNum - 0.1, 0);
+            iframeElement.css("transform", `scale(${newScaleNum})`);
+        }
+    });
 });
 
 ipcRenderer.on("newSnapshots", function(event, snapshotsData, componentsData, errData){
@@ -78,6 +102,22 @@ ipcRenderer.on("deleteAfterDomStringForLine", function(event, lineNumberStr){
         delete data["afterDomString"];
     }
 });
+
+function getScaleNum(transformString){
+    if(transformString.indexOf("scale") >= 0){
+        const openParenIndex = transformString.indexOf("(");
+        const closeParenIndex = transformString.indexOf(")");
+        const num = transformString.substring(openParenIndex+1, closeParenIndex);
+        return parseFloat(num);
+    }else if(transformString.indexOf("matrix") >= 0){
+        const openParenIndex = transformString.indexOf("(");
+        const firstCommaIndex = transformString.indexOf(",");
+        const num = transformString.substring(openParenIndex+1, firstCommaIndex);
+        return parseFloat(num);
+    }else{
+        return null;
+    }
+}
 
 function createSnapshots(lineNumber, currentSelector){
     // Should update the tooltip that's being shown
@@ -225,16 +265,20 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
                     </span>
                     <button class="showRun hideShowRun" winID='${winID}'>Show</button>
                 </div>
-                <div class="snapshotContainer" winID='${winID}'>
-                    <iframe winID='${winID}' class='snapshot beforeSnapshot'></iframe>
+                <div class="outerSnapshotContainer" winID='${winID}'>
                     <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn">+</button>
                     <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut">-</button>
+                    <div class="snapshotContainer" winID='${winID}'>
+                        <iframe winID='${winID}' class='snapshot beforeSnapshot'></iframe>
+                    </div>
                 </div>
                 <div class="downArrow" winID='${winID}'>&#8595;</div>
-                <div class="snapshotContainer" winID='${winID}'>
-                    <iframe winID='${winID}' class='snapshot afterSnapshot'></iframe>
+                <div class="outerSnapshotContainer" winID='${winID}'>
                     <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn">+</button>
                     <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut">-</button>
+                    <div class="snapshotContainer" winID='${winID}'>
+                        <iframe winID='${winID}' class='snapshot afterSnapshot'></iframe>
+                    </div>
                 </div>
             `);
         }else{
@@ -248,16 +292,20 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
                     </span>
                     <button class="showRun hideShowRun" winID='${winID}' style="display: block;">Show</button>
                 </div>
-                <div class="snapshotContainer" winID='${winID}' style="width: 50px;">
-                    <iframe winID='${winID}' class='snapshot beforeSnapshot' style="visibility: hidden;"></iframe>
+                <div class="outerSnapshotContainer" winID='${winID}'>
                     <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn" style="visibility: hidden;">+</button>
                     <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut" style="visibility: hidden;">-</button>
+                    <div class="snapshotContainer" winID='${winID}' style="width: 50px;">
+                        <iframe winID='${winID}' class='snapshot beforeSnapshot' style="visibility: hidden;"></iframe>
+                    </div>
                 </div>
                 <div class="downArrow" winID='${winID}' style="width: 50px;">&#8595;</div>
-                <div class="snapshotContainer" winID='${winID}' style="width: 50px;">
-                    <iframe winID='${winID}' class='snapshot afterSnapshot' style="visibility: hidden;"></iframe>
+                <div class="outerSnapshotContainer" winID='${winID}'>
                     <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn" style="visibility: hidden;">+</button>
                     <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut" style="visibility: hidden;">-</button>
+                    <div class="snapshotContainer" winID='${winID}' style="width: 50px;">
+                        <iframe winID='${winID}' class='snapshot afterSnapshot' style="visibility: hidden;"></iframe>
+                    </div>
                 </div>
             `);
         }

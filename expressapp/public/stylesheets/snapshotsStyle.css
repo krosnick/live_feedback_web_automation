@@ -99,8 +99,17 @@ body {
 .snapshotContainer {
     max-width: 250px;
     width: min-content;
-    overflow: hidden;
+    /*overflow: hidden;*/
+    overflow-x: scroll;
+    overflow-y: hidden;
     position: relative;
+}
+
+.outerSnapshotContainer {
+    max-width: 250px;
+    width: min-content;
+    position: relative;
+    overflow: hidden;
 }
 
 .runInfo {
@@ -145,6 +154,7 @@ body {
     width: 24px;
     height: 24px;
     opacity: 0.7;
+    z-index: 1;
 }
 
 .zoomIn {
