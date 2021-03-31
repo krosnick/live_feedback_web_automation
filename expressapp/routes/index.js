@@ -303,6 +303,7 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
             nodeIntegration: true,
             webSecurity: false,
             enableRemoteModule: true,
+            zoomFactor: .8,
             preload: path.resolve(__dirname, '../public/javascript/pageViewPreload.js')
         }
     });

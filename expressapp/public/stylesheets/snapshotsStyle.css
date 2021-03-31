@@ -156,8 +156,8 @@ body {
     position: relative;
     /*width: 250px;
     height: 125px;*/
-    width: 1032px;
-    height: 1032px;
+    width: 1075px;
+    height: 1075px;
     transform: scale(1.0); /* Default, in case JS doesn't set it */
     transform-origin: left top;
 }
