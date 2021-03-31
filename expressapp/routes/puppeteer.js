@@ -155,6 +155,9 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
             codeWithConsolesReplaced += code.substring(thisEnd, nextStart);
         }
     }
+    if(consoleCallsToReplace.length === 0){
+        codeWithConsolesReplaced = code;
+    }
 
     console.log("codeWithConsolesReplaced", codeWithConsolesReplaced);
 
@@ -231,6 +234,9 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         //instrumentedCodeString += `; await page.waitFor(500); pageContent = await page.content(); lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { domString: pageContent, selectorData: ${JSON.stringify(selectorData)} }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj;`;
         //instrumentedCodeString += `; afterPageContent = await page.content(); lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, afterDomString: afterPageContent, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj;`;
         instrumentedCodeString += `; snapshotCaptured = false; try { afterPageContent = await page.content(); afterPageScreenshot = await page.screenshot({ fullPage: false, clip: { x: 0, y: 0, width: 500, height: 500 } } ); snapshotCaptured = true; } catch(e){ } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; if(!(lineObj[winID])){ lineObj[winID] = {}; } lineObj[winID].afterDomString = afterPageContent; lineObj[winID].afterScreenshotBuffer = afterPageScreenshot; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; afterPageContent = null; afterPageScreenshot = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ }`;
+    }
+    if(endIndices.length === 0){
+        instrumentedCodeString = codeWithConsolesReplaced;
     }
 
     console.log("instrumentedCodeString", instrumentedCodeString);
