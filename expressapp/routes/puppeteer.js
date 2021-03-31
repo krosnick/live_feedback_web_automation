@@ -182,8 +182,10 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
                 const selectorInfo = checkForSelector(node.expression, ancestors);
                 if(selectorInfo){
                     const prevStatement = findPrevStatement(node.expression, ancestors[ancestors.length-2]);
-                    const prevLineNumber = prevStatement.loc.start.line;
-                    selectorInfo.prevLineNumber = prevLineNumber;
+                    if(prevStatement){
+                        const prevLineNumber = prevStatement.loc.start.line;
+                        selectorInfo.prevLineNumber = prevLineNumber;
+                    }
                     statementAndDeclarationData[node.end].selectorData = selectorInfo;
                 }
             }
@@ -203,8 +205,10 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
                     const selectorInfo = checkForSelector(node.declarations[0].init, ancestors);
                     if(selectorInfo){
                         const prevStatement = findPrevStatement(node.declarations[0].init, ancestors[ancestors.length-2]);
-                        const prevLineNumber = prevStatement.loc.start.line;
-                        selectorInfo.prevLineNumber = prevLineNumber;
+                        if(prevStatement){
+                            const prevLineNumber = prevStatement.loc.start.line;
+                            selectorInfo.prevLineNumber = prevLineNumber;
+                        }
                         statementAndDeclarationData[node.end].selectorData = selectorInfo;
                     }
                 }

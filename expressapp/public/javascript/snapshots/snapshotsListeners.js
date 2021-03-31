@@ -345,8 +345,10 @@ function scaleIframe(iframeElement, lineObj, transformOriginString, currentSelec
         if(currentSelector){
             //const selector = lineObj.selectorData.selectorString;
             const selectorElement = iframeDocument.querySelector(currentSelector);
-            
-            // Zoom to selector element if it is present in DOM
+            if(selectorElement){
+                addCursorAndBorder(iframeElement, currentSelector);
+            }
+            /*// Zoom to selector element if it is present in DOM
             if(selectorElement){
                 scaleToElement(selectorElement, iframeElement, iframeDocument, transformOriginString);
                 //addCursorAndBorder(iframeElement, lineObj.selectorData.method, lineObj.selectorData.selectorString);
@@ -355,7 +357,7 @@ function scaleIframe(iframeElement, lineObj, transformOriginString, currentSelec
             }else{
                 // TODO - Check if this is a keyboard command and if the prior command had a selector it was operating on
 
-            }
+            }*/
         }
         // Otherwise, scale to page width
         scaleToPageWidth(iframeElement, iframeDocument, transformOriginString);
