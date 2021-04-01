@@ -300,7 +300,7 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
 
     const pageView = new BrowserView({
         webPreferences: {
-            nodeIntegration: true,
+            nodeIntegration: false,
             webSecurity: false,
             enableRemoteModule: true,
             zoomFactor: .8,
