@@ -96,8 +96,11 @@ ipcRenderer.on("newSnapshots", function(event, snapshotsData, componentsData, er
 
 ipcRenderer.on("showLineNumber", function(event, lineNumber, selector){
     console.log("showLineNumber");
-    $("#lineNumber").text(lineNumber);
-    createSnapshots(lineNumber, selector);
+    // Only update if different line number
+    if(lineNumber !== parseInt($("#lineNumber").text().trim())){
+        $("#lineNumber").text(lineNumber);
+        createSnapshots(lineNumber, selector);
+    }
 });
 
 ipcRenderer.on("deleteAllSnapshotsForLine", function(event, lineNumberStr){
