@@ -103,6 +103,12 @@ ipcRenderer.on("showLineNumber", function(event, lineNumber, selector){
     }
 });
 
+ipcRenderer.on("forceShowLineNumber", function(event, lineNumber, selector){
+    console.log("forceShowLineNumber");
+    $("#lineNumber").text(lineNumber);
+    createSnapshots(lineNumber, selector);
+});
+
 ipcRenderer.on("deleteAllSnapshotsForLine", function(event, lineNumberStr){
     delete snapshotLineToDOMSelectorData[lineNumberStr];
 });

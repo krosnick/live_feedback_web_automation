@@ -297,6 +297,9 @@ function editorOnDidChangeCursorPosition(e){
     if(mightBeOutOfSync){
         mightBeOutOfSync = false;
         
+        // Tell snapshots view to update snapshots shown (since snapshots might be different now for the currently selected line number)
+        ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "forceShowLineNumber", lineNumber, currentSelector);
+
         // Depending on hide/show snapshots button status, tell server to /showSnapshotView
         if(showSnapshotsView){
             // Tell server to show UI snapshots view
