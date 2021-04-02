@@ -229,6 +229,21 @@ function findSelector(lineNumber){
     });
     let selectorDataList = [];
     walk.ancestor(acornAST, {
+        AwaitExpression(node, ancestors) {
+            // Look for the line number of interest
+            if(node.loc.start.line === lineNumber){
+                // Will be null if no selector found
+                const selectorInfo = checkForSelector(node);
+                if(selectorInfo){
+                    const prevStatement = findPrevStatement(node, ancestors[ancestors.length-2]);
+                    if(prevStatement){
+                        const prevLineNumber = prevStatement.loc.start.line;
+                        selectorInfo.prevLineNumber = prevLineNumber;   
+                    }
+                    selectorDataList.push(selectorInfo);
+                }
+            }
+        },
         AssignmentExpression(node, ancestors) {
             // Look for the line number of interest
             if(node.loc.start.line === lineNumber){
