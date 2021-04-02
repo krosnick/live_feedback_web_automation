@@ -170,6 +170,30 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     });
     let statementAndDeclarationData = {};
     walk.ancestor(acornAST, {
+        AssignmentExpression(node, ancestors) {
+            // Exclude if it is a variable declaration within for loop, e.g., (for(let i = 0; ...))
+            const parentType = ancestors[ancestors.length-2].type;
+            if(parentType !== "ForStatement" && parentType !== "ForInStatement"){
+                const hasEvaluateAncestor = isInsideEvaluateOrEvaluateHandle(node, ancestors);
+                // Don't take snapshot here, because we're inside of an "evaluate" or "evaluateHandle", so doesn't make sense
+                if(!hasEvaluateAncestor){
+                    statementAndDeclarationData[node.end] = {
+                        lineObj: node.loc.start.line
+                    };
+                    //console.log("node.loc.start.line", node.loc.start.line);
+                    // Will be null if no selector found
+                    const selectorInfo = checkForSelector(node.right, ancestors);
+                    if(selectorInfo){
+                        const prevStatement = findPrevStatement(node.right, ancestors[ancestors.length-2]);
+                        if(prevStatement){
+                            const prevLineNumber = prevStatement.loc.start.line;
+                            selectorInfo.prevLineNumber = prevLineNumber;
+                        }
+                        statementAndDeclarationData[node.end].selectorData = selectorInfo;
+                    }
+                }
+            }
+        },
         ExpressionStatement(node, ancestors) {
             const hasEvaluateAncestor = isInsideEvaluateOrEvaluateHandle(node, ancestors);
             // Don't take snapshot here, because we're inside of an "evaluate" or "evaluateHandle", so doesn't make sense

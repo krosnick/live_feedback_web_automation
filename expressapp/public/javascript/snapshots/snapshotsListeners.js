@@ -159,7 +159,13 @@ function createSnapshots(lineNumber){
         if(lastRunSnapshotLineToDOMSelectorData && lastRunSnapshotLineToDOMSelectorData[lineNumber]){
             let cluster = Object.keys(lastRunSnapshotLineToDOMSelectorData[lineNumber]);
             const firstWinID = cluster[0];
-            const selector = lastRunSnapshotLineToDOMSelectorData[lineNumber][firstWinID].selectorData.selectorString;
+            const selectorData = lastRunSnapshotLineToDOMSelectorData[lineNumber][firstWinID].selectorData;
+            let selector;
+            if(selectorData){
+                selector = selectorData.selectorString;
+            }else{
+                selector = null;
+            }
             createCluster(cluster, "Last run", newElement, lastRunSnapshotLineToDOMSelectorData, lineNumber, lastRunErrorData, selector);
         }
 
@@ -227,7 +233,13 @@ function createSnapshots(lineNumber){
             const cluster = clusterList[index];
             // cluster is of the form ["1", "2", "4"] (where "1" is a winID, etc)
             const firstWinID = cluster[0];
-            const selector = snapshotLineToDOMSelectorData[lineNumber][firstWinID].selectorData.selectorString;
+            const selectorData = snapshotLineToDOMSelectorData[lineNumber][firstWinID].selectorData;
+            let selector;
+            if(selectorData){
+                selector = selectorData.selectorString;
+            }else{
+                selector = null;
+            }
             createCluster(cluster, index, newElement, snapshotLineToDOMSelectorData, lineNumber, errorData, selector);
         }
         
