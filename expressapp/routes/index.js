@@ -304,7 +304,12 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
             webSecurity: false,
             enableRemoteModule: true,
             zoomFactor: .8,
-            preload: path.resolve(__dirname, '../public/javascript/pageViewPreload.js')
+            nodeIntegration: false,
+            enableRemoteModule: false,
+            contextIsolation: true,
+            sandbox: true,
+            preload: path.join(__dirname, "../public/javascript/preload.js")
+            //preload: path.resolve(__dirname, '../public/javascript/pageViewPreload.js')
         }
     });
     req.app.locals.win.addBrowserView(pageView);
@@ -347,17 +352,29 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
         const canGoForward = pageView.webContents.canGoForward();
         const url = pageView.webContents.getURL();
         borderView.webContents.send("updateBackForwardButtonsAndUrl", canGoBack, canGoForward, url);
+        pageView.webContents.insertCSS('.blueBorder { border: 5px solid blue !important; border-radius: 10px !important; }');
         pageView.webContents.executeJavaScript(`
-            const { ipcRenderer } = require('electron');
-            document.body.innerHTML = document.body.innerHTML + "<style> .blueBorder { border: 5px solid blue !important; border-radius: 10px !important; } </style>";
+            // Approach from https://stackoverflow.com/questions/52236641/electron-ipc-and-nodeintegration
+            window.addEventListener('message', event => {
+                // do something with custom event
+                const message = event.data;
+                if(message.type === "highlightUIElements"){
+                    console.log("renderer received highlightUIElements");
+                    highlightUIElements(message.selector);
+                }else if(message.type === "clearHighlightedUIElements"){
+                    console.log("renderer received clearHighlightedUIElements");
+                    clearHighlightedElements();
+                }
+            });
+        
             function clearHighlightedElements(){
                 const highlightedElements = document.querySelectorAll(".blueBorder");
                 for(let element of highlightedElements){
                     element.classList.remove("blueBorder");
                 }
             }
-            ipcRenderer.on('highlightUIElements', function(event, selector){
-                console.log('highlightUIElements message received');
+            
+            function highlightUIElements(selector){
                 clearHighlightedElements();
                 const elements = document.querySelectorAll(selector);
                 console.log("elements", elements);
@@ -371,36 +388,31 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
                         }else{
                             borderElement = element;
                         }
-                        /*borderElement.style.border = "5px solid blue";
-                        borderElement.style.borderRadius = "10px";*/
+                        // borderElement.style.border = "5px solid blue";
+                        // borderElement.style.borderRadius = "10px";
                         borderElement.classList.add("blueBorder");
         
-                        /*// Append mouse icon img if element is semantically "clickable",
-                            // e.g., button, link, radio button, checkbox, but NOT textfield etc
-                        if(element.tagName === "BUTTON" || element.tagName === "A" || element.tagName === "SELECT" || element.tagName === "OPTION" || (element.tagName === "INPUT" && (element.type === "button" || element.type === "checkbox" || element.type === "color" || element.type === "file" || element.type === "radio" || element.type === "range" || element.type === "submit"))){
-                            const imageElement = document.createElement('img');
-                            borderElement.appendChild(imageElement);
+                        // // Append mouse icon img if element is semantically "clickable",
+                        //     // e.g., button, link, radio button, checkbox, but NOT textfield etc
+                        // if(element.tagName === "BUTTON" || element.tagName === "A" || element.tagName === "SELECT" || element.tagName === "OPTION" || (element.tagName === "INPUT" && (element.type === "button" || element.type === "checkbox" || element.type === "color" || element.type === "file" || element.type === "radio" || element.type === "range" || element.type === "submit"))){
+                        //     const imageElement = document.createElement('img');
+                        //     borderElement.appendChild(imageElement);
                             
-                            // Should change this to a local file
-                            imageElement.src = "https://cdn2.iconfinder.com/data/icons/design-71/32/Design_design_cursor_pointer_arrow_mouse-512.png";
-                            imageElement.width = 20;
-                            imageElement.height = 20;
-                            //imageElement.maxWidth = "50%";
-                            //imageElement.maxHeight = "50%";
-                            imageElement.style.position = "absolute";
-                            imageElement.style.left = "calc(50% - 10px)";
-                            imageElement.style.top = "calc(50% - 10px)";
-                            //imageElement.style.left = "50%";
-                            //imageElement.style.top = "50%";
-                        }*/
+                        //     // Should change this to a local file
+                        //     imageElement.src = "https://cdn2.iconfinder.com/data/icons/design-71/32/Design_design_cursor_pointer_arrow_mouse-512.png";
+                        //     imageElement.width = 20;
+                        //     imageElement.height = 20;
+                        //     //imageElement.maxWidth = "50%";
+                        //     //imageElement.maxHeight = "50%";
+                        //     imageElement.style.position = "absolute";
+                        //     imageElement.style.left = "calc(50% - 10px)";
+                        //     imageElement.style.top = "calc(50% - 10px)";
+                        //     //imageElement.style.left = "50%";
+                        //     //imageElement.style.top = "50%";
+                        // }
                     //}
                 }
-            });
-            
-            ipcRenderer.on('clearHighlightedUIElements', function(event){
-                console.log('clearHighlightedUIElements message received');
-                clearHighlightedElements();
-            });
+            }
         `);
     });
     pageView.webContents.loadURL(addHttpsIfNeeded(startingUrl));
