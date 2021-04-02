@@ -637,7 +637,7 @@ const updateUIForEndingCodeRun = function(){
 };
 
 const checkValidity = function(codeString){
-    const surroundedWithFuncStr = `async function testValidityFunc(){${codeString}}`;
+    const surroundedWithFuncStr = `async function testValidityFunc(){${codeString}\n}`;
     try{
         eval(surroundedWithFuncStr);
     }catch(error){

@@ -267,7 +267,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     //+ middleStringToWrap +
     //+ code +
     + instrumentedCodeString +
-    `} catch (error) {
+    `\n} catch (error) {
         errorMessage = error.name + ": " + error.message;
         //console.error(error);
         updateClientSideTerminal([error.stack], winID, "error");
