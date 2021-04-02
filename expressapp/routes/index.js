@@ -375,7 +375,7 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
                         borderElement.style.borderRadius = "10px";*/
                         borderElement.classList.add("blueBorder");
         
-                        // Append mouse icon img if element is semantically "clickable",
+                        /*// Append mouse icon img if element is semantically "clickable",
                             // e.g., button, link, radio button, checkbox, but NOT textfield etc
                         if(element.tagName === "BUTTON" || element.tagName === "A" || element.tagName === "SELECT" || element.tagName === "OPTION" || (element.tagName === "INPUT" && (element.type === "button" || element.type === "checkbox" || element.type === "color" || element.type === "file" || element.type === "radio" || element.type === "range" || element.type === "submit"))){
                             const imageElement = document.createElement('img');
@@ -392,7 +392,7 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
                             imageElement.style.top = "calc(50% - 10px)";
                             //imageElement.style.left = "50%";
                             //imageElement.style.top = "50%";
-                        }
+                        }*/
                     //}
                 }
             });
