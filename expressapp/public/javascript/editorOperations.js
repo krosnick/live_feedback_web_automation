@@ -326,7 +326,8 @@ function editorOnDidChangeCursorPosition(e){
     }
 
     $(".tooltip").remove();
-    if(snapshotLineToDOMSelectorData && snapshotLineToDOMSelectorData[lineNumber]){
+    // Show these hide/show UI snapshot buttons as long as snapshots exist somewhere (i.e., that snapshotLineToDOMSelectorData isn't empty)
+    if(snapshotLineToDOMSelectorData){
         // For this line number, show "show UI snapshot" or "hide UI snapshot"
         
         // Reference element (line number in gutter to attach to)
