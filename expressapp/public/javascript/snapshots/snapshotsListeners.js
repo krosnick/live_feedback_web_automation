@@ -94,19 +94,19 @@ ipcRenderer.on("newSnapshots", function(event, snapshotsData, componentsData, er
     lineNumToComponentsList = componentsData;
 });
 
-ipcRenderer.on("showLineNumber", function(event, lineNumber, selector){
+ipcRenderer.on("showLineNumber", function(event, lineNumber){
     console.log("showLineNumber");
     // Only update if different line number
     if(lineNumber !== parseInt($("#lineNumber").text().trim())){
         $("#lineNumber").text(lineNumber);
-        createSnapshots(lineNumber, selector);
+        createSnapshots(lineNumber);
     }
 });
 
-ipcRenderer.on("forceShowLineNumber", function(event, lineNumber, selector){
+ipcRenderer.on("forceShowLineNumber", function(event, lineNumber){
     console.log("forceShowLineNumber");
     $("#lineNumber").text(lineNumber);
-    createSnapshots(lineNumber, selector);
+    createSnapshots(lineNumber);
 });
 
 ipcRenderer.on("deleteAllSnapshotsForLine", function(event, lineNumberStr){
@@ -136,7 +136,7 @@ function getScaleNum(transformString){
     }
 }
 
-function createSnapshots(lineNumber, currentSelector){
+function createSnapshots(lineNumber){
     // Should update the tooltip that's being shown
     // First delete all existing .tooltip elements
     $(".tooltip").remove();
@@ -158,7 +158,9 @@ function createSnapshots(lineNumber, currentSelector){
         // (Maybe even have the cluster itself minimized?)
         if(lastRunSnapshotLineToDOMSelectorData && lastRunSnapshotLineToDOMSelectorData[lineNumber]){
             let cluster = Object.keys(lastRunSnapshotLineToDOMSelectorData[lineNumber]);
-            createCluster(cluster, "Last run", newElement, lastRunSnapshotLineToDOMSelectorData, lineNumber, lastRunErrorData, currentSelector);
+            const firstWinID = cluster[0];
+            const selector = lastRunSnapshotLineToDOMSelectorData[lineNumber][firstWinID].selectorData.selectorString;
+            createCluster(cluster, "Last run", newElement, lastRunSnapshotLineToDOMSelectorData, lineNumber, lastRunErrorData, selector);
         }
 
         let clusterList = [];
@@ -224,7 +226,9 @@ function createSnapshots(lineNumber, currentSelector){
         for(let index = 0; index < clusterList.length; index++){
             const cluster = clusterList[index];
             // cluster is of the form ["1", "2", "4"] (where "1" is a winID, etc)
-            createCluster(cluster, index, newElement, snapshotLineToDOMSelectorData, lineNumber, errorData, currentSelector);
+            const firstWinID = cluster[0];
+            const selector = snapshotLineToDOMSelectorData[lineNumber][firstWinID].selectorData.selectorString;
+            createCluster(cluster, index, newElement, snapshotLineToDOMSelectorData, lineNumber, errorData, selector);
         }
         
         //const element = document.querySelector("#paramEditor");
@@ -239,7 +243,7 @@ function createSnapshots(lineNumber, currentSelector){
     }
 }
 
-function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber, errorObj, currentSelector){
+function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber, errorObj, selector){
     newElement.find("#snapshots").append(`<div class="clusterLabel">Label: ${indexOrName}</div>`);
     const clusterElement = $(`
         <div class="cluster" clusterIndex="${indexOrName}">
@@ -339,23 +343,23 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
 
         const beforeSnapshotIframe = document.querySelector(`[winID='${winID}'].beforeSnapshot`);
         const afterSnapshotIframe = document.querySelector(`[winID='${winID}'].afterSnapshot`);
-        scaleIframe(beforeSnapshotIframe, lineObj, `left top`, currentSelector);
-        scaleIframe(afterSnapshotIframe, lineObj, `left top`, currentSelector);
+        scaleIframe(beforeSnapshotIframe, lineObj, `left top`, selector);
+        scaleIframe(afterSnapshotIframe, lineObj, `left top`, selector);
     }
 }
 
-function scaleIframe(iframeElement, lineObj, transformOriginString, currentSelector){
+function scaleIframe(iframeElement, lineObj, transformOriginString, selector){
     //beforeSnapshotIframeDocument.addEventListener('DOMFrameContentLoaded', (event) => {
     // Using setTimeout for now, to wait 500ms and hope that's enough for the DOM to be loaded so that
         // we know the dimensions we're accessing are stable (i.e., that the elements exist and they're not just size 0)
         // Prev tried using .onload or DOMFrameContentLoaded or DOMContentLoaded but these didn't work
     setTimeout(function(){
         const iframeDocument = iframeElement.contentWindow.document;
-        if(currentSelector){
+        if(selector){
             //const selector = lineObj.selectorData.selectorString;
-            const selectorElement = iframeDocument.querySelector(currentSelector);
+            const selectorElement = iframeDocument.querySelector(selector);
             if(selectorElement){
-                addCursorAndBorder(iframeElement, currentSelector);
+                addCursorAndBorder(iframeElement, selector);
             }
             /*// Zoom to selector element if it is present in DOM
             if(selectorElement){
@@ -436,7 +440,7 @@ function addCursorAndBorder(iframeElement, selector){
                 }else{
                     borderElement = element;
                 }
-                borderElement.style.border = "5px solid blue";
+                borderElement.style.border = "5px solid #08ae0d";
                 borderElement.style.borderRadius = "10px";
 
                 // Append mouse icon img if element is semantically "clickable",

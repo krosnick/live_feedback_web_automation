@@ -292,13 +292,13 @@ function editorOnDidChangeCursorPosition(e){
             ipcRenderer.sendTo(parseInt(winID), "clearHighlightedUIElements");
         }
     }
-    ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "showLineNumber", lineNumber, currentSelector);
+    ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "showLineNumber", lineNumber);
 
     if(mightBeOutOfSync){
         mightBeOutOfSync = false;
         
         // Tell snapshots view to update snapshots shown (since snapshots might be different now for the currently selected line number)
-        ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "forceShowLineNumber", lineNumber, currentSelector);
+        ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "forceShowLineNumber", lineNumber);
 
         // Depending on hide/show snapshots button status, tell server to /showSnapshotView
         if(showSnapshotsView){
