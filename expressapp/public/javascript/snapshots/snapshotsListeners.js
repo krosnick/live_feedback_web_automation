@@ -145,13 +145,15 @@ ipcRenderer.on("clearAllSnapshots", function(event){
 
 // Show snapshots for this line (show if they're rendered already, or create if not)
 function showSnapshots(lineNumber){
-    const snapshotsForThisLine = $(`.tooltip[lineNumber="${lineNumber}"]`);
+    const snapshotsForThisLine = $(`.tooltip[lineNumber="${lineNumber}"] iframe`);
     if(snapshotsForThisLine.length > 0){
         // Exist already
         // Check that all iframes have width and height > 0
         let widthHeightAllNonZero = true;
         for(let i = 0; i < snapshotsForThisLine.length; i++){
-            const thisSnapshot = $(snapshotsForThisLine[i]).find("iframe");
+            const thisSnapshot = $(snapshotsForThisLine[i]);
+            /*console.log("thisSnapshot.width()", thisSnapshot.width());
+            console.log("thisSnapshot.height()", thisSnapshot.height());*/
             if(thisSnapshot.width() === 0 || thisSnapshot.height() === 0){
                 widthHeightAllNonZero = false;
             }
@@ -159,7 +161,7 @@ function showSnapshots(lineNumber){
         console.log("widthHeightAllNonZero", widthHeightAllNonZero);
         if(widthHeightAllNonZero){
             // All iframes have non-zero width and height - show them
-            snapshotsForThisLine.show();
+            $(`.tooltip[lineNumber="${lineNumber}"]`).show();
         }else{
             // At least one iframe has width or height of zero; re-render all
             console.log("Have to re-render all iframes for this line");
@@ -192,11 +194,11 @@ function createSnapshots(lineNumber){
     if((snapshotLineToDOMSelectorData && snapshotLineToDOMSelectorData[lineNumber]) || (lastRunSnapshotLineToDOMSelectorData && lastRunSnapshotLineToDOMSelectorData[lineNumber])){
         const newElement = $(`
             <div class="tooltip" role="tooltip" data-show="" lineNumber="${lineNumber}">
-                <div id="labels">
-                    <div id="beforeLabel" class="beforeAfterLabel">Before</div>
-                    <div id="afterLabel" class="beforeAfterLabel">After</div>
+                <div class="labels">
+                    <div class="beforeLabel beforeAfterLabel">Before</div>
+                    <div class="afterLabel beforeAfterLabel">After</div>
                 </div>
-                <div id="snapshots">
+                <div class="snapshots">
                 </div>
             </div>
         `).appendTo("#container");
@@ -295,12 +297,12 @@ function createSnapshots(lineNumber){
 }
 
 function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber, errorObj, selector){
-    newElement.find("#snapshots").append(`<div class="clusterLabel">Label: ${indexOrName}</div>`);
+    newElement.find(".snapshots").append(`<div class="clusterLabel">Label: ${indexOrName}</div>`);
     const clusterElement = $(`
         <div class="cluster" clusterIndex="${indexOrName}">
         </div>
     `);
-    newElement.find("#snapshots").append(clusterElement);
+    newElement.find(".snapshots").append(clusterElement);
 
     // Now for each winID in this cluster, create an html string and append to clusterElement
     for(let winIDIndex = 0; winIDIndex < cluster.length; winIDIndex++){
