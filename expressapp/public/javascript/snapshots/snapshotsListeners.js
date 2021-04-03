@@ -85,9 +85,9 @@ $(function(){
 });
 
 ipcRenderer.on("newSnapshots", function(event, snapshotsData, componentsData, errData){
-    console.log("newSnapshots");
+    /*console.log("newSnapshots");
     console.log("snapshotsData", snapshotsData);
-    console.log("componentsData", componentsData);
+    console.log("componentsData", componentsData);*/
     lastRunSnapshotLineToDOMSelectorData = snapshotLineToDOMSelectorData;
     lastRunErrorData = errorData;
     snapshotLineToDOMSelectorData = snapshotsData;
@@ -276,7 +276,7 @@ function createSnapshots(lineNumber){
                 clusterList.push(cluster);
             }
 
-            console.log(`clusterList for lineNumber ${lineNumber}`, clusterList);
+            //console.log(`clusterList for lineNumber ${lineNumber}`, clusterList);
 
             // Let's user clusterList now for grouping snapshots visually
             for(let index = 0; index < clusterList.length; index++){
@@ -393,7 +393,7 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
         }
         
         if(beforeSnapshot && beforeSnapshot.childNodes.length >= 2){
-            console.log("beforeSnapshot", beforeSnapshot);
+            //console.log("beforeSnapshot", beforeSnapshot);
             const iframeElementBefore = clusterElement.find(`[winID='${winID}'].beforeSnapshot`)[0];
             const iframeContentDocumentBefore = iframeElementBefore.contentDocument;
             rrwebSnapshot["rebuild"](beforeSnapshot, iframeContentDocumentBefore);
@@ -403,7 +403,7 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
         }
 
         if(afterSnapshot && afterSnapshot.childNodes.length >= 2){
-            console.log("afterSnapshot", afterSnapshot);
+            //console.log("afterSnapshot", afterSnapshot);
             const iframeElementAfter = clusterElement.find(`[winID='${winID}'].afterSnapshot`)[0];
             const iframeContentDocumentAfter = iframeElementAfter.contentDocument;
             rrwebSnapshot["rebuild"](afterSnapshot, iframeContentDocumentAfter);
@@ -492,12 +492,11 @@ function addCursorAndBorder(iframeElement, selector){
 
     if(targetSelector){
         const iframeDocBody = iframeElement.contentWindow.document.body;
-        console.log("iframeDocBody", iframeDocBody);
         //console.log("iframeDocBody", iframeDocBody);
         //const element = iframeDocBody.querySelector(targetSelector);
         const elements = iframeDocBody.querySelectorAll(targetSelector);
-        console.log("addCursorAndBorder elements", elements);
-        console.log("targetSelector", targetSelector);
+        //console.log("addCursorAndBorder elements", elements);
+        //console.log("targetSelector", targetSelector);
         for(let element of elements){
             // Apply border only if this is an interactive widget,
                 // e.g., <button>, <input>, <a>, <select>, <option>, <textarea>
