@@ -99,7 +99,7 @@ ipcRenderer.on("newSnapshots", function(event, snapshotsData, componentsData, er
 });
 
 ipcRenderer.on("showLineNumber", function(event, lineNumber){
-    console.log("showLineNumber");
+    //console.log("showLineNumber");
     // Only update if different line number
     if(lineNumber !== parseInt($("#lineNumber").text().trim())){
         $("#lineNumber").text(lineNumber);
@@ -112,7 +112,7 @@ ipcRenderer.on("showLineNumber", function(event, lineNumber){
 });
 
 ipcRenderer.on("forceShowLineNumber", function(event, lineNumber){
-    console.log("forceShowLineNumber");
+    //console.log("forceShowLineNumber");
     $("#lineNumber").text(lineNumber);
     
     // Hide all snapshots
@@ -158,13 +158,13 @@ function showSnapshots(lineNumber){
                 widthHeightAllNonZero = false;
             }
         }
-        console.log("widthHeightAllNonZero", widthHeightAllNonZero);
+        //("widthHeightAllNonZero", widthHeightAllNonZero);
         if(widthHeightAllNonZero){
             // All iframes have non-zero width and height - show them
             $(`.tooltip[lineNumber="${lineNumber}"]`).show();
         }else{
             // At least one iframe has width or height of zero; re-render all
-            console.log("Have to re-render all iframes for this line");
+            //console.log("Have to re-render all iframes for this line");
             createSnapshots(lineNumber);
         }
     }else{
