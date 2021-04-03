@@ -12,3 +12,5 @@ ipcRenderer.on('clearHighlightedUIElements', function(event){
         type: 'clearHighlightedUIElements'
     });
 });
+
+window.rrwebSnapshot = require("rrweb-snapshot");

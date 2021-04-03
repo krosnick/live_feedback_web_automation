@@ -302,12 +302,11 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
         webPreferences: {
             nodeIntegration: false,
             webSecurity: false,
-            enableRemoteModule: true,
+            /*enableRemoteModule: true,*/
             zoomFactor: .8,
-            nodeIntegration: false,
-            enableRemoteModule: false,
-            contextIsolation: true,
-            sandbox: true,
+            /*enableRemoteModule: false,*/
+            /*contextIsolation: true,*/
+            /*sandbox: true,*/
             preload: path.join(__dirname, "../public/javascript/preload.js")
             //preload: path.resolve(__dirname, '../public/javascript/pageViewPreload.js')
         }
@@ -354,6 +353,10 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
         borderView.webContents.send("updateBackForwardButtonsAndUrl", canGoBack, canGoForward, url);
         pageView.webContents.insertCSS('.blueBorder { border: 5px solid blue !important; border-radius: 10px !important; }');
         pageView.webContents.executeJavaScript(`
+            function getCurrentSnapshot(){
+                return window.rrwebSnapshot["snapshot"](document)[0];
+            };
+        
             // Approach from https://stackoverflow.com/questions/52236641/electron-ipc-and-nodeintegration
             window.addEventListener('message', event => {
                 // do something with custom event

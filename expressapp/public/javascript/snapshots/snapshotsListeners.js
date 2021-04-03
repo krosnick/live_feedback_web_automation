@@ -1,4 +1,5 @@
 const { ipcRenderer } = require('electron');
+const rrwebSnapshot = require("rrweb-snapshot");
 let snapshotLineToDOMSelectorData;
 let lastRunSnapshotLineToDOMSelectorData;
 let errorData;
@@ -350,13 +351,26 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
                 </div>
             `);
         }
-        clusterElement.find(`[winID='${winID}'].beforeSnapshot`).attr("srcdoc", beforeSnapshot);
-        clusterElement.find(`[winID='${winID}'].afterSnapshot`).attr("srcdoc", afterSnapshot);
+        
+        if(beforeSnapshot && beforeSnapshot.childNodes.length >= 2){
+            console.log("beforeSnapshot", beforeSnapshot);
+            const iframeElementBefore = clusterElement.find(`[winID='${winID}'].beforeSnapshot`)[0];
+            const iframeContentDocumentBefore = iframeElementBefore.contentDocument;
+            rrwebSnapshot["rebuild"](beforeSnapshot, iframeContentDocumentBefore);
 
-        const beforeSnapshotIframe = document.querySelector(`[winID='${winID}'].beforeSnapshot`);
-        const afterSnapshotIframe = document.querySelector(`[winID='${winID}'].afterSnapshot`);
-        scaleIframe(beforeSnapshotIframe, lineObj, `left top`, selector);
-        scaleIframe(afterSnapshotIframe, lineObj, `left top`, selector);
+            const beforeSnapshotIframe = document.querySelector(`[winID='${winID}'].beforeSnapshot`);
+            scaleIframe(beforeSnapshotIframe, lineObj, `left top`, selector);
+        }
+
+        if(afterSnapshot && afterSnapshot.childNodes.length >= 2){
+            console.log("afterSnapshot", afterSnapshot);
+            const iframeElementAfter = clusterElement.find(`[winID='${winID}'].afterSnapshot`)[0];
+            const iframeContentDocumentAfter = iframeElementAfter.contentDocument;
+            rrwebSnapshot["rebuild"](afterSnapshot, iframeContentDocumentAfter);
+
+            const afterSnapshotIframe = document.querySelector(`[winID='${winID}'].afterSnapshot`);
+            scaleIframe(afterSnapshotIframe, lineObj, `left top`, selector);
+        }
     }
 }
 
@@ -366,26 +380,28 @@ function scaleIframe(iframeElement, lineObj, transformOriginString, selector){
         // we know the dimensions we're accessing are stable (i.e., that the elements exist and they're not just size 0)
         // Prev tried using .onload or DOMFrameContentLoaded or DOMContentLoaded but these didn't work
     setTimeout(function(){
-        const iframeDocument = iframeElement.contentWindow.document;
-        if(selector){
-            //const selector = lineObj.selectorData.selectorString;
-            const selectorElement = iframeDocument.querySelector(selector);
-            if(selectorElement){
-                addCursorAndBorder(iframeElement, selector);
-            }
-            /*// Zoom to selector element if it is present in DOM
-            if(selectorElement){
-                scaleToElement(selectorElement, iframeElement, iframeDocument, transformOriginString);
-                //addCursorAndBorder(iframeElement, lineObj.selectorData.method, lineObj.selectorData.selectorString);
-                addCursorAndBorder(iframeElement, currentSelector);
-                return;
-            }else{
-                // TODO - Check if this is a keyboard command and if the prior command had a selector it was operating on
+        if(iframeElement.contentWindow){
+            const iframeDocument = iframeElement.contentWindow.document;
+            if(selector){
+                //const selector = lineObj.selectorData.selectorString;
+                const selectorElement = iframeDocument.querySelector(selector);
+                if(selectorElement){
+                    addCursorAndBorder(iframeElement, selector);
+                }
+                /*// Zoom to selector element if it is present in DOM
+                if(selectorElement){
+                    scaleToElement(selectorElement, iframeElement, iframeDocument, transformOriginString);
+                    //addCursorAndBorder(iframeElement, lineObj.selectorData.method, lineObj.selectorData.selectorString);
+                    addCursorAndBorder(iframeElement, currentSelector);
+                    return;
+                }else{
+                    // TODO - Check if this is a keyboard command and if the prior command had a selector it was operating on
 
-            }*/
+                }*/
+            }
+            // Otherwise, scale to page width
+            scaleToPageWidth(iframeElement, iframeDocument, transformOriginString);
         }
-        // Otherwise, scale to page width
-        scaleToPageWidth(iframeElement, iframeDocument, transformOriginString);
     }, 1000);
     //});
 }
