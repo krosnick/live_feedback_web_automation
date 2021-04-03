@@ -3,6 +3,19 @@ let codeChangeSetTimeout;
 let paramChangeSetTimeout;
 let monacoEditor;
 let paramEditor;
+
+// To be called when user creates a new file, opens a different file, or deletes a file
+const resetSnapshotsView = function(){
+    // Hide snapshots view (i.e., tell server to show border and page views)
+    $.ajax({
+        method: "POST",
+        url: "/showPageView"
+    });
+
+    // Clear out iframes from snapshots view (need to send message to snapshots view)
+    ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "clearAllSnapshots");
+};
+
 $(function(){
     setTimeout(function(){
         // To be used later
@@ -126,6 +139,9 @@ $(function(){
             // Set code and params for this file
             monacoEditor.getModel().setValue(fileContents);
             paramEditor.getModel().setValue(paramCodeString);
+
+            // Clear snapshot iframes and hide snapshots view
+            resetSnapshotsView();
         });
     });
 
@@ -176,6 +192,9 @@ $(function(){
                 // Set code and params for this file
                 monacoEditor.getModel().setValue(fileContents);
                 paramEditor.getModel().setValue(paramCodeString);
+
+                // Clear snapshot iframes and hide snapshots view
+                resetSnapshotsView();
             });
         }
     });
@@ -198,6 +217,9 @@ $(function(){
             // Set code for this file
             monacoEditor.getModel().setValue(fileContents);
             paramEditor.getModel().setValue(paramCodeString);
+
+            // Clear snapshot iframes and hide snapshots view
+            resetSnapshotsView();
         });
     });
 });

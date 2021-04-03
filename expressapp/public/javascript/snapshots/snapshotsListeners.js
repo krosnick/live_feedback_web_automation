@@ -120,6 +120,16 @@ ipcRenderer.on("deleteAfterDomStringForLine", function(event, lineNumberStr){
         delete data["afterDomString"];
     }
 });
+ipcRenderer.on("clearAllSnapshots", function(event){
+    snapshotLineToDOMSelectorData = undefined;
+    lastRunSnapshotLineToDOMSelectorData = undefined;
+    errorData = undefined;
+    lastRunErrorData = undefined;
+    lineNumToComponentsList = undefined;
+
+    // Removing element that contains iframes
+    $(".tooltip").remove();
+});
 
 function getScaleNum(transformString){
     if(transformString.indexOf("scale") >= 0){
