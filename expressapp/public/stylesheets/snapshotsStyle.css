@@ -28,6 +28,7 @@ body {
     color: black;
     /*border: 1px solid gray;*/
     /*z-index: -1;*/
+    display: none;
 }
 
 .tooltip[data-show] {

@@ -93,6 +93,9 @@ ipcRenderer.on("newSnapshots", function(event, snapshotsData, componentsData, er
     snapshotLineToDOMSelectorData = snapshotsData;
     errorData = errData;
     lineNumToComponentsList = componentsData;
+
+    // Clear old snapshots
+    $(".tooltip").remove();
 });
 
 ipcRenderer.on("showLineNumber", function(event, lineNumber){
@@ -100,14 +103,23 @@ ipcRenderer.on("showLineNumber", function(event, lineNumber){
     // Only update if different line number
     if(lineNumber !== parseInt($("#lineNumber").text().trim())){
         $("#lineNumber").text(lineNumber);
-        createSnapshots(lineNumber);
+        // Hide all snapshots
+        $(".tooltip").hide();
+        
+        // Show for this line
+        showSnapshots(lineNumber);
     }
 });
 
 ipcRenderer.on("forceShowLineNumber", function(event, lineNumber){
     console.log("forceShowLineNumber");
     $("#lineNumber").text(lineNumber);
-    createSnapshots(lineNumber);
+    
+    // Hide all snapshots
+    $(".tooltip").hide();
+
+    // Show for this line
+    showSnapshots(lineNumber);
 });
 
 ipcRenderer.on("deleteAllSnapshotsForLine", function(event, lineNumberStr){
@@ -131,6 +143,34 @@ ipcRenderer.on("clearAllSnapshots", function(event){
     $(".tooltip").remove();
 });
 
+// Show snapshots for this line (show if they're rendered already, or create if not)
+function showSnapshots(lineNumber){
+    const snapshotsForThisLine = $(`.tooltip[lineNumber="${lineNumber}"]`);
+    if(snapshotsForThisLine.length > 0){
+        // Exist already
+        // Check that all iframes have width and height > 0
+        let widthHeightAllNonZero = true;
+        for(let i = 0; i < snapshotsForThisLine.length; i++){
+            const thisSnapshot = $(snapshotsForThisLine[i]).find("iframe");
+            if(thisSnapshot.width() === 0 || thisSnapshot.height() === 0){
+                widthHeightAllNonZero = false;
+            }
+        }
+        console.log("widthHeightAllNonZero", widthHeightAllNonZero);
+        if(widthHeightAllNonZero){
+            // All iframes have non-zero width and height - show them
+            snapshotsForThisLine.show();
+        }else{
+            // At least one iframe has width or height of zero; re-render all
+            console.log("Have to re-render all iframes for this line");
+            createSnapshots(lineNumber);
+        }
+    }else{
+        // Don't exist yet - create them
+        createSnapshots(lineNumber);
+    }
+}
+
 function getScaleNum(transformString){
     if(transformString.indexOf("scale") >= 0){
         const openParenIndex = transformString.indexOf("(");
@@ -148,14 +188,10 @@ function getScaleNum(transformString){
 }
 
 function createSnapshots(lineNumber){
-    // Should update the tooltip that's being shown
-    // First delete all existing .tooltip elements
-    $(".tooltip").remove();
-    
     // If there's a snapshot for this line
-    if(snapshotLineToDOMSelectorData && snapshotLineToDOMSelectorData[lineNumber]){
+    if((snapshotLineToDOMSelectorData && snapshotLineToDOMSelectorData[lineNumber]) || (lastRunSnapshotLineToDOMSelectorData && lastRunSnapshotLineToDOMSelectorData[lineNumber])){
         const newElement = $(`
-            <div class="tooltip" role="tooltip" data-show="">
+            <div class="tooltip" role="tooltip" data-show="" lineNumber="${lineNumber}">
                 <div id="labels">
                     <div id="beforeLabel" class="beforeAfterLabel">Before</div>
                     <div id="afterLabel" class="beforeAfterLabel">After</div>
@@ -180,89 +216,81 @@ function createSnapshots(lineNumber){
             createCluster(cluster, "Last run", newElement, lastRunSnapshotLineToDOMSelectorData, lineNumber, lastRunErrorData, selector);
         }
 
-        let clusterList = [];
-        const winIDsForThisLine = Object.keys(snapshotLineToDOMSelectorData[lineNumber]);
-        if(lineNumToComponentsList && lineNumToComponentsList[lineNumber]){
-            const connectedComponents = Object.values(lineNumToComponentsList[lineNumber]);
+        if(snapshotLineToDOMSelectorData && snapshotLineToDOMSelectorData[lineNumber]){
+            let clusterList = [];
+            const winIDsForThisLine = Object.keys(snapshotLineToDOMSelectorData[lineNumber]);
+            if(lineNumToComponentsList && lineNumToComponentsList[lineNumber]){
+                const connectedComponents = Object.values(lineNumToComponentsList[lineNumber]);
 
-            // Create actual clusters
+                // Create actual clusters
 
-            const winIDsWithoutAfterSnapshot = [];
-            const winIDsNotInConnectedComponents = [];
+                const winIDsWithoutAfterSnapshot = [];
+                const winIDsNotInConnectedComponents = [];
 
-            for(const winID of winIDsForThisLine){
-                let winIDFound = false;
-                const winIDStr = winID + "";
-                for(const component of connectedComponents){
-                    if(component.includes(winIDStr)){
-                        winIDFound = true;
+                for(const winID of winIDsForThisLine){
+                    let winIDFound = false;
+                    const winIDStr = winID + "";
+                    for(const component of connectedComponents){
+                        if(component.includes(winIDStr)){
+                            winIDFound = true;
+                        }
+                    }
+                    if(!winIDFound){
+                        winIDsNotInConnectedComponents.push(winIDStr);
+                    }
+
+                    if(!snapshotLineToDOMSelectorData[lineNumber][winID].afterDomString){
+                        winIDsWithoutAfterSnapshot.push(winIDStr);
                     }
                 }
-                if(!winIDFound){
-                    winIDsNotInConnectedComponents.push(winIDStr);
+
+                // Start off using connectedComponents
+                if(connectedComponents.length > 0){
+                    clusterList = clusterList.concat(connectedComponents);
                 }
 
-                if(!snapshotLineToDOMSelectorData[lineNumber][winID].afterDomString){
-                    winIDsWithoutAfterSnapshot.push(winIDStr);
+                // Cluster winIDsWithoutAfterSnapshot together as their own cluster
+                if(winIDsWithoutAfterSnapshot.length > 0){
+                    clusterList.push(winIDsWithoutAfterSnapshot);
                 }
-            }
 
-            // Start off using connectedComponents
-            if(connectedComponents.length > 0){
-                clusterList = clusterList.concat(connectedComponents);
-            }
-
-            // Cluster winIDsWithoutAfterSnapshot together as their own cluster
-            if(winIDsWithoutAfterSnapshot.length > 0){
-                clusterList.push(winIDsWithoutAfterSnapshot);
-            }
-
-            // For winIDsNotInConnectedComponents that are not in winIDsWithoutAfterSnapshot, keep each one separate
-            for(const winIDStr of winIDsNotInConnectedComponents){
-                if(!winIDsWithoutAfterSnapshot.includes(winIDStr)){
-                    // For some reason this winID wasn't included in a cluster, but it does have an afterSnapshot
-                    // Let's just keep it as a separate cluster
-                    clusterList.push([winIDStr]);
+                // For winIDsNotInConnectedComponents that are not in winIDsWithoutAfterSnapshot, keep each one separate
+                for(const winIDStr of winIDsNotInConnectedComponents){
+                    if(!winIDsWithoutAfterSnapshot.includes(winIDStr)){
+                        // For some reason this winID wasn't included in a cluster, but it does have an afterSnapshot
+                        // Let's just keep it as a separate cluster
+                        clusterList.push([winIDStr]);
+                    }
                 }
-            }
-        }else{
-            // No clusters were identified on the server. Likely means that no winIDs on
-                // this line had afterSnapshot.
-            // So let's just cluster all of the winIDs together
-            const cluster = [];
-            for(const winID of winIDsForThisLine){
-                const winIDStr = winID + "";
-                cluster.push(winIDStr);
-            }
-            clusterList.push(cluster);
-        }
-
-        console.log(`clusterList for lineNumber ${lineNumber}`, clusterList);
-
-        // Let's user clusterList now for grouping snapshots visually
-        for(let index = 0; index < clusterList.length; index++){
-            const cluster = clusterList[index];
-            // cluster is of the form ["1", "2", "4"] (where "1" is a winID, etc)
-            const firstWinID = cluster[0];
-            const selectorData = snapshotLineToDOMSelectorData[lineNumber][firstWinID].selectorData;
-            let selector;
-            if(selectorData){
-                selector = selectorData.selectorString;
             }else{
-                selector = null;
+                // No clusters were identified on the server. Likely means that no winIDs on
+                    // this line had afterSnapshot.
+                // So let's just cluster all of the winIDs together
+                const cluster = [];
+                for(const winID of winIDsForThisLine){
+                    const winIDStr = winID + "";
+                    cluster.push(winIDStr);
+                }
+                clusterList.push(cluster);
             }
-            createCluster(cluster, index, newElement, snapshotLineToDOMSelectorData, lineNumber, errorData, selector);
-        }
-        
-        //const element = document.querySelector("#paramEditor");
-        const element = document.querySelector("#container");
-        const tooltip = newElement[0];
 
-        /*// Pass the button, the tooltip, and some options, and Popper will do the
-        // magic positioning for you:
-        Popper.createPopper(tooltip, element, {
-            placement: 'right'
-        });*/
+            console.log(`clusterList for lineNumber ${lineNumber}`, clusterList);
+
+            // Let's user clusterList now for grouping snapshots visually
+            for(let index = 0; index < clusterList.length; index++){
+                const cluster = clusterList[index];
+                // cluster is of the form ["1", "2", "4"] (where "1" is a winID, etc)
+                const firstWinID = cluster[0];
+                const selectorData = snapshotLineToDOMSelectorData[lineNumber][firstWinID].selectorData;
+                let selector;
+                if(selectorData){
+                    selector = selectorData.selectorString;
+                }else{
+                    selector = null;
+                }
+                createCluster(cluster, index, newElement, snapshotLineToDOMSelectorData, lineNumber, errorData, selector);
+            }
+        }
     }
 }
 

@@ -296,10 +296,27 @@ function findSelector(lineNumber){
 
 function editorOnDidChangeCursorPosition(e){
     //console.log("editorOnDidChangeCursorPosition");
-    // Assuming at most 1 selector per line
-    let currentSelector = null;
     const lineNumber = e.position.lineNumber;
     
+    ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "showLineNumber", lineNumber);
+    if(mightBeOutOfSync){
+        mightBeOutOfSync = false;
+        
+        // Tell snapshots view to update snapshots shown (since snapshots might be different now for the currently selected line number)
+        ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "forceShowLineNumber", lineNumber);
+
+        // Depending on hide/show snapshots button status, tell server to /showSnapshotView
+        if(showSnapshotsView){
+            // Tell server to show UI snapshots view
+            $.ajax({
+                method: "POST",
+                url: "/showSnapshotView"
+            });
+        }
+    }
+
+    // Assuming at most 1 selector per line
+    let currentSelector = null;
     const codeValidityResult = checkValidity(monacoEditor.getValue());
     //console.log("codeValidityResult", codeValidityResult);
     // If syntax error, don't try checking for selectors
@@ -320,23 +337,6 @@ function editorOnDidChangeCursorPosition(e){
         // For each winID, tell BrowserViews to clear 
         for(let winID of Object.keys(winIDList)){
             ipcRenderer.sendTo(parseInt(winID), "clearHighlightedUIElements");
-        }
-    }
-    ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "showLineNumber", lineNumber);
-
-    if(mightBeOutOfSync){
-        mightBeOutOfSync = false;
-        
-        // Tell snapshots view to update snapshots shown (since snapshots might be different now for the currently selected line number)
-        ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "forceShowLineNumber", lineNumber);
-
-        // Depending on hide/show snapshots button status, tell server to /showSnapshotView
-        if(showSnapshotsView){
-            // Tell server to show UI snapshots view
-            $.ajax({
-                method: "POST",
-                url: "/showSnapshotView"
-            });
         }
     }
 
