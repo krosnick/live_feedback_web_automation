@@ -5,8 +5,10 @@ let lastRunSnapshotLineToDOMSelectorData;
 let errorData;
 let lastRunErrorData;
 let lineNumToComponentsList;
-const snapshotWidth = 250;
-const snapshotHeight = 125;
+/*const snapshotWidth = 250;
+const snapshotHeight = 125;*/
+const snapshotWidth = 375;
+const snapshotHeight = 187;
 let editorBrowserViewID;
 
 $(function(){
@@ -45,16 +47,16 @@ $(function(){
         const winID = $(e.target).attr("winID");
         const clusterIndex = $(e.target).closest(".cluster").attr("clusterIndex");
         $(`.cluster[clusterIndex="${clusterIndex}"] .snapshotContainer[winID="${winID}"]`).animate({
-            width: "250px"
+            width: "375px"
         }, 500);
         $(`.cluster[clusterIndex="${clusterIndex}"] .colHeader[winID="${winID}"]`).animate({
-            width: "250px"
+            width: "375px"
         }, 500);
         $(`.cluster[clusterIndex="${clusterIndex}"] .downArrow[winID="${winID}"]`).animate({
-            width: "250px"
+            width: "375px"
         }, 500);
         $(`.cluster[clusterIndex="${clusterIndex}"] .outerSnapshotContainer[winID="${winID}"]`).animate({
-            width: "250px"
+            width: "375px"
         }, 500);
         $(`.cluster[clusterIndex="${clusterIndex}"] .outerSnapshotContainer[winID="${winID}"]`).css("resize", "both");
         $(`.cluster[clusterIndex="${clusterIndex}"] .zoomButton[winID="${winID}"]`).css("visibility", "visible");

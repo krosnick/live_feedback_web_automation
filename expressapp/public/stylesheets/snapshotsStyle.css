@@ -45,11 +45,12 @@ body {
     /*position: relative;*/
     display: grid;
     grid-template-columns: 70px;
-    grid-template-rows: 200px 125px;
+    grid-template-rows: 220px 187px;
     grid-auto-flow: column;
     grid-column-gap: 10px;
     grid-row-gap: 10px;
     height: 360px;
+    top: 80px;
 }
 
 .snapshots {
@@ -79,7 +80,7 @@ body {
     border: 1px solid gray;
     padding: 10px;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min-content, 250px));
+    grid-template-columns: repeat(auto-fit, minmax(min-content, 375px));
     /*grid-template-rows: 20px 125px 20px 125px;*/
     grid-template-rows: 20px auto 20px auto;
     /*grid-template-rows: 20px min-content 20px min-content;*/
@@ -92,12 +93,12 @@ body {
 
 .downArrow {
     text-align: center;
-    width: 250px;
+    width: 375px;
 }
 
 .colHeader {
     position: relative;
-    max-width: 250px;
+    max-width: 375px;
     min-width: 50px;
 }
 
@@ -117,8 +118,8 @@ body {
 .outerSnapshotContainer {
     /*max-width: 250px;*/
     /*width: min-content;*/
-    width: 250px;
-    height: 125px;
+    width: 375px;
+    height: 187px;
     position: relative;
     /*overflow: hidden;*/
     overflow: scroll;
