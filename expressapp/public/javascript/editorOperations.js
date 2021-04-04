@@ -110,20 +110,27 @@ function editorOnDidChangeContent(e){
         // If syntax error, don't update any squiggles
         if(codeValidityResult === "valid"){
             // For lowestLineNumber, see if it has any selectors. If so, check if that selector exists in beforeSnapshot
-            const selectorDataList = findSelector(lowestLineNumber);
-            if(selectorDataList){
+            const selectorDataItem = findSelector(lowestLineNumber);
+            //console.log("selectorDataItem", selectorDataItem);
+            if(selectorDataItem){
+                //console.log("selectorDataList", selectorDataList);
+                //console.log("selectorDataList.length", selectorDataList.length);
                 // For each obj in array, check the selector against beforeSnapshot; and show squiggle for it at the given location
                 // Can probably reuse some code from earlier
-                for(selectorDataItem of selectorDataList){
-                    // Update selectorDataItem; it's line numbers are wrong, because we sent over only a single line of code (not the whole code),
-                        // which actually isn't correct, should be lowestLineNumber
-                    const numLines = selectorDataItem.selectorLocation.end.line - selectorDataItem.selectorLocation.start.line; // should be 0?
-                    selectorDataItem.selectorLocation.start.line = lowestLineNumber;
-                    selectorDataItem.selectorLocation.end.line = lowestLineNumber + numLines;
-                    identifyAndCreateSelectorSquiggleData(lowestLineNumber, selectorDataItem);
-                }
+                //for(selectorDataItem of selectorDataList){
+                // Update selectorDataItem; it's line numbers are wrong, because we sent over only a single line of code (not the whole code),
+                    // which actually isn't correct, should be lowestLineNumber
+                const numLines = selectorDataItem.selectorLocation.end.line - selectorDataItem.selectorLocation.start.line; // should be 0?
+                selectorDataItem.selectorLocation.start.line = lowestLineNumber;
+                selectorDataItem.selectorLocation.end.line = lowestLineNumber + numLines;
+                
+                // This will indirectly call identifyAndCreateSelectorSquiggleData and setModelMarkers
+                ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "getSelectorNumResults", lowestLineNumber, selectorDataItem);
+                /*// Before calling next 2 lines, need to call getSelectorNumResults and get result in selectorNumResults
+                identifyAndCreateSelectorSquiggleData(lowestLineNumber, selectorDataItem);
+                //}
                 // Update model markers
-                monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList());
+                monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList());*/
             }
         }
     }
@@ -291,7 +298,16 @@ function findSelector(lineNumber){
         }
     });
     
-    return selectorDataList;
+    for(let i = 0; i < selectorDataList.length; i++){
+        const selectorDataObj = selectorDataList[i];
+        if(Number.isInteger(selectorDataObj.prevLineNumber)){
+            return selectorDataObj;
+        }
+    }
+    // None had prevLineNumber, so just return first result
+        // (this is assuming only 1 selector per line)
+    return selectorDataList[0];
+    //return selectorDataList;
 }
 
 function editorOnDidChangeCursorPosition(e){
@@ -321,9 +337,10 @@ function editorOnDidChangeCursorPosition(e){
     //console.log("codeValidityResult", codeValidityResult);
     // If syntax error, don't try checking for selectors
     if(codeValidityResult === "valid"){
-        const selectorDataList = findSelector(lineNumber);
-        if(selectorDataList.length > 0){
-            currentSelector = selectorDataList[0].selectorString;
+        const selectorDataItem = findSelector(lineNumber);
+        //console.log("selectorDataItem", selectorDataItem);
+        if(selectorDataItem){
+            currentSelector = selectorDataItem.selectorString;
         }
     }
 
@@ -424,18 +441,15 @@ const identifyAndCreateSelectorSquiggleData = function(lineNumber, selectorDataT
                     const selector = selectorDataToTest.selectorString;
                     const numWindows = Object.keys(prevLineObj).length;
                     for (const [winID, data] of Object.entries(prevLineObj)) {
-                        const afterDomString = data.afterDomString;
-
-                        if(afterDomString){
-                            const domObj = $(afterDomString);
-                            const selectorResults = domObj.find(selector);
-                            if(selectorResults.length === 0){
+                        const selectorNumResults = parseInt(snapshotLineToDOMSelectorData[lineNumber][winID].selectorNumResults);
+                        if(Number.isInteger(selectorNumResults)){ // i.e., it was set
+                            if(selectorNumResults === 0){
                                 selectorNotFoundWinIDList.push(winID);
                                 selectorNotFoundParamString += JSON.stringify(data.parametersString);
-                            }else if(selectorResults.length === 1){
+                            }else if(selectorNumResults === 1){
                                 selectorFoundAndUniqueWinIDList.push(winID);
                                 selectorFoundAndUniqueParamString += JSON.stringify(data.parametersString);
-                            }else if(selectorResults.length > 1){
+                            }else if(selectorNumResults > 1){
                                 selectorNotUniqueWinIDList.push(winID);
                                 selectorNotUniqueParamString += JSON.stringify(data.parametersString);
                             }
@@ -1035,4 +1049,18 @@ ipcRenderer.on('updateParameters', function(event, pageWinID, paramString){
 ipcRenderer.on('clear', function(event){
     document.querySelector('#windowSelectMenu').innerHTML = "";
     $("#puppeteerTerminals").empty();
+});
+
+ipcRenderer.on('selectorNumResults', function(event, lineNumber, winIDToSelectorNumResults, selectorDataItem){
+    //console.log("winIDToSelectorNumResults", winIDToSelectorNumResults);
+    // Need to update snapshotLineToDOMSelectorData
+    const lineObj = snapshotLineToDOMSelectorData[lineNumber];
+    for(let [winID, selectorNumResults] of Object.entries(winIDToSelectorNumResults)){
+        lineObj[winID].selectorNumResults = selectorNumResults;
+    }
+    // Now, should update squiggles on page
+    identifyAndCreateSelectorSquiggleData(lineNumber, selectorDataItem);
+    //}
+    // Update model markers
+    monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList());
 });

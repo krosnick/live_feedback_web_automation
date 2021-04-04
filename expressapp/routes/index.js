@@ -76,6 +76,7 @@ router.get('/windowSelection', function(req, res, next) {
 
 router.get('/snapshots', function(req, res, next) {
     res.render('layouts/snapshots', {
+        editorBrowserViewID: req.app.locals.editorBrowserViewID,
         layout: 'snapshotsLayout'
     });
 });

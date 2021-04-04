@@ -7,8 +7,10 @@ let lastRunErrorData;
 let lineNumToComponentsList;
 const snapshotWidth = 250;
 const snapshotHeight = 125;
+let editorBrowserViewID;
 
 $(function(){
+    editorBrowserViewID = $("#editorBrowserViewID").attr("editorBrowserViewID");
     $("body").on("click", ".hideRun", function(e){
         // Hide/show appropriate header elements
         $(e.target).closest(".fullViewContents").hide();
@@ -141,6 +143,17 @@ ipcRenderer.on("clearAllSnapshots", function(event){
 
     // Removing element that contains iframes
     $(".tooltip").remove();
+});
+
+ipcRenderer.on("getSelectorNumResults", function(event, lineNumber, selectorDataItem){
+    const relevantClusterElement = $(`.tooltip[lineNumber="${lineNumber}"] .cluster[runInfo="currentRun"]`);
+    const winIDToSelectorNumResults = {};
+    relevantClusterElement.find("iframe").each(function( index, element ) {
+        const winID = $(element).attr("winID");
+        const selectorNumResults = element.contentWindow.document.querySelectorAll(selectorDataItem.selectorString).length;
+        winIDToSelectorNumResults[winID] = selectorNumResults;
+    });
+    ipcRenderer.sendTo(parseInt(editorBrowserViewID), "selectorNumResults", lineNumber, winIDToSelectorNumResults, selectorDataItem);
 });
 
 // Show snapshots for this line (show if they're rendered already, or create if not)
@@ -298,10 +311,22 @@ function createSnapshots(lineNumber){
 
 function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber, errorObj, selector){
     newElement.find(".snapshots").append(`<div class="clusterLabel">Label: ${indexOrName}</div>`);
-    const clusterElement = $(`
+    /*const clusterElement = $(`
         <div class="cluster" clusterIndex="${indexOrName}">
         </div>
-    `);
+    `);*/
+    let clusterElement;
+    if(indexOrName === "Last run"){
+        clusterElement = $(`
+            <div class="cluster" clusterIndex="${indexOrName}" runInfo="lastRun">
+            </div>
+        `);
+    }else{
+        clusterElement = $(`
+            <div class="cluster" clusterIndex="${indexOrName}" runInfo="currentRun">
+            </div>
+        `);
+    }
     newElement.find(".snapshots").append(clusterElement);
 
     // Now for each winID in this cluster, create an html string and append to clusterElement
