@@ -290,7 +290,15 @@ function createWindow () {
     expressApp.locals.editorBrowserView = editorBrowserView;
     expressApp.locals.editorBrowserViewID = editorBrowserView.webContents.id;
 
-    const snapshotsBrowserView = new BrowserView({webPreferences: {zoomFactor: 1.0, nodeIntegration: true, webSecurity: false} });
+    const snapshotsBrowserView = new BrowserView({
+        webPreferences: {
+            zoomFactor: 1.0,
+            nodeIntegration: true,
+            webSecurity: false,
+            enableRemoteModule: true,
+            preload: path.join(__dirname, "../expressapp/public/javascript/snapshots/snapshotsViewPreload.js")
+        }
+    });
     win.addBrowserView(snapshotsBrowserView);
     // Set offscreen for now
     snapshotsBrowserView.setBounds({ x: 780, y: 1000, width: 920, height: 905 });
