@@ -309,8 +309,7 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
             /*contextIsolation: true,*/
             /*sandbox: true,*/
             enableRemoteModule: true,
-            preload: path.join(__dirname, "../public/javascript/preload.js")
-            //preload: path.resolve(__dirname, '../public/javascript/pageViewPreload.js')
+            preload: path.join(__dirname, "../public/javascript/pageViewPreload.js")
         }
     });
     req.app.locals.win.addBrowserView(pageView);
