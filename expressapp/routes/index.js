@@ -347,6 +347,15 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
         }*/
     });
     pageView.webContents.on('did-finish-load', () => {
+        // Load jQuery on the page
+        pageView.webContents.executeJavaScript(`
+            async function loadJQuery(){
+                const jQueryString = await window.fetch('https://code.jquery.com/jquery-3.5.1.min.js').then((res) => res.text());
+                eval(jQueryString);
+            }
+            loadJQuery();
+        `);
+
         // Send message to the corresponding borderView to update its Back/Forward buttons
         const canGoBack = pageView.webContents.canGoBack();
         const canGoForward = pageView.webContents.canGoForward();
