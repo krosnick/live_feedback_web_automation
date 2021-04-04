@@ -110,7 +110,7 @@ function editorOnDidChangeContent(e){
         // If syntax error, don't update any squiggles
         if(codeValidityResult === "valid"){
             // For lowestLineNumber, see if it has any selectors. If so, check if that selector exists in beforeSnapshot
-            const selectorDataItem = findSelector(lowestLineNumber);
+            const selectorDataItem = findSelector(lowestLineNumber, false);
             //console.log("selectorDataItem", selectorDataItem);
             if(selectorDataItem){
                 //console.log("selectorDataList", selectorDataList);
@@ -134,6 +134,100 @@ function editorOnDidChangeContent(e){
             }
         }
     }
+}
+
+function checkForClientSideSelector(expressionObj){
+    // Return selector string and the line/col location
+    // Or, if no selector in expression, return null
+
+    // Check for client-side JS calls/methods
+    if(expressionObj.callee && expressionObj.callee.object && expressionObj.callee.object.name && expressionObj.callee.object.name === "document"){
+        if(expressionObj.callee && expressionObj.callee.property && expressionObj.callee.property.name){
+            if(expressionObj.arguments && expressionObj.arguments.length > 0){
+                const argument = expressionObj.arguments[0];
+                const candidateSelector = argument.value;
+                const methodName = expressionObj.callee.property.name;
+                // Ignoring variable-based selectors for now. Just searching for string literal. 
+                if(typeof(candidateSelector) === "string"){
+                    // Different ways of processing the string arg depending on method
+                    if(methodName === "querySelector"){
+                        const loc = argument.loc;
+                        return {
+                            method: "document." + methodName,
+                            isSelectorOwn: true,
+                            selectorString: candidateSelector,
+                            selectorLocation: loc
+                        };
+                    }else if(methodName === "querySelectorAll"){
+                        const loc = argument.loc;
+                        return {
+                            method: "document." + methodName,
+                            isSelectorOwn: true,
+                            selectorString: candidateSelector,
+                            selectorLocation: loc
+                        };
+                    }else if(methodName === "getElementById"){
+                        // Need to prepend string with #
+                        const loc = argument.loc;
+                        return {
+                            method: "document." + methodName,
+                            isSelectorOwn: true,
+                            selectorString: "#" + candidateSelector,
+                            selectorLocation: loc
+                        };
+                    }else if(methodName === "getElementsByClassName"){
+                        // Need to split candidateSelector string by space, then for each class prepend a ".", then combine
+                        const classesList = candidateSelector.split(" ");
+                        let classesSelector = "";
+                        for(let className of classesList){
+                            classesSelector += "." + className;
+                        } 
+                        const loc = argument.loc;
+                        return {
+                            method: "document." + methodName,
+                            isSelectorOwn: true,
+                            selectorString: classesSelector,
+                            selectorLocation: loc
+                        };
+                    }else if(methodName === "getElementsByName"){
+                        // Need to use attribute value selector syntax
+                        const loc = argument.loc;
+                        return {
+                            method: "document." + methodName,
+                            isSelectorOwn: true,
+                            selectorString: `[name="${candidateSelector}"]`,
+                            selectorLocation: loc
+                        };
+                    }else if(methodName === "getElementsByTagName"){
+                        const loc = argument.loc;
+                        return {
+                            method: "document." + methodName,
+                            isSelectorOwn: true,
+                            selectorString: candidateSelector,
+                            selectorLocation: loc
+                        };
+                    }
+                }
+            }
+        }
+    }/*else if(expressionObj.callee && expressionObj.callee.name && expressionObj.callee.name === "$"){
+        if(expressionObj.arguments && expressionObj.arguments.length === 1){ // want to ensure we're not searching withing some other context (which could be provided as additional arg)
+            const argument = expressionObj.arguments[0];
+            const candidateSelector = argument.value;
+            // Ignoring variable-based selectors for now. Just searching for string literal.
+            if(typeof(candidateSelector) === "string"){
+                // It is a selector
+                const loc = argument.loc;
+                return {
+                    method: "$",
+                    isSelectorOwn: true,
+                    selectorString: candidateSelector,
+                    selectorLocation: loc
+                };
+            }
+        }
+    }*/
+    return null;
 }
 
 function checkForSelector(expressionObj, ancestors){
@@ -227,7 +321,7 @@ function findPrevStatement(expressionObj, parentObj){
     return null;
 };
 
-function findSelector(lineNumber){
+function findSelector(lineNumber, searchClientSideJS){
     const fullCode = monacoEditor.getValue();
     const acornAST = acorn.parse(fullCode, {
         ecmaVersion: 2020,
@@ -236,11 +330,24 @@ function findSelector(lineNumber){
     });
     let selectorDataList = [];
     walk.ancestor(acornAST, {
+        CallExpression(node, ancestors) {
+            if(searchClientSideJS){
+                // Look for the line number of interest
+                if(node.loc.start.line === lineNumber){
+                    // Will be null if no selector found
+                    const selectorInfo = checkForClientSideSelector(node);
+                    console.log("checkForClientSideSelector result", selectorInfo); 
+                    if(selectorInfo){
+                        selectorDataList.push(selectorInfo);
+                    }
+                }
+            }
+        },
         AwaitExpression(node, ancestors) {
             // Look for the line number of interest
             if(node.loc.start.line === lineNumber){
                 // Will be null if no selector found
-                const selectorInfo = checkForSelector(node);
+                const selectorInfo = checkForSelector(node, searchClientSideJS);
                 if(selectorInfo){
                     const prevStatement = findPrevStatement(node, ancestors[ancestors.length-2]);
                     if(prevStatement){
@@ -255,7 +362,7 @@ function findSelector(lineNumber){
             // Look for the line number of interest
             if(node.loc.start.line === lineNumber){
                 // Will be null if no selector found
-                const selectorInfo = checkForSelector(node.right);
+                const selectorInfo = checkForSelector(node.right, searchClientSideJS);
                 if(selectorInfo){
                     const prevStatement = findPrevStatement(node.right, ancestors[ancestors.length-2]);
                     if(prevStatement){
@@ -270,7 +377,7 @@ function findSelector(lineNumber){
             // Look for the line number of interest
             if(node.loc.start.line === lineNumber){
                 // Will be null if no selector found
-                const selectorInfo = checkForSelector(node.expression);
+                const selectorInfo = checkForSelector(node.expression, searchClientSideJS);
                 if(selectorInfo){
                     const prevStatement = findPrevStatement(node.expression, ancestors[ancestors.length-2]);
                     if(prevStatement){
@@ -285,7 +392,7 @@ function findSelector(lineNumber){
             // Look for the line number of interest
             if(node.loc.start.line === lineNumber){
                 // Will be null if no selector found
-                const selectorInfo = checkForSelector(node.declarations[0].init);
+                const selectorInfo = checkForSelector(node.declarations[0].init, searchClientSideJS);
                 if(selectorInfo){
                     const prevStatement = findPrevStatement(node.declarations[0].init, ancestors[ancestors.length-2]);
                     if(prevStatement){
@@ -337,7 +444,7 @@ function editorOnDidChangeCursorPosition(e){
     //console.log("codeValidityResult", codeValidityResult);
     // If syntax error, don't try checking for selectors
     if(codeValidityResult === "valid"){
-        const selectorDataItem = findSelector(lineNumber);
+        const selectorDataItem = findSelector(lineNumber, true);
         //console.log("selectorDataItem", selectorDataItem);
         if(selectorDataItem){
             currentSelector = selectorDataItem.selectorString;
