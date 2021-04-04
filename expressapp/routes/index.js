@@ -354,10 +354,6 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
         borderView.webContents.send("updateBackForwardButtonsAndUrl", canGoBack, canGoForward, url);
         pageView.webContents.insertCSS('.blueBorder { border: 5px solid blue !important; border-radius: 10px !important; }');
         pageView.webContents.executeJavaScript(`
-            function getCurrentSnapshot(){
-                return window.rrwebSnapshot["snapshot"](document)[0];
-            };
-        
             // Approach from https://stackoverflow.com/questions/52236641/electron-ipc-and-nodeintegration
             window.addEventListener('message', event => {
                 // do something with custom event
