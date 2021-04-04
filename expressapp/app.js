@@ -304,6 +304,16 @@ function createWindow () {
     snapshotsBrowserView.setBounds({ x: 780, y: 1000, width: 920, height: 905 });
     //snapshotsBrowserView.setBounds({ x: 800, y: 0, width: 860, height: 820 });
     snapshotsBrowserView.webContents.loadURL('http://localhost:3000/snapshots');
+    snapshotsBrowserView.webContents.on('did-finish-load', () => {
+        // Load jQuery on the page
+        snapshotsBrowserView.webContents.executeJavaScript(`
+            async function loadJQuery(){
+                const jQueryString = await window.fetch('https://code.jquery.com/jquery-3.5.1.min.js').then((res) => res.text());
+                eval(jQueryString);
+            }
+            loadJQuery();
+        `);
+    });
     // Render devtools within app UI, so that users can inspect snapshot DOMs if they want to
     snapshotsBrowserView.webContents.openDevTools({mode: "bottom"});
     expressApp.locals.snapshotsBrowserView = snapshotsBrowserView;
