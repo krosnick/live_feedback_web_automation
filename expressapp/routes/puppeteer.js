@@ -122,7 +122,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     });
     // Sort from smallest 'start' to largest
     consoleCallsToReplace.sort((a, b) => a.start - b.start);
-    console.log("consoleCallsToReplace", consoleCallsToReplace);
+    //console.log("consoleCallsToReplace", consoleCallsToReplace);
 
     // Use consoleCallsToReplace to construct new code string (codeWithConsolesReplaced)
     let codeWithConsolesReplaced = "";
@@ -159,7 +159,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         codeWithConsolesReplaced = code;
     }
 
-    console.log("codeWithConsolesReplaced", codeWithConsolesReplaced);
+    //console.log("codeWithConsolesReplaced", codeWithConsolesReplaced);
 
     // Process new string and instrument to take snapshots, etc
     // AST processing
@@ -174,9 +174,10 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
             // Exclude if it is a variable declaration within for loop, e.g., (for(let i = 0; ...))
             const parentType = ancestors[ancestors.length-2].type;
             if(parentType !== "ForStatement" && parentType !== "ForInStatement"){
+                const hasNonAsyncFunctionAncestor = isInsideNonAsyncFunction(node, ancestors);
                 const hasEvaluateAncestor = isInsideEvaluateOrEvaluateHandle(node, ancestors);
-                // Don't take snapshot here, because we're inside of an "evaluate" or "evaluateHandle", so doesn't make sense
-                if(!hasEvaluateAncestor){
+                // Don't take snapshot here, because we're inside of an "evaluate" or "evaluateHandle", so doesn't make sense; or if we're in non-async function
+                if(!hasEvaluateAncestor && !hasNonAsyncFunctionAncestor){
                     statementAndDeclarationData[node.end] = {
                         lineObj: node.loc.start.line
                     };
@@ -195,9 +196,10 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
             }
         },
         ExpressionStatement(node, ancestors) {
+            const hasNonAsyncFunctionAncestor = isInsideNonAsyncFunction(node, ancestors);
             const hasEvaluateAncestor = isInsideEvaluateOrEvaluateHandle(node, ancestors);
             // Don't take snapshot here, because we're inside of an "evaluate" or "evaluateHandle", so doesn't make sense
-            if(!hasEvaluateAncestor){
+            if(!hasEvaluateAncestor && !hasNonAsyncFunctionAncestor){
                 statementAndDeclarationData[node.end] = {
                     lineObj: node.loc.start.line
                 };
@@ -218,9 +220,10 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
             // Exclude if it is a variable declaration within for loop, e.g., (for(let i = 0; ...))
             const parentType = ancestors[ancestors.length-2].type;
             if(parentType !== "ForStatement" && parentType !== "ForInStatement"){
+                const hasNonAsyncFunctionAncestor = isInsideNonAsyncFunction(node, ancestors);
                 const hasEvaluateAncestor = isInsideEvaluateOrEvaluateHandle(node, ancestors);
                 // Don't take snapshot here, because we're inside of an "evaluate" or "evaluateHandle", so doesn't make sense
-                if(!hasEvaluateAncestor){
+                if(!hasEvaluateAncestor && !hasNonAsyncFunctionAncestor){
                     statementAndDeclarationData[node.end] = {
                         lineObj: node.loc.start.line
                     };
@@ -268,7 +271,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         instrumentedCodeString = codeWithConsolesReplaced;
     }
 
-    console.log("instrumentedCodeString", instrumentedCodeString);
+    //console.log("instrumentedCodeString", instrumentedCodeString);
 
     // Let's split the code by semicolons(;)
     // Right after each semicolon, let's insert "await page.waitFor(200);snapshotsList.push(await page.content());" to take
@@ -393,6 +396,22 @@ const isInsideEvaluateOrEvaluateHandle = function(node, ancestors){
         if(ancestor.type === "CallExpression"){
             if(ancestor.callee && ancestor.callee.property && ancestor.callee.property.name && (ancestor.callee.property.name === "evaluate" || ancestor.callee.property.name === "evaluateHandle")){
                 return true;
+            }
+        }
+    }
+    return false;
+};
+
+const isInsideNonAsyncFunction = function(node, ancestors){
+    // Loop through backwards to find first containing function (if any); see if function is async or not
+    for(let i = ancestors.length-1; i >= 0; i--){
+        const ancestor = ancestors[i];
+        if(ancestor.type === "FunctionDeclaration" || ancestor.type === "FunctionExpression"){
+            if(ancestor.async === false){
+                return true;
+            }else{
+                // If first function is async, then we're good; we only want to check the innermost function
+                return false;
             }
         }
     }
