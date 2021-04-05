@@ -368,10 +368,10 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
                 // do something with custom event
                 const message = event.data;
                 if(message.type === "highlightUIElements"){
-                    console.log("renderer received highlightUIElements");
+                    //console.log("renderer received highlightUIElements");
                     highlightUIElements(message.selector);
                 }else if(message.type === "clearHighlightedUIElements"){
-                    console.log("renderer received clearHighlightedUIElements");
+                    //console.log("renderer received clearHighlightedUIElements");
                     clearHighlightedElements();
                 }
             });
@@ -386,7 +386,7 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
             function highlightUIElements(selector){
                 clearHighlightedElements();
                 const elements = $(selector);
-                console.log("elements", elements);
+                //console.log("elements", elements);
                 for(let element of elements){
                     // Apply border only if this is an interactive widget,
                         // e.g., <button>, <input>, <a>, <select>, <option>, <textarea>
