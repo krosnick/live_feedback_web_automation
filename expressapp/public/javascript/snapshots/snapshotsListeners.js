@@ -440,38 +440,28 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
 }
 
 function scaleIframe(iframeElement, lineObj, transformOriginString, selector){
-    //beforeSnapshotIframeDocument.addEventListener('DOMFrameContentLoaded', (event) => {
-    // Using setTimeout for now, to wait 500ms and hope that's enough for the DOM to be loaded so that
-        // we know the dimensions we're accessing are stable (i.e., that the elements exist and they're not just size 0)
-        // Prev tried using .onload or DOMFrameContentLoaded or DOMContentLoaded but these didn't work
-    setTimeout(function(){
-        if(iframeElement.contentWindow){
-            const iframeDocument = iframeElement.contentWindow.document;
-            if(selector){
-                //const selector = lineObj.selectorData.selectorString;
-                const selectorElement = iframeDocument.querySelector(selector);
-                if(selectorElement){
-                    addCursorAndBorder(iframeElement, selector);
-                }
-                /*// Zoom to selector element if it is present in DOM
-                if(selectorElement){
-                    scaleToElement(selectorElement, iframeElement, iframeDocument, transformOriginString);
-                    //addCursorAndBorder(iframeElement, lineObj.selectorData.method, lineObj.selectorData.selectorString);
-                    addCursorAndBorder(iframeElement, currentSelector);
-                    return;
-                }else{
-                    // TODO - Check if this is a keyboard command and if the prior command had a selector it was operating on
-
-                }*/
+    if(iframeElement.contentWindow){
+        const iframeDocument = iframeElement.contentWindow.document;
+        if(selector){
+            //const selector = lineObj.selectorData.selectorString;
+            const selectorElement = iframeDocument.querySelector(selector);
+            if(selectorElement){
+                addCursorAndBorder(iframeElement, selector);
             }
-            // Otherwise, scale to page width
-            scaleToPageWidth(iframeElement, iframeDocument, transformOriginString);
-        }else{
-            // Maybe the iframe just isn't fully loaded yet. Try calling this function again in hopes it'll be ready in 1000ms
-            scaleIframe(iframeElement, lineObj, transformOriginString, selector);
+            /*// Zoom to selector element if it is present in DOM
+            if(selectorElement){
+                scaleToElement(selectorElement, iframeElement, iframeDocument, transformOriginString);
+                //addCursorAndBorder(iframeElement, lineObj.selectorData.method, lineObj.selectorData.selectorString);
+                addCursorAndBorder(iframeElement, currentSelector);
+                return;
+            }else{
+                // TODO - Check if this is a keyboard command and if the prior command had a selector it was operating on
+
+            }*/
         }
-    }, 1000);
-    //});
+        // Otherwise, scale to page width
+        scaleToPageWidth(iframeElement, iframeDocument, transformOriginString);
+    }
 }
 
 function scaleToElement(selectorElement, iframeElement, iframeDocument, transformOriginString){
