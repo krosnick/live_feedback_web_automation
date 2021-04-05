@@ -34,22 +34,22 @@ router.post('/login', function(req, res, next) {
     // Use connect method to connect to the Server
     client.connect(function(err) {
         console.log("after MongoClient connect");
-        console.log("err");
-        console.log(err);
-        assert.equal(null, err);
-        console.log("Connected successfully to server");
+        if(err !== null){
+            // Show error on page
+            res.send("Login unsuccessful");
+        }else{
+            console.log("Connected successfully to server");
 
-        // Now need to populate a bunch of variables etc 
+            let db = client.db(dbName);
+            
+            let filesCollection = db.collection('files');
+            // Set this locals property so that we can access the collections
+                // from other parts of the app (e.g., within the req object in
+                // in request callbacks)
+            req.app.locals.filesCollection = filesCollection;
 
-        let db = client.db(dbName);
-        
-        let filesCollection = db.collection('files');
-        // Set this locals property so that we can access the collections
-            // from other parts of the app (e.g., within the req object in
-            // in request callbacks)
-        req.app.locals.filesCollection = filesCollection;
-
-        setUpHomeScreen(req, res);
+            setUpHomeScreen(req, res);
+        }
     });
 });
 

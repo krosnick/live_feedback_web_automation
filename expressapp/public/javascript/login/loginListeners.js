@@ -7,6 +7,13 @@ $(function(){
                 username: $("#username").val(),
                 password: $("#password").val()
             }
-        })
+        }).done(function(data) {
+            // If error, show error on page
+            if(data === "Login unsuccessful"){
+                $("#errorMessage").text(data);
+            }else{
+                $("#errorMessage").empty();
+            }
+        });
     });
 });
