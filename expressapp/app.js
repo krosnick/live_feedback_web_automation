@@ -1,37 +1,11 @@
 const { app, BrowserWindow, BrowserView } = require('electron');
-const fetch = require('node-fetch');
-const puppeteer = require('puppeteer');
 app.commandLine.appendSwitch('remote-debugging-port', '8315');
-
-async function setupPuppeteer() {
-    console.log("before response");
-    const response = await fetch(`http://localhost:8315/json/version/`)
-    console.log("after response");
-    //console.log("response", response);
-    const debugEndpoint = await response.json();
-    //console.log("debugEndpoints", debugEndpoint);
-
-    await puppeteer.defaultArgs({ devtools: true });
-    puppeteerBrowser = await puppeteer.connect({
-        browserWSEndpoint: debugEndpoint.webSocketDebuggerUrl,
-        defaultViewport: null
-    });
-    expressApp.locals.puppeteerBrowser = puppeteerBrowser;
-    console.log("puppeteerBrowser.targets()", puppeteerBrowser.targets());
-
-    // use puppeteer APIs now!
-}
 
 var createError = require('http-errors');
 var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
-const fs = require('fs');
-
-
-const MongoClient = require('mongodb').MongoClient;
-const assert = require('assert');
 
 var indexRouter = require('./routes/index').router;
 var puppeteerRouter = require('./routes/puppeteer').router;
@@ -104,132 +78,99 @@ app.on('ready', function() {
         expressApp.locals.devMode = false;
     }
 
-    // Connection URL
-    // process.argv[2] is the first arg, the shared directory
-    /*const mongoKeys = JSON.parse(fs.readFileSync(path.join(process.argv[2], 'atlas.keys.json'), 'utf8'));
-    const mongoUsername = mongoKeys.username;
-    const mongoPassword = mongoKeys.password;*/
-    //const url = "mongodb+srv://" + mongoUsername + ":" + mongoPassword + "@cluster0-jct4v.mongodb.net/test?retryWrites=true&w=majority";
-    const url = 'mongodb://localhost:27017';
+    expressApp.locals.title = "Live web automation";
+    // ------------------------------
+    var debug = require('debug')('expressapp:server');
+    var http = require('http');
 
-    // Database Name
-    const dbName = 'liveWebAutomationData';
+    /**
+     * Get port from environment and store in Express.
+     */
 
-    let db;
-    let filesCollection;
+    var port = normalizePort(process.env.PORT || '3000');
+    expressApp.set('port', port);
 
-    console.log("before MongoClient");
-    const client = new MongoClient(url, { useNewUrlParser: true });
-    console.log("after MongoClient");
-    // Use connect method to connect to the Server
-    client.connect(function(err) {
-        console.log("after MongoClient connect");
-        console.log("err");
-        console.log(err);
-        assert.equal(null, err);
-        console.log("Connected successfully to server");
+    /**
+     * Create HTTP server.
+     */
 
-        db = client.db(dbName);
+    var server = http.createServer(expressApp);
 
-        filesCollection = db.collection('files');
-        // Set this locals property so that we can access the collections
-            // from other parts of the app (e.g., within the req object in
-            // in request callbacks)
-        expressApp.locals.filesCollection = filesCollection;
+    /**
+     * Listen on provided port, on all network interfaces.
+     */
 
-        expressApp.locals.title = "Live web automation";
-        // ------------------------------
-        var debug = require('debug')('expressapp:server');
-        var http = require('http');
+    server.listen(port);
+    server.on('error', onError);
+    server.on('listening', onListening);
 
-        /**
-         * Get port from environment and store in Express.
-         */
+    /**
+     * Normalize a port into a number, string, or false.
+     */
 
-        var port = normalizePort(process.env.PORT || '3000');
-        expressApp.set('port', port);
+    function normalizePort(val) {
+        var port = parseInt(val, 10);
 
-        /**
-         * Create HTTP server.
-         */
-
-        var server = http.createServer(expressApp);
-
-        /**
-         * Listen on provided port, on all network interfaces.
-         */
-
-        server.listen(port);
-        server.on('error', onError);
-        server.on('listening', onListening);
-
-        /**
-         * Normalize a port into a number, string, or false.
-         */
-
-        function normalizePort(val) {
-            var port = parseInt(val, 10);
-
-            if (isNaN(port)) {
-            // named pipe
-            return val;
-            }
-
-            if (port >= 0) {
-            // port number
-            return port;
-            }
-
-            return false;
+        if (isNaN(port)) {
+        // named pipe
+        return val;
         }
 
-        /**
-         * Event listener for HTTP server "error" event.
-         */
+        if (port >= 0) {
+        // port number
+        return port;
+        }
 
-        function onError(error) {
-            if (error.syscall !== 'listen') {
+        return false;
+    }
+
+    /**
+     * Event listener for HTTP server "error" event.
+     */
+
+    function onError(error) {
+        if (error.syscall !== 'listen') {
+        throw error;
+        }
+
+        var bind = typeof port === 'string'
+        ? 'Pipe ' + port
+        : 'Port ' + port;
+
+        // handle specific listen errors with friendly messages
+        switch (error.code) {
+        case 'EACCES':
+            console.error(bind + ' requires elevated privileges');
+            process.exit(1);
+            break;
+        case 'EADDRINUSE':
+            console.error(bind + ' is already in use');
+            process.exit(1);
+            break;
+        default:
             throw error;
-            }
-
-            var bind = typeof port === 'string'
-            ? 'Pipe ' + port
-            : 'Port ' + port;
-
-            // handle specific listen errors with friendly messages
-            switch (error.code) {
-            case 'EACCES':
-                console.error(bind + ' requires elevated privileges');
-                process.exit(1);
-                break;
-            case 'EADDRINUSE':
-                console.error(bind + ' is already in use');
-                process.exit(1);
-                break;
-            default:
-                throw error;
-            }
         }
+    }
 
-        /**
-         * Event listener for HTTP server "listening" event.
-         */
+    /**
+     * Event listener for HTTP server "listening" event.
+     */
 
-        function onListening() {
-            var addr = server.address();
-            var bind = typeof addr === 'string'
-            ? 'pipe ' + addr
-            : 'port ' + addr.port;
-            debug('Listening on ' + bind);
-        }
+    function onListening() {
+        var addr = server.address();
+        var bind = typeof addr === 'string'
+        ? 'pipe ' + addr
+        : 'port ' + addr.port;
+        debug('Listening on ' + bind);
+    }
 
-        // ------------------------------
+    // ------------------------------
 
-        // Capturing the window ID, so that later in router files we can send messages to a particular window
-        expressApp.locals.browserWinIDs = {};
+    // Capturing the window ID, so that later in router files we can send messages to a particular window
+    expressApp.locals.browserWinIDs = {};
 
-        createWindow();
-    });
+    createWindow();
+    //});
 
 });
 
@@ -266,60 +207,19 @@ function createWindow () {
             webSecurity: false
         }
     });
+    
     expressApp.locals.browserWinIDs["win"] = win.id;
     expressApp.locals.win = win;
-    
-    const windowSelectionView = new BrowserView({webPreferences: {zoomFactor: 1.0, nodeIntegration: true, webSecurity: false} });
-    win.addBrowserView(windowSelectionView);
-    windowSelectionView.setBounds({ x: 780, y: 0, width: 780, height: 100 });
-    windowSelectionView.webContents.loadURL('http://localhost:3000/windowSelection');
+
+    const loginBrowserView = new BrowserView({webPreferences: {zoomFactor: 1.0, nodeIntegration: true, webSecurity: false} });
+    expressApp.locals.win.addBrowserView(loginBrowserView);
+    loginBrowserView.setBounds({ x: 0, y: 0, width: 780, height: 950 });
+    loginBrowserView.webContents.loadURL('http://localhost:3000/');
     if(expressApp.locals.devMode){
-        windowSelectionView.webContents.openDevTools({mode: "detach"});
+        loginBrowserView.webContents.openDevTools({mode: "detach"});
     }
-    expressApp.locals.windowSelectionView = windowSelectionView;
-    expressApp.locals.windowSelectionViewID = windowSelectionView.webContents.id;
-
-    const editorBrowserView = new BrowserView({webPreferences: {zoomFactor: 1.0, nodeIntegration: true, webSecurity: false} });
-    console.log("editorBrowserView ID", editorBrowserView.webContents.id);
-    win.addBrowserView(editorBrowserView);
-    editorBrowserView.setBounds({ x: 0, y: 0, width: 780, height: 950 });
-    editorBrowserView.webContents.loadURL('http://localhost:3000/');
-    if(expressApp.locals.devMode){
-        editorBrowserView.webContents.openDevTools({mode: "detach"});
-    }
-    expressApp.locals.editorBrowserView = editorBrowserView;
-    expressApp.locals.editorBrowserViewID = editorBrowserView.webContents.id;
-
-    const snapshotsBrowserView = new BrowserView({
-        webPreferences: {
-            zoomFactor: 1.0,
-            nodeIntegration: true,
-            webSecurity: false,
-            enableRemoteModule: true,
-            preload: path.join(__dirname, "../expressapp/public/javascript/snapshots/snapshotsViewPreload.js")
-        }
-    });
-    win.addBrowserView(snapshotsBrowserView);
-    // Set offscreen for now
-    snapshotsBrowserView.setBounds({ x: 780, y: 1000, width: 920, height: 905 });
-    //snapshotsBrowserView.setBounds({ x: 800, y: 0, width: 860, height: 820 });
-    snapshotsBrowserView.webContents.loadURL('http://localhost:3000/snapshots');
-    snapshotsBrowserView.webContents.on('did-finish-load', () => {
-        // Load jQuery on the page
-        snapshotsBrowserView.webContents.executeJavaScript(`
-            async function loadJQuery(){
-                const jQueryString = await window.fetch('https://code.jquery.com/jquery-3.5.1.min.js').then((res) => res.text());
-                eval(jQueryString);
-            }
-            loadJQuery();
-        `);
-    });
-    // Render devtools within app UI, so that users can inspect snapshot DOMs if they want to
-    snapshotsBrowserView.webContents.openDevTools({mode: "bottom"});
-    expressApp.locals.snapshotsBrowserView = snapshotsBrowserView;
-    expressApp.locals.snapshotsBrowserViewID = snapshotsBrowserView.webContents.id;
-
-    setupPuppeteer();
+    expressApp.locals.loginBrowserView = loginBrowserView;
+    expressApp.locals.loginBrowserViewID = loginBrowserView.webContents.id;
 
     // Emitted when the window is closed.
     win.on('closed', () => {

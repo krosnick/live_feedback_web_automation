@@ -1,15 +1,60 @@
 var express = require('express');
-const { BrowserWindow, BrowserView, webContents } = require('electron');
+const {  BrowserView } = require('electron');
 var router = express.Router();
 const { v1: uuidv1 } = require('uuid');
 const _ = require('lodash');
 const path = require('path');
 const { resetTargetPages, addTargetPages } = require('./puppeteer');
+const MongoClient = require('mongodb').MongoClient;
+const assert = require('assert');
+const fetch = require('node-fetch');
+const puppeteer = require('puppeteer');
 
 let currentlySelectedWindowID;
 
-/* GET home page. */
 router.get('/', function(req, res, next) {
+    res.render('layouts/login', {
+        layout: 'loginLayout'
+    });
+});
+
+router.post('/login', function(req, res, next) {
+    const username = req.body.username.trim();
+    const password = req.body.password.trim();
+    console.log("username", username);
+    console.log("password", password);
+
+    const dbName = 'liveWebAutomationData';
+    // Should try to login to MongoDB cloud here; probably need to do a try/catch
+    //const url = 'mongodb://localhost:27017';
+    const url = `mongodb+srv://${username}:${password}@cluster0.efihn.mongodb.net/${dbName}?retryWrites=true&w=majority`;
+    console.log("before MongoClient");
+    const client = new MongoClient(url, { useNewUrlParser: true });
+    console.log("after MongoClient");
+    // Use connect method to connect to the Server
+    client.connect(function(err) {
+        console.log("after MongoClient connect");
+        console.log("err");
+        console.log(err);
+        assert.equal(null, err);
+        console.log("Connected successfully to server");
+
+        // Now need to populate a bunch of variables etc 
+
+        let db = client.db(dbName);
+        
+        let filesCollection = db.collection('files');
+        // Set this locals property so that we can access the collections
+            // from other parts of the app (e.g., within the req object in
+            // in request callbacks)
+        req.app.locals.filesCollection = filesCollection;
+
+        setUpHomeScreen(req, res);
+    });
+});
+
+/* GET home page. */
+router.get('/home', function(req, res, next) {
 
     // Check DB for existing files
     // If no existing files, create a new one
@@ -32,7 +77,14 @@ router.get('/', function(req, res, next) {
             fileObj = {
                 fileID: req.app.locals.fileID,
                 fileName: "untitled_" + req.app.locals.fileID + ".js",
-                fileContents: "",
+                fileContents: "// Write your script here\n",
+                paramCodeString: `[
+    {
+        "paramName1": "val1",
+        "paramName2": "val2"
+    }
+]`,
+                startingUrl: null,
                 lastModified: Date.now()
             };
             req.app.locals.filesCollection.insertOne(fileObj);
@@ -471,6 +523,84 @@ const addHttpsIfNeeded = function(startingUrl){
     }
     return trimmedNewURL;
 };
+
+async function setupPuppeteer(req, res) {
+    console.log("before response");
+    const response = await fetch(`http://localhost:8315/json/version/`)
+    console.log("after response");
+    //console.log("response", response);
+    const debugEndpoint = await response.json();
+    //console.log("debugEndpoints", debugEndpoint);
+
+    await puppeteer.defaultArgs({ devtools: true });
+    puppeteerBrowser = await puppeteer.connect({
+        browserWSEndpoint: debugEndpoint.webSocketDebuggerUrl,
+        defaultViewport: null
+    });
+    req.app.locals.puppeteerBrowser = puppeteerBrowser;
+    console.log("puppeteerBrowser.targets()", puppeteerBrowser.targets());
+
+    // use puppeteer APIs now!
+}
+
+const setUpHomeScreen = function(req, res){
+    // Remove login screen
+    req.app.locals.win.removeBrowserView(req.app.locals.loginBrowserView);
+    
+    // Set up all other BrowserViews
+    const windowSelectionView = new BrowserView({webPreferences: {zoomFactor: 1.0, nodeIntegration: true, webSecurity: false} });
+    req.app.locals.win.addBrowserView(windowSelectionView);
+    windowSelectionView.setBounds({ x: 780, y: 0, width: 780, height: 100 });
+    windowSelectionView.webContents.loadURL('http://localhost:3000/windowSelection');
+    if(req.app.locals.devMode){
+        windowSelectionView.webContents.openDevTools({mode: "detach"});
+    }
+    req.app.locals.windowSelectionView = windowSelectionView;
+    req.app.locals.windowSelectionViewID = windowSelectionView.webContents.id;
+
+    const editorBrowserView = new BrowserView({webPreferences: {zoomFactor: 1.0, nodeIntegration: true, webSecurity: false} });
+    req.app.locals.win.addBrowserView(editorBrowserView);
+    editorBrowserView.setBounds({ x: 0, y: 0, width: 780, height: 950 });
+    editorBrowserView.webContents.loadURL('http://localhost:3000/home/');
+    if(req.app.locals.devMode){
+        editorBrowserView.webContents.openDevTools({mode: "detach"});
+    }
+    req.app.locals.editorBrowserView = editorBrowserView;
+    req.app.locals.editorBrowserViewID = editorBrowserView.webContents.id;
+
+    const snapshotsBrowserView = new BrowserView({
+        webPreferences: {
+            zoomFactor: 1.0,
+            nodeIntegration: true,
+            webSecurity: false,
+            enableRemoteModule: true,
+            preload: path.join(__dirname, "../expressapp/public/javascript/snapshots/snapshotsViewPreload.js")
+        }
+    });
+    req.app.locals.win.addBrowserView(snapshotsBrowserView);
+    // Set offscreen for now
+    snapshotsBrowserView.setBounds({ x: 780, y: 1000, width: 920, height: 905 });
+    //snapshotsBrowserView.setBounds({ x: 800, y: 0, width: 860, height: 820 });
+    snapshotsBrowserView.webContents.loadURL('http://localhost:3000/snapshots');
+    snapshotsBrowserView.webContents.on('did-finish-load', () => {
+        // Load jQuery on the page
+        snapshotsBrowserView.webContents.executeJavaScript(`
+            async function loadJQuery(){
+                const jQueryString = await window.fetch('https://code.jquery.com/jquery-3.5.1.min.js').then((res) => res.text());
+                eval(jQueryString);
+            }
+            loadJQuery();
+        `);
+    });
+    // Render devtools within app UI, so that users can inspect snapshot DOMs if they want to
+    snapshotsBrowserView.webContents.openDevTools({mode: "bottom"});
+    req.app.locals.snapshotsBrowserView = snapshotsBrowserView;
+    req.app.locals.snapshotsBrowserViewID = snapshotsBrowserView.webContents.id;
+
+    setupPuppeteer(req, res);
+
+    res.end();
+}
 
 module.exports = {
     router,
