@@ -377,10 +377,6 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         // and have this boolean set to "true" anytime the file changes or user updates url.
         // Then, we can set the target pages later only when we need to run the code (so ideally by this point
         // the BrowserViews will all have been updated)
-    /*req.app.locals.filesCollection.find({
-        fileID: req.app.locals.fileID
-    }).toArray(function(error, docs){
-        //console.log("docs[0].startingUrl", docs[0].startingUrl);*/
     let checkIfTargetPageListReady = setInterval((wrappedCodeString) => {
         if(req.app.locals.targetPageListReady){
             clearTimeout(checkIfTargetPageListReady);

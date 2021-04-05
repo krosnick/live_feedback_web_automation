@@ -3,7 +3,7 @@ const { BrowserWindow, webContents} = require('electron');
 var router = express.Router();
 const { v1: uuidv1 } = require('uuid');
 const _ = require('lodash');
-const { resetExampleWindows, addExampleWindows } = require('./index');
+const { resetExampleWindows, addExampleWindows, createBaseSearchQueryObj } = require('./index');
 
 // Update params for current file
 router.put('/update/', function(req, res, next) {
@@ -31,9 +31,9 @@ router.put('/update/', function(req, res, next) {
             }
         },
         function(error, result){
-            req.app.locals.filesCollection.find({
-                fileID: req.app.locals.fileID
-            }).toArray(function(error, docs){
+            let searchQueryObj = createBaseSearchQueryObj(req);
+            searchQueryObj.fileID = req.app.locals.fileID;
+            req.app.locals.filesCollection.find(searchQueryObj).toArray(function(error, docs){
                 // Only create windows if a startingUrl exists
                 if(docs[0].startingUrl){
                     // Compare to what's in req.app.locals.windowMetadata
@@ -87,10 +87,9 @@ router.put('/update/', function(req, res, next) {
                         // paramSetsAdded.length < paramSetsRemoved.length
                         // We're going to have to remove windows, which unfortunately means we have to just
                             // clear all existing windows and start from scratch
-
-                        req.app.locals.filesCollection.find({
-                            fileID: req.app.locals.fileID
-                        }).toArray(function(error, docs){
+                        let searchQueryObj = createBaseSearchQueryObj(req);
+                        searchQueryObj.fileID = req.app.locals.fileID;
+                        req.app.locals.filesCollection.find(searchQueryObj).toArray(function(error, docs){
                             resetExampleWindows(req, docs[0].startingUrl);
                             res.end();
                         });
@@ -104,9 +103,9 @@ router.put('/update/', function(req, res, next) {
 });
 
 router.post('/getCurrentParamCodeString/', function(req, res, next) {
-    req.app.locals.filesCollection.find({
-        fileID: req.app.locals.fileID
-    }).toArray(function(error, docs){
+    let searchQueryObj = createBaseSearchQueryObj(req);
+    searchQueryObj.fileID = req.app.locals.fileID;
+    req.app.locals.filesCollection.find(searchQueryObj).toArray(function(error, docs){
         res.send(docs[0].paramCodeString);
     });
 });

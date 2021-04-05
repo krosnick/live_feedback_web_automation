@@ -4,7 +4,7 @@ var router = express.Router();
 const { v1: uuidv1 } = require('uuid');
 
 const { extractStartingUrl } = require('./code');
-const { resetExampleWindows } = require('./index');
+const { resetExampleWindows, createBaseSearchQueryObj } = require('./index');
 
 // Update file name for current file
 router.post('/updateName', function(req, res, next) {
@@ -51,7 +51,8 @@ router.post('/showFile/:fileID', function(req, res, next) {
         function(error, result){
             // Maybe just re-render fileSelection template entirely and send
                 // back over to client to just replace
-            req.app.locals.filesCollection.find().toArray(function(error2, docs){
+            const searchQueryObj = createBaseSearchQueryObj(req);
+            req.app.locals.filesCollection.find(searchQueryObj).toArray(function(error2, docs){
                 let fileIDNamePairs = [];
                 // Add all pairs to the list
                 for(let i = 0; i < docs.length; i++){
@@ -66,8 +67,9 @@ router.post('/showFile/:fileID', function(req, res, next) {
                 }
 
                 req.app.locals.fileID = newFileIDToShow;
-
-                req.app.locals.filesCollection.find({fileID: newFileIDToShow}).toArray(function(error3, fileDocs){
+                let searchQueryObj = createBaseSearchQueryObj(req);
+                searchQueryObj.fileID = req.app.locals.fileID;
+                req.app.locals.filesCollection.find(searchQueryObj).toArray(function(error3, fileDocs){
                     const fileToShowObj = fileDocs[0];
                     const fileName = fileToShowObj.fileName;
                     const fileContents = fileToShowObj.fileContents;
@@ -121,7 +123,8 @@ router.post('/createNewFile', function(req, res, next) {
         function(error, result){
             // Maybe just re-render fileSelection template entirely and send
                 // back over to client to just replace
-            req.app.locals.filesCollection.find().toArray(function(error2, docs){
+            const searchQueryObj = createBaseSearchQueryObj(req);
+            req.app.locals.filesCollection.find(searchQueryObj).toArray(function(error2, docs){
                 let fileIDNamePairs = [];
                 // Add all pairs to the list
                 for(let i = 0; i < docs.length; i++){
@@ -184,7 +187,8 @@ router.delete('/delete', function(req, res, next) {
 
         // Check DB for existing files
         // If no existing files, create a new one
-        req.app.locals.filesCollection.find().sort( { lastModified: -1 } ).toArray(function(error, docs){
+        const searchQueryObj = createBaseSearchQueryObj(req);
+        req.app.locals.filesCollection.find(searchQueryObj).sort( { lastModified: -1 } ).toArray(function(error, docs){
             let fileObj;
             if(docs.length > 0){
                 // There are existing files

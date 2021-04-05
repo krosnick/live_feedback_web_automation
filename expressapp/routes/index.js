@@ -57,12 +57,7 @@ router.post('/login', function(req, res, next) {
 /* GET home page. */
 router.get('/home', function(req, res, next) {
     // Check DB for existing files for this user
-    let searchQueryObj;
-    if(req.app.locals.username === "admin"){
-        searchQueryObj = {};
-    }else{
-        searchQueryObj = { username: req.app.locals.username };
-    }
+    const searchQueryObj = createBaseSearchQueryObj(req);
     req.app.locals.filesCollection.find(searchQueryObj).sort( { lastModified: -1 } ).toArray(function(error, docs){
         // If no existing files, create a new one
         let fileObj;
@@ -207,10 +202,9 @@ router.post('/hideShowWindows', function(req, res, next) {
 
 const addExampleWindows = function(req, paramSets){
     req.app.locals.targetPageListReady = false;
-
-    req.app.locals.filesCollection.find({
-        fileID: req.app.locals.fileID
-    }).toArray(function(error, docs){
+    let searchQueryObj = createBaseSearchQueryObj(req);
+    searchQueryObj.fileID = req.app.locals.fileID;
+    req.app.locals.filesCollection.find(searchQueryObj).toArray(function(error, docs){
         const startingUrl = docs[0].startingUrl;
 
         // Add window per paramSet
@@ -263,10 +257,9 @@ const resetExampleWindows = function(req, startingUrl){
         //const parameterValueSets = [ {1: "Home & Kitchen",  2: "can opener"} ];
         //const parameterValueSets = [ null ];
         let parameterValueSets; // This needs to contain the equivalent of what's in paramCodeString
-
-        req.app.locals.filesCollection.find({
-            fileID: req.app.locals.fileID
-        }).toArray(function(error, docs){
+        let searchQueryObj = createBaseSearchQueryObj(req);
+        searchQueryObj.fileID = req.app.locals.fileID;
+        req.app.locals.filesCollection.find(searchQueryObj).toArray(function(error, docs){
             const paramCodeString = docs[0].paramCodeString;
             parameterValueSets = _.uniqWith(JSON.parse(paramCodeString), _.isEqual);
             //console.log("parameterValueSets", parameterValueSets);
@@ -610,8 +603,20 @@ const setUpHomeScreen = function(req, res){
     res.end();
 }
 
+// Including or not including username in db search query, as appropriate
+const createBaseSearchQueryObj = function(req){
+    let searchQueryObj;
+    if(req.app.locals.username === "admin"){
+        searchQueryObj = {};
+    }else{
+        searchQueryObj = { username: req.app.locals.username };
+    }
+    return searchQueryObj;
+}
+
 module.exports = {
     router,
     resetExampleWindows,
-    addExampleWindows
+    addExampleWindows,
+    createBaseSearchQueryObj
 };

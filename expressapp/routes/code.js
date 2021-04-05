@@ -4,7 +4,7 @@ var router = express.Router();
 const { v1: uuidv1 } = require('uuid');
 
 //const puppeteer = require('puppeteer');
-const { resetExampleWindows } = require('./index');
+const { resetExampleWindows, createBaseSearchQueryObj } = require('./index');
 //const { findPuppeteerErrorLineNumber } = require("./puppeteer");
 
 /*let numBrowserWindowsFinishedCodeExecution = 0;
@@ -30,9 +30,9 @@ router.put('/update/', function(req, res, next) {
 
     // Compare the file's current startingUrl vs what url
         // updatedCode now contains. If different, update windows.
-    req.app.locals.filesCollection.find({
-        fileID: req.app.locals.fileID
-    }).toArray(function(error, docs){
+    let searchQueryObj = createBaseSearchQueryObj(req);
+    searchQueryObj.fileID = req.app.locals.fileID;
+    req.app.locals.filesCollection.find(searchQueryObj).toArray(function(error, docs){
         const existingStartingUrl = docs[0].startingUrl;
         const newStartingUrl = extractStartingUrl(updatedCode);
         
@@ -122,9 +122,9 @@ router.put('/update/', function(req, res, next) {
 });
 
 router.post('/getCurrentFileCode/', function(req, res, next) {
-    req.app.locals.filesCollection.find({
-        fileID: req.app.locals.fileID
-    }).toArray(function(error, docs){
+    let searchQueryObj = createBaseSearchQueryObj(req);
+    searchQueryObj.fileID = req.app.locals.fileID;
+    req.app.locals.filesCollection.find(searchQueryObj).toArray(function(error, docs){
         console.log("docs[0].fileContents", docs[0].fileContents);
         res.send(docs[0].fileContents);
     });
