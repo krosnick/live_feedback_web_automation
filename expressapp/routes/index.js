@@ -39,6 +39,7 @@ router.post('/login', function(req, res, next) {
             res.send("Login unsuccessful");
         }else{
             console.log("Connected successfully to server");
+            req.app.locals.username = username; // to use for indicating which username created a given file
 
             let db = client.db(dbName);
             
@@ -55,10 +56,15 @@ router.post('/login', function(req, res, next) {
 
 /* GET home page. */
 router.get('/home', function(req, res, next) {
-
-    // Check DB for existing files
-    // If no existing files, create a new one
-    req.app.locals.filesCollection.find().sort( { lastModified: -1 } ).toArray(function(error, docs){
+    // Check DB for existing files for this user
+    let searchQueryObj;
+    if(req.app.locals.username === "admin"){
+        searchQueryObj = {};
+    }else{
+        searchQueryObj = { username: req.app.locals.username };
+    }
+    req.app.locals.filesCollection.find(searchQueryObj).sort( { lastModified: -1 } ).toArray(function(error, docs){
+        // If no existing files, create a new one
         let fileObj;
         if(docs.length > 0){
             // There are existing files
@@ -85,7 +91,8 @@ router.get('/home', function(req, res, next) {
     }
 ]`,
                 startingUrl: null,
-                lastModified: Date.now()
+                lastModified: Date.now(),
+                username: req.app.locals.username
             };
             req.app.locals.filesCollection.insertOne(fileObj);
         }

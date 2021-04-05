@@ -142,7 +142,8 @@ router.post('/createNewFile', function(req, res, next) {
     }
 ]`,
                     startingUrl: null,
-                    lastModified: Date.now()
+                    lastModified: Date.now(),
+                    username: req.app.locals.username
                 };
                 req.app.locals.filesCollection.insertOne(fileObj);
 
@@ -200,7 +201,8 @@ router.delete('/delete', function(req, res, next) {
     }
 ]`,
                     startingUrl: null,
-                    lastModified: Date.now()
+                    lastModified: Date.now(),
+                    username: req.app.locals.username
                 };
                 req.app.locals.filesCollection.insertOne(fileObj);
             }
