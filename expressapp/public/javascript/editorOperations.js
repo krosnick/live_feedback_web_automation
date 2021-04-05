@@ -210,7 +210,7 @@ function checkForClientSideSelector(expressionObj){
                 }
             }
         }
-    }/*else if(expressionObj.callee && expressionObj.callee.name && expressionObj.callee.name === "$"){
+    }else if(expressionObj.callee && expressionObj.callee.name && expressionObj.callee.name === "$"){
         if(expressionObj.arguments && expressionObj.arguments.length === 1){ // want to ensure we're not searching withing some other context (which could be provided as additional arg)
             const argument = expressionObj.arguments[0];
             const candidateSelector = argument.value;
@@ -226,7 +226,7 @@ function checkForClientSideSelector(expressionObj){
                 };
             }
         }
-    }*/
+    }
     return null;
 }
 
@@ -257,7 +257,7 @@ function checkForSelector(expressionObj, ancestors){
                     }
                 }
             }
-        }else if(expressionObj.argument && expressionObj.argument.callee && expressionObj.argument.callee.object && expressionObj.argument.callee.object.object && expressionObj.argument.callee.object.object.name === "page" && expressionObj.argument.callee.object.property && expressionObj.argument.callee.object.property.name === "keyboard"){
+        }/*else if(expressionObj.argument && expressionObj.argument.callee && expressionObj.argument.callee.object && expressionObj.argument.callee.object.object && expressionObj.argument.callee.object.object.name === "page" && expressionObj.argument.callee.object.property && expressionObj.argument.callee.object.property.name === "keyboard"){
             // Is Puppeteer page.keyboard; let's check that it's a method, i.e., in puppeteerKeyboardMethods
             if(expressionObj.argument.callee.property){
                 const methodName = expressionObj.argument.callee.property.name;
@@ -280,7 +280,7 @@ function checkForSelector(expressionObj, ancestors){
                     }
                 }
             }
-        }
+        }*/
     }
     return null;
 };

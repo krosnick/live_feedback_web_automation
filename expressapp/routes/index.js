@@ -385,7 +385,7 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
             
             function highlightUIElements(selector){
                 clearHighlightedElements();
-                const elements = document.querySelectorAll(selector);
+                const elements = $(selector);
                 console.log("elements", elements);
                 for(let element of elements){
                     // Apply border only if this is an interactive widget,
