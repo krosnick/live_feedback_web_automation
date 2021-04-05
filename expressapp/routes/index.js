@@ -103,7 +103,8 @@ router.get('/home', function(req, res, next) {
         for(let i = 1; i < docs.length; i++){
             fileIDNamePairs.push({
                 fileID: docs[i].fileID,
-                fileName: docs[i].fileName
+                fileName: docs[i].fileName,
+                username: docs[i].username
             });
         }
         console.log("fileIDNamePairs", fileIDNamePairs);

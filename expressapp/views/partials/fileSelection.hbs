@@ -1,13 +1,13 @@
 <span id="currentFileControls" class="fileControls">
     <span>Current file:</span>
-    <input type="text" id="currentFileName" value="{{currentFileName}}">
+    <input type="text" id="currentFileName" value="{{currentFileName}}" fileID="{{fileID}}" username="{{username}}">
     <button id="deleteCurrentFile" class="clickableButton">Delete</button>
 </span>
 <span id="otherFileControls" class="fileControls">
     <select id="fileSelectMenu">
         <option value="chooseDifferentFile">--Choose a different file--</option>
         {{#each fileIDNamePairs}}
-            <option value="{{fileID}}">{{fileName}}</option>
+            <option value="{{fileID}}" username="{{username}}">{{fileName}}</option>
         {{/each}}
     </select>
     <button id="createNewFile" class="clickableButton">New File</button>

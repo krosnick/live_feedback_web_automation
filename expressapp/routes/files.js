@@ -59,7 +59,8 @@ router.post('/showFile/:fileID', function(req, res, next) {
                     if(docs[i].fileID !== newFileIDToShow){
                         fileIDNamePairs.push({
                             fileID: docs[i].fileID,
-                            fileName: docs[i].fileName
+                            fileName: docs[i].fileName,
+                            username: docs[i].username
                         });
                     }
                 }
@@ -81,6 +82,8 @@ router.post('/showFile/:fileID', function(req, res, next) {
                         // the current file code
                     res.render('partials/fileSelection', {
                         currentFileName: fileName,
+                        fileID: fileToShowObj.fileID,
+                        username: fileToShowObj.username,
                         fileIDNamePairs: fileIDNamePairs,
                         "layout": false
                     }, function (error4, fileSelectionHtml) {
@@ -124,7 +127,8 @@ router.post('/createNewFile', function(req, res, next) {
                 for(let i = 0; i < docs.length; i++){
                     fileIDNamePairs.push({
                         fileID: docs[i].fileID,
-                        fileName: docs[i].fileName
+                        fileName: docs[i].fileName,
+                        username: docs[i].username
                     });
                 }
 
@@ -155,6 +159,8 @@ router.post('/createNewFile', function(req, res, next) {
                     // the current file code
                 res.render('partials/fileSelection', {
                     currentFileName: fileObj.fileName,
+                    fileID: fileObj.fileID,
+                    username: fileObj.username,
                     fileIDNamePairs: fileIDNamePairs,
                     "layout": false
                 }, function (error4, fileSelectionHtml) {
@@ -215,13 +221,16 @@ router.delete('/delete', function(req, res, next) {
             for(let i = 1; i < docs.length; i++){
                 fileIDNamePairs.push({
                     fileID: docs[i].fileID,
-                    fileName: docs[i].fileName
+                    fileName: docs[i].fileName,
+                    username: docs[i].username
                 });
             }
             console.log("fileIDNamePairs", fileIDNamePairs);
 
             res.render('partials/fileSelection', {
                 currentFileName: fileObj.fileName,
+                fileID: fileObj.fileID,
+                username: fileObj.username,
                 fileIDNamePairs: fileIDNamePairs,
                 "layout": false
             }, function (error4, fileSelectionHtml) {
