@@ -425,8 +425,7 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
             const iframeContentDocumentBefore = iframeElementBefore.contentDocument;
             rrwebSnapshot["rebuild"](beforeSnapshot, iframeContentDocumentBefore);
 
-            const beforeSnapshotIframe = document.querySelector(`[winID='${winID}'].beforeSnapshot`);
-            scaleIframe(beforeSnapshotIframe, lineObj, `left top`, selector);
+            scaleIframe(iframeElementBefore, lineObj, `left top`, selector);
         }
 
         if(afterSnapshot && afterSnapshot.childNodes.length >= 2){
@@ -435,8 +434,7 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
             const iframeContentDocumentAfter = iframeElementAfter.contentDocument;
             rrwebSnapshot["rebuild"](afterSnapshot, iframeContentDocumentAfter);
 
-            const afterSnapshotIframe = document.querySelector(`[winID='${winID}'].afterSnapshot`);
-            scaleIframe(afterSnapshotIframe, lineObj, `left top`, selector);
+            scaleIframe(iframeElementAfter, lineObj, `left top`, selector);
         }
     }
 }
@@ -468,6 +466,9 @@ function scaleIframe(iframeElement, lineObj, transformOriginString, selector){
             }
             // Otherwise, scale to page width
             scaleToPageWidth(iframeElement, iframeDocument, transformOriginString);
+        }else{
+            // Maybe the iframe just isn't fully loaded yet. Try calling this function again in hopes it'll be ready in 1000ms
+            scaleIframe(iframeElement, lineObj, transformOriginString, selector);
         }
     }, 1000);
     //});
