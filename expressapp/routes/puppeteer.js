@@ -17,6 +17,7 @@ var router = express.Router();
 // All Puppeteer methods who have a selector arg; the selector arg is always the first one
 const puppeteerMethodsWithSelectorArg = [ "$", "$$", "$$eval", "$eval", "click", "focus", "hover", "select", "tap", "type", "waitForSelector", "waitFor" ]
 const puppeteerKeyboardMethods = ["down", "press", "sendCharacter", "type", "up"];
+const evalMethods = ["evaluate", "evaluateHandle", "evaluateOnNewDocument", "$$eval", "$eval", "waitForFunction"];
 // page.waitFor(selectorOrFunctionOrTimeout[, options[, ...args]])
 // So for "waitFor", check the first arg and see if it's a string (rather than function or variable)
 
@@ -394,8 +395,12 @@ const isInsideEvaluateOrEvaluateHandle = function(node, ancestors){
     for(let i = ancestors.length-1; i >= 0; i--){
         const ancestor = ancestors[i];
         if(ancestor.type === "CallExpression"){
-            if(ancestor.callee && ancestor.callee.property && ancestor.callee.property.name && (ancestor.callee.property.name === "evaluate" || ancestor.callee.property.name === "evaluateHandle")){
-                return true;
+            if(ancestor.callee && ancestor.callee.property && ancestor.callee.property.name){
+                const methodName = ancestor.callee.property.name;
+                //console.log("methodName", methodName);
+                if(evalMethods.includes(methodName)){
+                    return true;
+                }
             }
         }
     }
