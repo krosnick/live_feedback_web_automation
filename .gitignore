@@ -1,3 +1,6 @@
 node_modules
 .DS_Store
-out/
+dist
+dist_attempt
+out
+yarn.lock
