@@ -267,6 +267,11 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         }
         //instrumentedCodeString += `; snapshotCaptured = false; try { afterPageContent = await page.content(); afterPageScreenshot = await page.screenshot({ fullPage: false, clip: { x: 0, y: 0, width: 500, height: 500 } } ); snapshotCaptured = true; } catch(e){ } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; if(!(lineObj[winID])){ lineObj[winID] = {}; } lineObj[winID].afterDomString = afterPageContent; lineObj[winID].afterScreenshotBuffer = afterPageScreenshot; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; afterPageContent = null; afterPageScreenshot = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ }`;
         instrumentedCodeString += `; snapshotCaptured = false; try { afterPageContent = await page.evaluate(function(){ return getCurrentSnapshot();}); afterPageScreenshot = await page.screenshot({ fullPage: false, clip: { x: 0, y: 0, width: 500, height: 500 } } ); snapshotCaptured = true; } catch(e){ console.error(e); } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; if(!(lineObj[winID])){ lineObj[winID] = {}; } lineObj[winID].afterDomString = afterPageContent; lineObj[winID].afterScreenshotBuffer = afterPageScreenshot; lineObj[winID].parametersString = parametersString; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; afterPageContent = null; afterPageScreenshot = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ console.error(e); }`;
+
+        // If final end index, include rest of string
+        if(i === endIndices.length-1){
+            instrumentedCodeString += codeWithConsolesReplaced.substring(endIndex);
+        }
     }
     if(endIndices.length === 0){
         instrumentedCodeString = codeWithConsolesReplaced;
