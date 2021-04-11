@@ -698,6 +698,7 @@ const evaluateCodeOnAllPages = function(wrappedCodeString){
     for(let i = 0; i < targetPagesList.length; i++){
         let updatedCodeString = wrappedCodeString;
         const pageVarCode = `const page = targetPagesList[${i}];`;
+        const pageClearCookiesCacheCode = `async function clearCookiesCache(){ const client = await page.target().createCDPSession(); await client.send('Network.clearBrowserCookies'); await client.send('Network.clearBrowserCache'); } clearCookiesCache();`;
         const pageWinID = numPageWinIDs[i]; // This should work, because targetPagesList and numPageWinIDs should both in order of their creation
         const paramSetObj = currentReq.app.locals.windowMetadata[pageWinID].parameterValueSet;
         let allParamsVarCode = "";
@@ -708,7 +709,7 @@ const evaluateCodeOnAllPages = function(wrappedCodeString){
         //console.log("allParamsVarCode", allParamsVarCode);
 
         // Append param code to front, and func x call to end
-        updatedCodeString = `const parametersString = ${JSON.stringify(paramSetObj)};` + pageVarCode + allParamsVarCode + updatedCodeString + `; runUserCode(${pageWinID});`;
+        updatedCodeString = `const parametersString = ${JSON.stringify(paramSetObj)};` + pageVarCode + pageClearCookiesCacheCode + allParamsVarCode + updatedCodeString + `; runUserCode(${pageWinID});`;
         //updatedCodeString += ` x(${borderWinID});`;
         eval(updatedCodeString);
     }
