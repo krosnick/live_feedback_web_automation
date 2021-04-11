@@ -579,7 +579,7 @@ const setUpHomeScreen = function(req, res){
             nodeIntegration: true,
             webSecurity: false,
             enableRemoteModule: true,
-            preload: path.join(__dirname, "../expressapp/public/javascript/snapshots/snapshotsViewPreload.js")
+            preload: path.join(__dirname, "../public/javascript/snapshots/snapshotsViewPreload.js")
         }
     });
     req.app.locals.win.addBrowserView(snapshotsBrowserView);
