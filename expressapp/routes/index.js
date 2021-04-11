@@ -1,5 +1,5 @@
 var express = require('express');
-const {  BrowserView } = require('electron');
+const {  BrowserView, session } = require('electron');
 var router = express.Router();
 const { v1: uuidv1 } = require('uuid');
 const _ = require('lodash');
@@ -352,6 +352,8 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
         borderView.webContents.send("updateParameters", paramString);
     });*/
 
+    const sessionID = uuidv1();
+    const sessionObj = session.fromPartition(`persist:${sessionID}`, { cache: true });
     const pageView = new BrowserView({
         webPreferences: {
             nodeIntegration: false,
@@ -362,7 +364,8 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
             /*contextIsolation: true,*/
             /*sandbox: true,*/
             enableRemoteModule: true,
-            preload: path.join(__dirname, "../public/javascript/pageViewPreload.js")
+            preload: path.join(__dirname, "../public/javascript/pageViewPreload.js"),
+            session: sessionObj
         }
     });
     req.app.locals.win.addBrowserView(pageView);
