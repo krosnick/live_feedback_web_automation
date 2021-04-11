@@ -362,6 +362,7 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
             zoomFactor: .8,
             /*enableRemoteModule: false,*/
             /*contextIsolation: true,*/
+            contextIsolation: false,
             /*sandbox: true,*/
             enableRemoteModule: true,
             preload: path.join(__dirname, "../public/javascript/pageViewPreload.js"),
