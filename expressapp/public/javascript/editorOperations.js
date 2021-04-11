@@ -548,18 +548,21 @@ const identifyAndCreateSelectorSquiggleData = function(lineNumber, selectorDataT
                     const selector = selectorDataToTest.selectorString;
                     const numWindows = Object.keys(prevLineObj).length;
                     for (const [winID, data] of Object.entries(prevLineObj)) {
-                        const selectorNumResults = parseInt(snapshotLineToDOMSelectorData[lineNumber][winID].selectorNumResults);
-                        if(Number.isInteger(selectorNumResults)){ // i.e., it was set
-                            if(selectorNumResults === 0){
-                                selectorNotFoundWinIDList.push(winID);
-                                selectorNotFoundParamString += JSON.stringify(data.parametersString);
-                            }else if(selectorNumResults === 1){
-                                selectorFoundAndUniqueWinIDList.push(winID);
-                                selectorFoundAndUniqueParamString += JSON.stringify(data.parametersString);
-                            }else if(selectorNumResults > 1){
-                                selectorNotUniqueWinIDList.push(winID);
-                                selectorNotUniqueParamString += JSON.stringify(data.parametersString);
-                            }
+                        // Make sure exists
+                        if(snapshotLineToDOMSelectorData[lineNumber] && snapshotLineToDOMSelectorData[lineNumber][winID]){
+                            const selectorNumResults = parseInt(snapshotLineToDOMSelectorData[lineNumber][winID].selectorNumResults);
+                            if(Number.isInteger(selectorNumResults)){ // i.e., it was set
+                                if(selectorNumResults === 0){
+                                    selectorNotFoundWinIDList.push(winID);
+                                    selectorNotFoundParamString += JSON.stringify(data.parametersString);
+                                }else if(selectorNumResults === 1){
+                                    selectorFoundAndUniqueWinIDList.push(winID);
+                                    selectorFoundAndUniqueParamString += JSON.stringify(data.parametersString);
+                                }else if(selectorNumResults > 1){
+                                    selectorNotUniqueWinIDList.push(winID);
+                                    selectorNotUniqueParamString += JSON.stringify(data.parametersString);
+                                }
+                            }   
                         }
                     }
 
