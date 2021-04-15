@@ -366,7 +366,8 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
             instrumentedCodeString += codeWithLoopInstrumentationAdded.substring(priorEndIndex, endIndex);
         }
         //instrumentedCodeString += `; snapshotCaptured = false; try { afterPageContent = await page.content(); afterPageScreenshot = await page.screenshot({ fullPage: false, clip: { x: 0, y: 0, width: 500, height: 500 } } ); snapshotCaptured = true; } catch(e){ } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; if(!(lineObj[winID])){ lineObj[winID] = {}; } lineObj[winID].afterDomString = afterPageContent; lineObj[winID].afterScreenshotBuffer = afterPageScreenshot; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; afterPageContent = null; afterPageScreenshot = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ }`;
-        instrumentedCodeString += `; snapshotCaptured = false; try { afterPageContent = await page.evaluate(function(){ return getCurrentSnapshot();}); afterPageScreenshot = await page.screenshot({ fullPage: false, clip: { x: 0, y: 0, width: 500, height: 500 } } ); snapshotCaptured = true; } catch(e){ console.error(e); } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] = lineObj[winID] || {}; lineObj[winID]['after'] = lineObj[winID]['after'] || []; lineObj[winID]['after'].push({ timestamp: Date.now(), afterDomString: afterPageContent, afterScreenshotBuffer: afterPageScreenshot, parametersString: parametersString}); snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; afterPageContent = null; afterPageScreenshot = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ console.error(e); }`;
+        //instrumentedCodeString += `; snapshotCaptured = false; try { afterPageContent = await page.evaluate(function(){ return getCurrentSnapshot();}); afterPageScreenshot = await page.screenshot({ fullPage: false, clip: { x: 0, y: 0, width: 500, height: 500 } } ); snapshotCaptured = true; } catch(e){ console.error(e); } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] = lineObj[winID] || {}; lineObj[winID]['after'] = lineObj[winID]['after'] || []; lineObj[winID]['after'].push({ timestamp: Date.now(), afterDomString: afterPageContent, afterScreenshotBuffer: afterPageScreenshot, parametersString: parametersString}); snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; afterPageContent = null; afterPageScreenshot = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ console.error(e); }`;
+        instrumentedCodeString += `; snapshotCaptured = false; try { afterPageContent = await page.evaluate(function(){ return getCurrentSnapshot();}); snapshotCaptured = true; } catch(e){ console.error(e); } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] = lineObj[winID] || {}; lineObj[winID]['after'] = lineObj[winID]['after'] || []; lineObj[winID]['after'].push({ timestamp: Date.now(), afterDomString: afterPageContent, afterScreenshotBuffer: afterPageScreenshot, parametersString: parametersString}); snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; afterPageContent = null; afterPageScreenshot = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ console.error(e); }`;
 
         // If final end index, include rest of string
         if(i === endIndices.length-1){
@@ -424,52 +425,10 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
             //capcon.stopCapture(process.stdout);
             //capcon.stopCapture(process.stderr);
             //console.log("snapshotLineToDOMSelectorData", snapshotLineToDOMSelectorData);
-            // Do some extra processing of snapshotLineToDOMSelectorData here
-                // Per line, compare each pair of afterScreenshotBuffers and create pixelDiff attribute
-                // Then remove afterScreenshotBuffer attribute
-            const componentsPromises = [];
-            const lineNumList = [];
-            for(const [lineNum, lineObj] of Object.entries(snapshotLineToDOMSelectorData)){
-                const componentsScreenshotComparison = compareScreenshots(lineNum, lineObj);
-                componentsPromises.push(componentsScreenshotComparison);
-                lineNumList.push(lineNum);
-            }
-            Promise.all(componentsPromises).then((values) => {
-                //console.log("components values", values);
-                //console.log("lineNumList", lineNumList);
-                const lineNumToComponentsList = {};
-                for(let i = 0; i < lineNumList.length; i++){
-                    const lineNum = lineNumList[i];
-                    const componentsList = values[i];
-                    if(componentsList){ // i.e., not equal to null or undefined
-                        lineNumToComponentsList[lineNum] = componentsList;
-                    }
-                }
-                // Need to remove afterScreenshotBuffer attributes from snapshotLineToDOMSelectorData
-                for(const lineObj of Object.values(snapshotLineToDOMSelectorData)){
-                    for(const winIDObj of Object.values(lineObj)){
-                        delete winIDObj.afterScreenshotBuffer;
-                    }
-                }
-                /*console.log("snapshotLineToDOMSelectorData", snapshotLineToDOMSelectorData);
-                for(let [lineNumberIndex, lineNumberObj] of Object.entries(snapshotLineToDOMSelectorData)){
-                    console.log("line number", lineNumberIndex);
-                    for(let [winIDIndex, winIDObj] of Object.entries(lineNumberObj)){
-                        console.log("winID", winIDIndex);
-                        if(winIDObj.before){
-                            console.log("winIDObj.before.length", winIDObj.before.length);
-                        }
-                        if(winIDObj.after){
-                            console.log("winIDObj.after.length", winIDObj.after.length);
-                        }
-                    }
-                }*/
-                browserWindowFinishAndErrorData.snapshotLineToDOMSelectorData = snapshotLineToDOMSelectorData;
-                browserWindowFinishAndErrorData.lineNumToComponentsList = lineNumToComponentsList;
-                browserWindowFinishAndErrorData.winIDToUserRequestedStopLineNumber = winIDToUserRequestedStopLineNumber;
-                currentReq.app.locals.snapshotsBrowserView.webContents.send("newSnapshots", snapshotLineToDOMSelectorData, lineNumToComponentsList, browserWindowFinishAndErrorData.errors);
-                currentRes.send(browserWindowFinishAndErrorData);
-            });
+            browserWindowFinishAndErrorData.snapshotLineToDOMSelectorData = snapshotLineToDOMSelectorData;
+            browserWindowFinishAndErrorData.winIDToUserRequestedStopLineNumber = winIDToUserRequestedStopLineNumber;
+            currentReq.app.locals.snapshotsBrowserView.webContents.send("newSnapshots", snapshotLineToDOMSelectorData, browserWindowFinishAndErrorData.errors);
+            currentRes.send(browserWindowFinishAndErrorData);
         }
     }}`;
     //}} x();`;
@@ -541,7 +500,7 @@ const isInsideNonAsyncFunction = function(node, ancestors){
     return false;
 };
 
-const compareScreenshots = function(lineNum, lineObj){
+/*const compareScreenshots = function(lineNum, lineObj){
     const winIDs = Object.keys(lineObj);
     
     // Right now screenshots are all 500x500, so this isn't really necessary,
@@ -557,15 +516,11 @@ const compareScreenshots = function(lineNum, lineObj){
             heightList.push(dimensions.height);   
         }
     }
-    /*console.log("widthList", widthList);
-    console.log("heightList", heightList);*/
     
     if(widthList.length > 0){
         const smallestWidth = Math.min(...widthList);
         const smallestHeight = Math.min(...heightList);
-        /*console.log("smallestWidth", smallestWidth);
-        console.log("smallestHeight", smallestHeight);*/
-
+        
         // Read in each screenshot using PNG, and then crop it if necessary
         const bitmapObjList = [];
         const bitmapWinIDList = [];
@@ -681,7 +636,7 @@ const compareScreenshots = function(lineNum, lineObj){
                 // are dissimilar from all other winIDs, send each as its own set)
         });
     }
-};
+};*/
 
 const checkForSelector = function(expressionObj, ancestors){
     // Return selector string and the line/col location

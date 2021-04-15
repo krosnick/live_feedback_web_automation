@@ -4,7 +4,7 @@ let snapshotLineToDOMSelectorData;
 let lastRunSnapshotLineToDOMSelectorData;
 let errorData;
 let lastRunErrorData;
-let lineNumToComponentsList;
+//let lineNumToComponentsList;
 /*const snapshotWidth = 250;
 const snapshotHeight = 125;*/
 const snapshotWidth = 375;
@@ -88,7 +88,7 @@ $(function(){
     });
 });
 
-ipcRenderer.on("newSnapshots", function(event, snapshotsData, componentsData, errData){
+ipcRenderer.on("newSnapshots", function(event, snapshotsData, errData){
     /*console.log("newSnapshots");
     console.log("snapshotsData", snapshotsData);
     console.log("componentsData", componentsData);*/
@@ -96,7 +96,7 @@ ipcRenderer.on("newSnapshots", function(event, snapshotsData, componentsData, er
     lastRunErrorData = errorData;
     snapshotLineToDOMSelectorData = snapshotsData;
     errorData = errData;
-    lineNumToComponentsList = componentsData;
+    //lineNumToComponentsList = componentsData;
 
     // Clear old snapshots
     $(".tooltip").remove();
@@ -133,7 +133,8 @@ ipcRenderer.on("deleteAllSnapshotsForLine", function(event, lineNumberStr){
 ipcRenderer.on("deleteAfterDomStringForLine", function(event, lineNumberStr){
     const lineObj = snapshotLineToDOMSelectorData[lineNumberStr];
     for(data of Object.values(lineObj)){
-        delete data["afterDomString"];
+        //delete data["afterDomString"];
+        delete data.after;
     }
 });
 ipcRenderer.on("clearAllSnapshots", function(event){
@@ -141,7 +142,7 @@ ipcRenderer.on("clearAllSnapshots", function(event){
     lastRunSnapshotLineToDOMSelectorData = undefined;
     errorData = undefined;
     lastRunErrorData = undefined;
-    lineNumToComponentsList = undefined;
+    //lineNumToComponentsList = undefined;
 
     // Removing element that contains iframes
     $(".tooltip").remove();
@@ -223,9 +224,9 @@ function createSnapshots(lineNumber){
         if(lastRunSnapshotLineToDOMSelectorData && lastRunSnapshotLineToDOMSelectorData[lineNumber]){
             let cluster = Object.keys(lastRunSnapshotLineToDOMSelectorData[lineNumber]);
             const firstWinID = cluster[0];
-            const selectorData = lastRunSnapshotLineToDOMSelectorData[lineNumber][firstWinID].selectorData;
+            const afterObj = lastRunSnapshotLineToDOMSelectorData[lineNumber][firstWinID]['after'];
             let selector;
-            if(selectorData){
+            if(afterObj && afterObj[0] && afterObj[0].selectorData){
                 selector = selectorData.selectorString;
             }else{
                 selector = null;
@@ -234,7 +235,17 @@ function createSnapshots(lineNumber){
         }
 
         if(snapshotLineToDOMSelectorData && snapshotLineToDOMSelectorData[lineNumber]){
-            let clusterList = [];
+            let cluster = Object.keys(snapshotLineToDOMSelectorData[lineNumber]);
+            const firstWinID = cluster[0];
+            const afterObj = snapshotLineToDOMSelectorData[lineNumber][firstWinID]['after'];
+            let selector;
+            if(afterObj && afterObj[0] && afterObj[0].selectorData){
+                selector = selectorData.selectorString;
+            }else{
+                selector = null;
+            }
+            createCluster(cluster, "Current run", newElement, snapshotLineToDOMSelectorData, lineNumber, errorData, selector);
+            /*let clusterList = [];
             const winIDsForThisLine = Object.keys(snapshotLineToDOMSelectorData[lineNumber]);
             if(lineNumToComponentsList && lineNumToComponentsList[lineNumber]){
                 const connectedComponents = Object.values(lineNumToComponentsList[lineNumber]);
@@ -306,7 +317,7 @@ function createSnapshots(lineNumber){
                     selector = null;
                 }
                 createCluster(cluster, index, newElement, snapshotLineToDOMSelectorData, lineNumber, errorData, selector);
-            }
+            }*/
         }
     }
 }
@@ -332,20 +343,26 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
     newElement.find(".snapshots").append(clusterElement);
 
     // Now for each winID in this cluster, create an html string and append to clusterElement
-    for(let winIDIndex = 0; winIDIndex < cluster.length; winIDIndex++){
-        const winIDStr = cluster[winIDIndex];
-        const winID = parseInt(winIDStr);
+    //for(let winIDIndex = 0; winIDIndex < cluster.length; winIDIndex++){
+        //const winIDStr = cluster[winIDIndex];
+    const winIDStr = cluster[0]; // For now just showing first winID
+    const winID = parseInt(winIDStr);
 
-        const lineObj = snapshotObj[lineNumber][winID];
-        const beforeSnapshot = lineObj.beforeDomString;
-        const afterSnapshot = lineObj.afterDomString;
-        const parametersString = JSON.stringify(lineObj.parametersString);
+    const lineObj = snapshotObj[lineNumber][winID];
+    const lineObjBeforeList = lineObj['before'];
+    const lineObjAfterList = lineObj['after'];
+    for(let itemIndex = 0; itemIndex < lineObjAfterList.length; itemIndex++){
+        const beforeItemSnapshotObj = lineObjBeforeList[itemIndex];
+        const afterItemSnapshotObj = lineObjAfterList[itemIndex];
+        const beforeSnapshot = beforeItemSnapshotObj.beforeDomString;
+        const afterSnapshot = afterItemSnapshotObj.afterDomString;
+        const parametersString = JSON.stringify(afterItemSnapshotObj.parametersString);
         let errorString = "";
         const errorInfoForWin = errorObj[winID];
         if(errorInfoForWin){
             if(errorInfoForWin.errorLineNumber === lineNumber){
                 // Check if lineObj.parametersString key/value are in errorInfoForWin.parameterValueSet
-                const [key, value] = Object.entries(lineObj.parametersString)[0];
+                const [key, value] = Object.entries(afterItemSnapshotObj.parametersString)[0];
                 if(errorInfoForWin.parameterValueSet[key] && errorInfoForWin.parameterValueSet[key] === value){
                     // Show this error for this snapshot
                     errorString = errorInfoForWin.errorMessage;
@@ -354,65 +371,66 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
         }
 
         // If last run, minimize all snapshots. Otherwise, show snapshots if it's the first winID or there's an error; otherwise, hide.
-        if((indexOrName !== "Last run") && (winIDIndex === 0 || errorString)){
+        //if((indexOrName !== "Last run") && (winIDIndex === 0 || errorString)){
+        if((indexOrName !== "Last run")){
             clusterElement.append(`
-                <div class="colHeader" winID='${winID}'>
+                <div class="colHeader" winID='${winID}' itemIndex='${itemIndex}'>
                     <span class="fullViewContents">
-                        <span class="runInfo" winID='${winID}'>
+                        <span class="runInfo" winID='${winID}' itemIndex='${itemIndex}'>
                             ${parametersString}
                             <span class="errorText">${errorString}</span>
                         </span>
-                        <button class="hideRun hideShowRun clickableButton" winID='${winID}'>Hide</button>
+                        <button class="hideRun hideShowRun clickableButton" winID='${winID}' itemIndex='${itemIndex}'>Hide</button>
                     </span>
-                    <button class="showRun hideShowRun clickableButton" winID='${winID}'>Show</button>
+                    <button class="showRun hideShowRun clickableButton" winID='${winID}' itemIndex='${itemIndex}'>Show</button>
                 </div>
-                <div class="moreOuterSnapshotContainer" winID='${winID}'>
-                    <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn clickableButton">+</button>
-                    <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut clickableButton">-</button>
-                    <div class="outerSnapshotContainer" winID='${winID}'>
-                        <div class="snapshotContainer" winID='${winID}'>
-                            <iframe winID='${winID}' class='snapshot beforeSnapshot'></iframe>
+                <div class="moreOuterSnapshotContainer" winID='${winID}' itemIndex='${itemIndex}'>
+                    <button winID='${winID}' itemIndex='${itemIndex}' title="Zoom in" class="zoomButton zoomIn clickableButton">+</button>
+                    <button winID='${winID}' itemIndex='${itemIndex}' title="Zoom out" class="zoomButton zoomOut clickableButton">-</button>
+                    <div class="outerSnapshotContainer" winID='${winID}' itemIndex='${itemIndex}'>
+                        <div class="snapshotContainer" winID='${winID}' itemIndex='${itemIndex}'>
+                            <iframe winID='${winID}' itemIndex='${itemIndex}' class='snapshot beforeSnapshot'></iframe>
                         </div>
                     </div>
                 </div>
-                <div class="downArrow" winID='${winID}'>&#8595;</div>
-                <div class="moreOuterSnapshotContainer" winID='${winID}'>
-                    <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn clickableButton">+</button>
-                    <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut clickableButton">-</button>
-                    <div class="outerSnapshotContainer" winID='${winID}'>
-                        <div class="snapshotContainer" winID='${winID}'>
-                            <iframe winID='${winID}' class='snapshot afterSnapshot'></iframe>
+                <div class="downArrow" winID='${winID}' itemIndex='${itemIndex}'>&#8595;</div>
+                <div class="moreOuterSnapshotContainer" winID='${winID}' itemIndex='${itemIndex}'>
+                    <button winID='${winID}' itemIndex='${itemIndex}' title="Zoom in" class="zoomButton zoomIn clickableButton">+</button>
+                    <button winID='${winID}' itemIndex='${itemIndex}' title="Zoom out" class="zoomButton zoomOut clickableButton">-</button>
+                    <div class="outerSnapshotContainer" winID='${winID}' itemIndex='${itemIndex}'>
+                        <div class="snapshotContainer" winID='${winID}' itemIndex='${itemIndex}'>
+                            <iframe winID='${winID}' itemIndex='${itemIndex}' class='snapshot afterSnapshot'></iframe>
                         </div>
                     </div>
                 </div>
             `);
         }else{
             clusterElement.append(`
-                <div class="colHeader" winID='${winID}' style="width: 50px;">
+                <div class="colHeader" winID='${winID}' itemIndex='${itemIndex}' style="width: 50px;">
                     <span class="fullViewContents" style="display: none;">
-                        <span class="runInfo" winID='${winID}'>
+                        <span class="runInfo" winID='${winID}' itemIndex='${itemIndex}'>
                             ${parametersString}
                         </span>
-                        <button class="hideRun hideShowRun clickableButton" winID='${winID}'>Hide</button>
+                        <button class="hideRun hideShowRun clickableButton" winID='${winID}' itemIndex='${itemIndex}'>Hide</button>
                     </span>
-                    <button class="showRun hideShowRun clickableButton" winID='${winID}' style="display: block;">Show</button>
+                    <button class="showRun hideShowRun clickableButton" winID='${winID}' itemIndex='${itemIndex}' style="display: block;">Show</button>
                 </div>
-                <div class="moreOuterSnapshotContainer" winID='${winID}'>
-                    <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn clickableButton" style="visibility: hidden;">+</button>
-                    <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut clickableButton" style="visibility: hidden;">-</button>
-                    <div class="outerSnapshotContainer" winID='${winID}' style="width: 50px; resize: none;">
-                        <div class="snapshotContainer" winID='${winID}' style="width: 50px;">
-                            <iframe winID='${winID}' class='snapshot beforeSnapshot' style="visibility: hidden;"></iframe>
+                <div class="moreOuterSnapshotContainer" winID='${winID}' itemIndex='${itemIndex}'>
+                    <button winID='${winID}' itemIndex='${itemIndex}' title="Zoom in" class="zoomButton zoomIn clickableButton" style="visibility: hidden;">+</button>
+                    <button winID='${winID}' itemIndex='${itemIndex}' title="Zoom out" class="zoomButton zoomOut clickableButton" style="visibility: hidden;">-</button>
+                    <div class="outerSnapshotContainer" winID='${winID}' itemIndex='${itemIndex}' style="width: 50px; resize: none;">
+                        <div class="snapshotContainer" winID='${winID}' itemIndex='${itemIndex}' style="width: 50px;">
+                            <iframe winID='${winID}' itemIndex='${itemIndex}' class='snapshot beforeSnapshot' style="visibility: hidden;"></iframe>
                         </div>
                     </div>
                 </div>
-                <div class="downArrow" winID='${winID}' style="width: 50px;">&#8595;</div>
-                <div class="moreOuterSnapshotContainer" winID='${winID}'>
-                    <button winID='${winID}' title="Zoom in" class="zoomButton zoomIn clickableButton" style="visibility: hidden;">+</button>
-                    <button winID='${winID}' title="Zoom out" class="zoomButton zoomOut clickableButton" style="visibility: hidden;">-</button>
-                    <div class="outerSnapshotContainer" winID='${winID}' style="width: 50px; resize: none;">
-                        <div class="snapshotContainer" winID='${winID}' style="width: 50px;">
-                            <iframe winID='${winID}' class='snapshot afterSnapshot' style="visibility: hidden;"></iframe>
+                <div class="downArrow" winID='${winID}' itemIndex='${itemIndex}' style="width: 50px;">&#8595;</div>
+                <div class="moreOuterSnapshotContainer" winID='${winID}' itemIndex='${itemIndex}'>
+                    <button winID='${winID}' itemIndex='${itemIndex}' title="Zoom in" class="zoomButton zoomIn clickableButton" style="visibility: hidden;">+</button>
+                    <button winID='${winID}' itemIndex='${itemIndex}' title="Zoom out" class="zoomButton zoomOut clickableButton" style="visibility: hidden;">-</button>
+                    <div class="outerSnapshotContainer" winID='${winID}' itemIndex='${itemIndex}' style="width: 50px; resize: none;">
+                        <div class="snapshotContainer" winID='${winID}' itemIndex='${itemIndex}' style="width: 50px;">
+                            <iframe winID='${winID}' itemIndex='${itemIndex}' class='snapshot afterSnapshot' style="visibility: hidden;"></iframe>
                         </div>
                     </div>
                 </div>
@@ -421,21 +439,22 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
         
         if(beforeSnapshot && beforeSnapshot.childNodes.length >= 2){
             //console.log("beforeSnapshot", beforeSnapshot);
-            const iframeElementBefore = clusterElement.find(`[winID='${winID}'].beforeSnapshot`)[0];
+            const iframeElementBefore = clusterElement.find(`[winID='${winID}'][itemIndex='${itemIndex}'].beforeSnapshot`)[0];
             const iframeContentDocumentBefore = iframeElementBefore.contentDocument;
             rrwebSnapshot["rebuild"](beforeSnapshot, iframeContentDocumentBefore);
 
-            scaleIframe(iframeElementBefore, lineObj, `left top`, selector);
+            scaleIframe(iframeElementBefore, beforeItemSnapshotObj, `left top`, selector);
         }
 
         if(afterSnapshot && afterSnapshot.childNodes.length >= 2){
             //console.log("afterSnapshot", afterSnapshot);
-            const iframeElementAfter = clusterElement.find(`[winID='${winID}'].afterSnapshot`)[0];
+            const iframeElementAfter = clusterElement.find(`[winID='${winID}'][itemIndex='${itemIndex}'].afterSnapshot`)[0];
             const iframeContentDocumentAfter = iframeElementAfter.contentDocument;
             rrwebSnapshot["rebuild"](afterSnapshot, iframeContentDocumentAfter);
 
-            scaleIframe(iframeElementAfter, lineObj, `left top`, selector);
+            scaleIframe(iframeElementAfter, afterItemSnapshotObj, `left top`, selector);
         }
+    //}
     }
 }
 
