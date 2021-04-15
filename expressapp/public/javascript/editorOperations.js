@@ -528,167 +528,97 @@ const generateModelMarkerList = function(){
 };
 
 const identifyAndCreateSelectorSquiggleData = function(lineNumber, selectorDataToTest){
-    let prevLineNumberWithSnapshots = selectorDataToTest.prevLineNumber; // using the after snapshot for this line to check for the selector
-    
+    //console.log("identifyAndCreateSelectorSquiggleData");
+    //console.log("line number", lineNumber);
     if(snapshotLineToDOMSelectorData){
         // Should compare selector against prior line's 'after' snapshot
-        if(prevLineNumberWithSnapshots){
-            if(snapshotLineToDOMSelectorData[prevLineNumberWithSnapshots]){
-                const prevLineObj = snapshotLineToDOMSelectorData[prevLineNumberWithSnapshots];
-                let selectorNotFoundWinIDList = [];
-                let selectorNotUniqueWinIDList = [];
-                let selectorFoundAndUniqueWinIDList = [];
-                let selectorNotFoundParamString = "";
-                let selectorNotUniqueParamString = "";
-                let selectorFoundAndUniqueParamString = "";
-
-                // Only if isSelectorOwn (i.e., the selector occurs on this line);
-                    // Otherwise doesn't make sense to show error for page.keyboard command
-                if(selectorDataToTest.isSelectorOwn){
-                    const selector = selectorDataToTest.selectorString;
-                    const numWindows = Object.keys(prevLineObj).length;
-                    for (const [winID, data] of Object.entries(prevLineObj)) {
-                        // Make sure exists
-                        if(snapshotLineToDOMSelectorData[lineNumber] && snapshotLineToDOMSelectorData[lineNumber][winID]){
-                            const selectorNumResults = parseInt(snapshotLineToDOMSelectorData[lineNumber][winID].selectorNumResults);
+        if(snapshotLineToDOMSelectorData[lineNumber]){
+            const lineObj = snapshotLineToDOMSelectorData[lineNumber];
+            //const prevLineObj = snapshotLineToDOMSelectorData[prevLineNumberWithSnapshots];
+            //console.log("prevLineObj", prevLineObj);
+            let selectorNotFoundIterationIndexList = [];
+            let selectorNotUniqueIterationIndexList = [];
+            let selectorFoundAndUniqueIterationIndexList = [];
+            
+            // Only if isSelectorOwn (i.e., the selector occurs on this line);
+                // Otherwise doesn't make sense to show error for page.keyboard command
+            if(selectorDataToTest.isSelectorOwn){
+                const selector = selectorDataToTest.selectorString;
+                //console.log("selector", selector);
+                //const numWindows = Object.keys(prevLineObj).length;
+                let numIterations = 0;
+                for (const [winID, data] of Object.entries(lineObj)) {
+                    // Make sure exists
+                    if(snapshotLineToDOMSelectorData[lineNumber] && snapshotLineToDOMSelectorData[lineNumber][winID]){
+                        const beforeObj = snapshotLineToDOMSelectorData[lineNumber][winID]['before'];
+                        //console.log("beforeObj", beforeObj);
+                        numIterations = Math.max(numIterations, beforeObj.length);
+                        //console.log("numIterations", numIterations);
+                        // Loop through iterations
+                        for(let iterationIndex = 0; iterationIndex < beforeObj.length; iterationIndex++){
+                            const iterationObj = beforeObj[iterationIndex];
+                            //console.log("iterationObj", iterationObj);
+                            const selectorNumResults = parseInt(iterationObj.selectorNumResults);
+                            //console.log("selectorNumResults", selectorNumResults);
                             if(Number.isInteger(selectorNumResults)){ // i.e., it was set
                                 if(selectorNumResults === 0){
-                                    selectorNotFoundWinIDList.push(winID);
-                                    selectorNotFoundParamString += JSON.stringify(data.parametersString);
+                                    selectorNotFoundIterationIndexList.push(iterationIndex);
+                                    //selectorNotFoundParamString += JSON.stringify(data.parametersString);
                                 }else if(selectorNumResults === 1){
-                                    selectorFoundAndUniqueWinIDList.push(winID);
-                                    selectorFoundAndUniqueParamString += JSON.stringify(data.parametersString);
+                                    selectorFoundAndUniqueIterationIndexList.push(iterationIndex);
+                                    //selectorFoundAndUniqueParamString += JSON.stringify(data.parametersString);
                                 }else if(selectorNumResults > 1){
-                                    selectorNotUniqueWinIDList.push(winID);
-                                    selectorNotUniqueParamString += JSON.stringify(data.parametersString);
+                                    selectorNotUniqueIterationIndexList.push(iterationIndex);
+                                    //selectorNotUniqueParamString += JSON.stringify(data.parametersString);
                                 }
-                            }   
-                        }
+                            } 
+                        }  
                     }
-
-                    const selectorLocation = selectorDataToTest.selectorLocation;
-                    // Create squiggle model marker obj accordingly, add to squiggleLineMarkerObjList
-                    let message;
-                    let severity;
-                    if(selectorNotFoundWinIDList.length > 0){
-                        // Selector not found (for at least some windows); indicate error
-                        severity = monaco.MarkerSeverity.Error;
-                        if(selectorNotFoundWinIDList.length === numWindows){
-                            // Not found for any windows
-                            message = `Selector ${selector} cannot be found at this point in the execution`;
-                        }else{
-                            // Found for some windows but not all
-                            message = `Selector ${selector} cannot be found at this point in the execution for param sets ${selectorNotFoundParamString}`;
-                        }
-                    }else if(selectorNotUniqueWinIDList.length > 0){
-                        // Selector found but not unique
-                        severity = monaco.MarkerSeverity.Warning;
-                        if(selectorNotUniqueWinIDList.length === numWindows){
-                            // For all windows, not unique
-                            message = `Selector ${selector} is not unique`;
-                        }else{
-                            // For some windows not unique
-                            message = `Selector ${selector} is not unique for param sets ${selectorNotUniqueParamString}`;
-                        }
-                    }else if(selectorFoundAndUniqueWinIDList.length > 0){
-                        // Selector is found and is unique
-                        severity = monaco.MarkerSeverity.Info;
-                        message = `Selector ${selector} was found and is unique`;
-                    }else{
-                        // Means no after snapshots found, so can't check selector
-                        return;
-                    }
-                    const markerObj = {
-                        startLineNumber: selectorLocation.start.line,
-                        startColumn: selectorLocation.start.column + 1,
-                        endLineNumber: selectorLocation.end.line,
-                        endColumn: selectorLocation.end.column + 1,
-                        message: message,
-                        severity: severity
-                    };
-                    const lineList = selectorSpecificModelMarkerData[lineNumber] || [];
-                    lineList.push(markerObj);
-                    selectorSpecificModelMarkerData[lineNumber] = lineList;
                 }
-            }
-        }else if(lineNumber){
-            if(snapshotLineToDOMSelectorData[lineNumber]){
-                const lineObj = snapshotLineToDOMSelectorData[lineNumber];
-                let selectorNotFoundWinIDList = [];
-                let selectorNotUniqueWinIDList = [];
-                let selectorFoundAndUniqueWinIDList = [];
-                let selectorNotFoundParamString = "";
-                let selectorNotUniqueParamString = "";
-                let selectorFoundAndUniqueParamString = "";
 
-                // Only if isSelectorOwn (i.e., the selector occurs on this line);
-                    // Otherwise doesn't make sense to show error for page.keyboard command
-                if(selectorDataToTest.isSelectorOwn){
-                    const selector = selectorDataToTest.selectorString;
-                    const numWindows = Object.keys(lineObj).length;
-                    for (const [winID, data] of Object.entries(lineObj)) {
-                        const beforeDomString = data.beforeDomString;
-
-                        if(beforeDomString){
-                            const domObj = $(beforeDomString);
-                            const selectorResults = domObj.find(selector);
-                            if(selectorResults.length === 0){
-                                selectorNotFoundWinIDList.push(winID);
-                                selectorNotFoundParamString += JSON.stringify(data.parametersString);
-                            }else if(selectorResults.length === 1){
-                                selectorFoundAndUniqueWinIDList.push(winID);
-                                selectorFoundAndUniqueParamString += JSON.stringify(data.parametersString);
-                            }else if(selectorResults.length > 1){
-                                selectorNotUniqueWinIDList.push(winID);
-                                selectorNotUniqueParamString += JSON.stringify(data.parametersString);
-                            }
-                        }
-                    }
-
-                    const selectorLocation = selectorDataToTest.selectorLocation;
-                    // Create squiggle model marker obj accordingly, add to squiggleLineMarkerObjList
-                    let message;
-                    let severity;
-                    if(selectorNotFoundWinIDList.length > 0){
-                        // Selector not found (for at least some windows); indicate error
-                        severity = monaco.MarkerSeverity.Error;
-                        if(selectorNotFoundWinIDList.length === numWindows){
-                            // Not found for any windows
-                            message = `Selector ${selector} cannot be found at this point in the execution`;
-                        }else{
-                            // Found for some windows but not all
-                            message = `Selector ${selector} cannot be found at this point in the execution for param sets ${selectorNotFoundParamString}`;
-                        }
-                    }else if(selectorNotUniqueWinIDList.length > 0){
-                        // Selector found but not unique
-                        severity = monaco.MarkerSeverity.Warning;
-                        if(selectorNotUniqueWinIDList.length === numWindows){
-                            // For all windows, not unique
-                            message = `Selector ${selector} is not unique`;
-                        }else{
-                            // For some windows not unique
-                            message = `Selector ${selector} is not unique for param sets ${selectorNotUniqueParamString}`;
-                        }
-                    }else if(selectorFoundAndUniqueWinIDList.length > 0){
-                        // Selector is found and is unique
-                        severity = monaco.MarkerSeverity.Info;
-                        message = `Selector ${selector} was found and is unique`;
+                const selectorLocation = selectorDataToTest.selectorLocation;
+                // Create squiggle model marker obj accordingly, add to squiggleLineMarkerObjList
+                let message;
+                let severity;
+                if(selectorNotFoundIterationIndexList.length > 0){
+                    // Selector not found (for at least some windows); indicate error
+                    severity = monaco.MarkerSeverity.Error;
+                    if(selectorNotFoundIterationIndexList.length === numIterations){
+                        // Not found for any windows
+                        message = `Selector ${selector} cannot be found at this point in the execution`;
                     }else{
-                        // Means no after snapshots found, so can't check selector
-                        return;
+                        // Found for some windows but not all
+                        message = `Selector ${selector} cannot be found at this point in the execution for iterations: ${JSON.stringify(selectorNotFoundIterationIndexList)}`;
                     }
-                    const markerObj = {
-                        startLineNumber: selectorLocation.start.line,
-                        startColumn: selectorLocation.start.column + 1,
-                        endLineNumber: selectorLocation.end.line,
-                        endColumn: selectorLocation.end.column + 1,
-                        message: message,
-                        severity: severity
-                    };
-                    const lineList = selectorSpecificModelMarkerData[lineNumber] || [];
-                    lineList.push(markerObj);
-                    selectorSpecificModelMarkerData[lineNumber] = lineList;
+                }else if(selectorNotUniqueIterationIndexList.length > 0){
+                    // Selector found but not unique
+                    severity = monaco.MarkerSeverity.Warning;
+                    if(selectorNotUniqueIterationIndexList.length === numIterations){
+                        // For all windows, not unique
+                        message = `Selector ${selector} is not unique`;
+                    }else{
+                        // For some windows not unique
+                        message = `Selector ${selector} is not unique for iterations: ${JSON.stringify(selectorNotUniqueIterationIndexList)}`;
+                    }
+                }else if(selectorFoundAndUniqueIterationIndexList.length > 0){
+                    // Selector is found and is unique
+                    severity = monaco.MarkerSeverity.Info;
+                    message = `Selector ${selector} was found and is unique`;
+                }else{
+                    // Means no after snapshots found, so can't check selector
+                    return;
                 }
+                const markerObj = {
+                    startLineNumber: selectorLocation.start.line,
+                    startColumn: selectorLocation.start.column + 1,
+                    endLineNumber: selectorLocation.end.line,
+                    endColumn: selectorLocation.end.column + 1,
+                    message: message,
+                    severity: severity
+                };
+                const lineList = selectorSpecificModelMarkerData[lineNumber] || [];
+                lineList.push(markerObj);
+                selectorSpecificModelMarkerData[lineNumber] = lineList;
             }
         }
     }
@@ -961,9 +891,10 @@ $(function(){
                         // check against the beforeSnapshot to confirm it's in DOM, and also check for it's uniqueness.
                         // Create appropriate squiggles.
                     const lineNumbers = Object.keys(snapshotLineToDOMSelectorData);
+                    console.log("Before trying to identify selector squiggles");
                     for(lineNumber of lineNumbers){
                         // selectorData (string and location) is the same regardless of window
-                        const selectorData = Object.values(snapshotLineToDOMSelectorData[lineNumber])[0].selectorData;
+                        const selectorData = Object.values(snapshotLineToDOMSelectorData[lineNumber])[0]['before'][0].selectorData;
                         if(selectorData){
                             identifyAndCreateSelectorSquiggleData(lineNumber, selectorData);
                         }
