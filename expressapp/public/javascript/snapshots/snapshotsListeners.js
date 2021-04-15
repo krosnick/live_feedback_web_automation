@@ -349,8 +349,10 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
     const winID = parseInt(winIDStr);
 
     const lineObj = snapshotObj[lineNumber][winID];
+    console.log(`Line number ${lineNumber}`, lineObj);
     const lineObjBeforeList = lineObj['before'];
     const lineObjAfterList = lineObj['after'];
+    // lineObjBeforeList and lineObjAfterList should be same length
     for(let itemIndex = 0; itemIndex < lineObjAfterList.length; itemIndex++){
         const beforeItemSnapshotObj = lineObjBeforeList[itemIndex];
         const afterItemSnapshotObj = lineObjAfterList[itemIndex];
