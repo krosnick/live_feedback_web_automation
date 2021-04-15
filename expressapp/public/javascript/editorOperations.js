@@ -1095,12 +1095,15 @@ ipcRenderer.on('clear', function(event){
     $("#puppeteerTerminals").empty();
 });
 
-ipcRenderer.on('selectorNumResults', function(event, lineNumber, winIDToSelectorNumResults, selectorDataItem){
+ipcRenderer.on('selectorNumResults', function(event, lineNumber, selectorNumResultsObjList, selectorDataItem){
     //console.log("winIDToSelectorNumResults", winIDToSelectorNumResults);
     // Need to update snapshotLineToDOMSelectorData
     const lineObj = snapshotLineToDOMSelectorData[lineNumber];
-    for(let [winID, selectorNumResults] of Object.entries(winIDToSelectorNumResults)){
-        lineObj[winID].selectorNumResults = selectorNumResults;
+    for(let obj of selectorNumResultsObjList){
+        const winID = obj.winID;
+        const itemIndex = obj.itemIndex;
+        const selectorNumResults = obj.selectorNumResults;
+        lineObj[winID]['before'][itemIndex].selectorNumResults = selectorNumResults;
     }
     // Now, should update squiggles on page
     identifyAndCreateSelectorSquiggleData(lineNumber, selectorDataItem);

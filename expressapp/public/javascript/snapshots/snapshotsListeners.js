@@ -150,13 +150,18 @@ ipcRenderer.on("clearAllSnapshots", function(event){
 
 ipcRenderer.on("getSelectorNumResults", function(event, lineNumber, selectorDataItem){
     const relevantClusterElement = $(`.tooltip[lineNumber="${lineNumber}"] .cluster[runInfo="currentRun"]`);
-    const winIDToSelectorNumResults = {};
+    const selectorNumResultsObjList = [];
     relevantClusterElement.find("iframe").each(function( index, element ) {
         const winID = $(element).attr("winID");
+        const itemIndex = $(element).attr("itemIndex");
         const selectorNumResults = element.contentWindow.document.querySelectorAll(selectorDataItem.selectorString).length;
-        winIDToSelectorNumResults[winID] = selectorNumResults;
+        selectorNumResultsObjList.push({
+            winID,
+            itemIndex,
+            selectorNumResults
+        });
     });
-    ipcRenderer.sendTo(parseInt(editorBrowserViewID), "selectorNumResults", lineNumber, winIDToSelectorNumResults, selectorDataItem);
+    ipcRenderer.sendTo(parseInt(editorBrowserViewID), "selectorNumResults", lineNumber, selectorNumResultsObjList, selectorDataItem);
 });
 
 // Show snapshots for this line (show if they're rendered already, or create if not)
