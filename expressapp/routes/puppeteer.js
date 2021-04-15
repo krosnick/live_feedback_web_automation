@@ -109,6 +109,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
                             const argumentsStartIndex = node.arguments[0].start;
                             const argumentsEndIndex = node.arguments[node.arguments.length-1].end;
                             consoleCallsToReplace.push({
+                                startLineNumber: node.loc.start.line,
                                 start: node.start,
                                 end: node.end,
                                 argumentsStartIndex: argumentsStartIndex,
@@ -131,6 +132,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         // replace appropriate parts with updateClientSideTerminal func calls
     for(let i = 0; i < consoleCallsToReplace.length; i++){
         const obj = consoleCallsToReplace[i];
+        const startLineNumber = obj.startLineNumber;
         const thisStart = obj.start;
         const thisEnd = obj.end;
         const method = obj.method;
@@ -144,7 +146,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         // Now, fix this console instance
         codeWithConsolesReplaced += "updateClientSideTerminal([";
         codeWithConsolesReplaced += code.substring(argumentsStartIndex, argumentsEndIndex);
-        codeWithConsolesReplaced += `], winID, "${method}")`;
+        codeWithConsolesReplaced += `], winID, ${startLineNumber}, "${method}")`;
 
         // Now, take rest of string until next console obj
         if(i === consoleCallsToReplace.length - 1){
@@ -309,7 +311,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     `\n} catch (error) {
         errorMessage = error.name + ": " + error.message;
         //console.error(error);
-        updateClientSideTerminal([error.stack], winID, "error");
+        updateClientSideTerminal([error.stack], winID, null, "error");
 
         // Find line number where error occurred
         errorLineNumber = parseInt(findPuppeteerErrorLineNumber(error.stack));
@@ -692,7 +694,7 @@ const evaluateCodeOnAllPages = function(wrappedCodeString){
     }
 };
 
-const updateClientSideTerminal = function(consoleArguments, pageWinID, logType){
+const updateClientSideTerminal = function(consoleArguments, pageWinID, lineNumber, logType){
     let text = "";
     for(let i = 0; i < consoleArguments.length; i++){
         text += consoleArguments[i] + " ";
@@ -733,6 +735,11 @@ const updateClientSideTerminal = function(consoleArguments, pageWinID, logType){
             // actually can't clone correctly, see https://github.com/electron/electron/issues/23722
         editorBrowserViewWebContents.executeJavaScript(codeToRun);
     });
+
+    if(lineNumber !== null){
+        // Add console info to list (in snapshotsListeners.js), so we can show output there inline with snapshots
+        currentReq.app.locals.snapshotsBrowserView.webContents.send("addConsoleOutput", lineNumber, text);
+    }
 };
 
 const stripPrefixAndCheckIfUrlsSame = function(url1, url2){

@@ -10,6 +10,7 @@ const snapshotHeight = 125;*/
 const snapshotWidth = 375;
 const snapshotHeight = 187;
 let editorBrowserViewID;
+let lineNumToConsoleOutputList = {};
 
 $(function(){
     editorBrowserViewID = $("#editorBrowserViewID").attr("editorBrowserViewID");
@@ -36,6 +37,9 @@ $(function(){
         $(`.cluster[clusterIndex="${clusterIndex}"] .downArrow[winID="${winID}"]`).animate({
             width: "50px"
         }, 500);
+        $(`.cluster[clusterIndex="${clusterIndex}"] .consoleOutput[winID="${winID}"]`).animate({
+            width: "50px"
+        }, 500);
     });
 
     $("body").on("click", ".showRun", function(e){
@@ -50,6 +54,9 @@ $(function(){
             width: "375px"
         }, 500);
         $(`.cluster[clusterIndex="${clusterIndex}"] .colHeader[winID="${winID}"]`).animate({
+            width: "375px"
+        }, 500);
+        $(`.cluster[clusterIndex="${clusterIndex}"] .consoleOutput[winID="${winID}"]`).animate({
             width: "375px"
         }, 500);
         $(`.cluster[clusterIndex="${clusterIndex}"] .downArrow[winID="${winID}"]`).animate({
@@ -86,6 +93,12 @@ $(function(){
             iframeElement.css("transform", `scale(${newScaleNum})`);
         }
     });
+});
+
+ipcRenderer.on("addConsoleOutput", function(event, lineNumber, text){
+    //console.log("addConsoleOutput");
+    lineNumToConsoleOutputList[lineNumber] = lineNumToConsoleOutputList[lineNumber] || [];
+    lineNumToConsoleOutputList[lineNumber].push(text);
 });
 
 ipcRenderer.on("newSnapshots", function(event, snapshotsData, errData){
@@ -142,6 +155,7 @@ ipcRenderer.on("clearAllSnapshots", function(event){
     lastRunSnapshotLineToDOMSelectorData = undefined;
     errorData = undefined;
     lastRunErrorData = undefined;
+    lineNumToConsoleOutputList = {};
     //lineNumToComponentsList = undefined;
 
     // Removing element that contains iframes
@@ -217,6 +231,7 @@ function createSnapshots(lineNumber){
             <div class="tooltip" role="tooltip" data-show="" lineNumber="${lineNumber}">
                 <div class="labels">
                     <div class="beforeLabel beforeAfterLabel">Before</div>
+                    <div class="consoleLabel beforeAfterLabel">Console</div>
                     <div class="afterLabel beforeAfterLabel">After</div>
                 </div>
                 <div class="snapshots">
@@ -383,6 +398,12 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
         }else{
             iterationString = `Iteration ${itemIndex}`;
         }
+
+        let consoleOutput = "";
+        if(lineNumToConsoleOutputList[lineNumber]){
+            consoleOutput = lineNumToConsoleOutputList[lineNumber][itemIndex];
+        }
+
         // If last run, minimize all snapshots. Otherwise, show snapshots if it's the first winID or there's an error; otherwise, hide.
         //if((indexOrName !== "Last run") && (winIDIndex === 0 || errorString)){
         if((indexOrName !== "Last run")){
@@ -408,6 +429,7 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
                     </div>
                 </div>
                 <div class="downArrow" winID='${winID}' itemIndex='${itemIndex}'>&#8595;</div>
+                <div class="consoleOutput" winID='${winID}' itemIndex='${itemIndex}'>${consoleOutput}</div>
                 <div class="moreOuterSnapshotContainer" winID='${winID}' itemIndex='${itemIndex}'>
                     <button winID='${winID}' itemIndex='${itemIndex}' title="Zoom in" class="zoomButton zoomIn clickableButton">+</button>
                     <button winID='${winID}' itemIndex='${itemIndex}' title="Zoom out" class="zoomButton zoomOut clickableButton">-</button>
@@ -440,6 +462,7 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
                     </div>
                 </div>
                 <div class="downArrow" winID='${winID}' itemIndex='${itemIndex}' style="width: 50px;">&#8595;</div>
+                <div class="consoleOutput" winID='${winID}' itemIndex='${itemIndex}'>${consoleOutput}</div>
                 <div class="moreOuterSnapshotContainer" winID='${winID}' itemIndex='${itemIndex}'>
                     <button winID='${winID}' itemIndex='${itemIndex}' title="Zoom in" class="zoomButton zoomIn clickableButton" style="visibility: hidden;">+</button>
                     <button winID='${winID}' itemIndex='${itemIndex}' title="Zoom out" class="zoomButton zoomOut clickableButton" style="visibility: hidden;">-</button>
