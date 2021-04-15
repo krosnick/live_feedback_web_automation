@@ -642,12 +642,15 @@ const createSquigglyErrorMarkers = function(errorData){
                 borderWindowIDAndMessageList.push({borderWinID: borderWinID, message: message});
             }
 
+            /*const numIterationObjects = Object.values(snapshotLineToDOMSelectorData[lineNumber])[0]['before'].length;
+            const failingIterationNumber = numIterationObjects - 1;*/
+
             const markerObj = {
                 startLineNumber: lineNumber,
                 startColumn: 0,
                 endLineNumber: lineNumber,
                 endColumn: 1000,
-                message: `The following error occurred for the ${parameterValueSets.length} param sets ${JSON.stringify(parameterValueSets)}:\n${message}`,
+                message: `The following error occurred:\n${message}`, // ideally would like to say loop iteration number, but hard to do with if/else statement bodies, etc
                 severity: monaco.MarkerSeverity.Error
             };
             const lineList = runtimeErrorModelMarkerData[lineNumber] || [];
