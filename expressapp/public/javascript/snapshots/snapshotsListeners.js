@@ -224,10 +224,10 @@ function createSnapshots(lineNumber){
         if(lastRunSnapshotLineToDOMSelectorData && lastRunSnapshotLineToDOMSelectorData[lineNumber]){
             let cluster = Object.keys(lastRunSnapshotLineToDOMSelectorData[lineNumber]);
             const firstWinID = cluster[0];
-            const afterObj = lastRunSnapshotLineToDOMSelectorData[lineNumber][firstWinID]['after'];
+            const beforeObj = lastRunSnapshotLineToDOMSelectorData[lineNumber][firstWinID]['before'];
             let selector;
-            if(afterObj && afterObj[0] && afterObj[0].selectorData){
-                selector = selectorData.selectorString;
+            if(beforeObj && beforeObj[0] && beforeObj[0].selectorData){
+                selector = beforeObj[0].selectorData.selectorString;
             }else{
                 selector = null;
             }
@@ -237,10 +237,10 @@ function createSnapshots(lineNumber){
         if(snapshotLineToDOMSelectorData && snapshotLineToDOMSelectorData[lineNumber]){
             let cluster = Object.keys(snapshotLineToDOMSelectorData[lineNumber]);
             const firstWinID = cluster[0];
-            const afterObj = snapshotLineToDOMSelectorData[lineNumber][firstWinID]['after'];
+            const beforeObj = snapshotLineToDOMSelectorData[lineNumber][firstWinID]['before'];
             let selector;
-            if(afterObj && afterObj[0] && afterObj[0].selectorData){
-                selector = selectorData.selectorString;
+            if(beforeObj && beforeObj[0] && beforeObj[0].selectorData){
+                selector = beforeObj[0].selectorData.selectorString;
             }else{
                 selector = null;
             }
