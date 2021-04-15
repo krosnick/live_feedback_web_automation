@@ -372,6 +372,12 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
             }
         }
 
+        let iterationString = "";
+        if(lineObjAfterList.length === 1){
+            // Don't show anything; just ran once, not inside a loop
+        }else{
+            iterationString = `Iteration ${itemIndex}`;
+        }
         // If last run, minimize all snapshots. Otherwise, show snapshots if it's the first winID or there's an error; otherwise, hide.
         //if((indexOrName !== "Last run") && (winIDIndex === 0 || errorString)){
         if((indexOrName !== "Last run")){
@@ -379,7 +385,8 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
                 <div class="colHeader" winID='${winID}' itemIndex='${itemIndex}'>
                     <span class="fullViewContents">
                         <span class="runInfo" winID='${winID}' itemIndex='${itemIndex}'>
-                            ${parametersString}
+                            <!--${parametersString}-->
+                            ${iterationString}
                             <span class="errorText">${errorString}</span>
                         </span>
                         <button class="hideRun hideShowRun clickableButton" winID='${winID}' itemIndex='${itemIndex}'>Hide</button>
@@ -411,7 +418,8 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
                 <div class="colHeader" winID='${winID}' itemIndex='${itemIndex}' style="width: 50px;">
                     <span class="fullViewContents" style="display: none;">
                         <span class="runInfo" winID='${winID}' itemIndex='${itemIndex}'>
-                            ${parametersString}
+                            <!--${parametersString}-->
+                            ${iterationString}
                         </span>
                         <button class="hideRun hideShowRun clickableButton" winID='${winID}' itemIndex='${itemIndex}'>Hide</button>
                     </span>
