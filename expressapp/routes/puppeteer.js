@@ -166,7 +166,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         locations: true
     });
     let loopsToInstrument = [];
-    walk.ancestor(astForLoops, {
+    /*walk.ancestor(astForLoops, {
         ForStatement(node, ancestors) {
             //console.log("loop node", node);
             // Check to make sure it doesn't have evaluate or evaluateHandle ancestor
@@ -253,7 +253,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
             const nextStart = loopsToInstrument[i+1].loopStartIndex;
             codeWithLoopInstrumentationAdded += codeWithConsolesReplaced.substring(bodyStartIndex+1, nextStart);
         }
-    }
+    }*/
     if(loopsToInstrument.length === 0){
         codeWithLoopInstrumentationAdded = codeWithConsolesReplaced;
     }
@@ -356,7 +356,8 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         const selectorData = data.selectorData;
         //instrumentedCodeString += `; snapshotCaptured = false; try { beforePageContent = await page.content(); snapshotCaptured = true; } catch(e){ } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; beforePageContent = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ }`;
         //instrumentedCodeString += `; snapshotCaptured = false; try { beforePageContent = await page.evaluate(function(){ return getCurrentSnapshot();}); snapshotCaptured = true; } catch(e){ console.error(e);} finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; beforePageContent = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ }`;
-        instrumentedCodeString += `; snapshotCaptured = false; try { beforeSnapshotAndSelectorInfo = await page.evaluate(function(selectorData){ var selectorNumResults; if(selectorData){ selectorNumResults = document.querySelectorAll(selectorData.selectorString).length; }; var beforePageContent = getCurrentSnapshot(); return { selectorNumResults, beforePageContent }}, ${JSON.stringify(selectorData)}); selectorNumResults = beforeSnapshotAndSelectorInfo.selectorNumResults; beforePageContent = beforeSnapshotAndSelectorInfo.beforePageContent; snapshotCaptured = true; } catch(e){ console.error(e);} finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, selectorNumResults: selectorNumResults, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; beforeSnapshotAndSelectorInfo = null; beforePageContent = null; selectorNumResults = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ console.error(e); }`;
+        //instrumentedCodeString += `; snapshotCaptured = false; try { beforeSnapshotAndSelectorInfo = await page.evaluate(function(selectorData){ var selectorNumResults; if(selectorData){ selectorNumResults = document.querySelectorAll(selectorData.selectorString).length; }; var beforePageContent = getCurrentSnapshot(); return { selectorNumResults, beforePageContent }}, ${JSON.stringify(selectorData)}); selectorNumResults = beforeSnapshotAndSelectorInfo.selectorNumResults; beforePageContent = beforeSnapshotAndSelectorInfo.beforePageContent; snapshotCaptured = true; } catch(e){ console.error(e);} finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, selectorNumResults: selectorNumResults, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; beforeSnapshotAndSelectorInfo = null; beforePageContent = null; selectorNumResults = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ console.error(e); }`;
+        instrumentedCodeString += `; snapshotCaptured = false; try { beforeSnapshotAndSelectorInfo = await page.evaluate(function(selectorData){ var selectorNumResults; if(selectorData){ selectorNumResults = document.querySelectorAll(selectorData.selectorString).length; }; var beforePageContent = getCurrentSnapshot(); return { selectorNumResults, beforePageContent }}, ${JSON.stringify(selectorData)}); selectorNumResults = beforeSnapshotAndSelectorInfo.selectorNumResults; beforePageContent = beforeSnapshotAndSelectorInfo.beforePageContent; snapshotCaptured = true; } catch(e){ console.error(e);} finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] = lineObj[winID] || {}; lineObj[winID]['before'] = lineObj[winID]['before'] || []; lineObj[winID]['before'].push({ timestamp: Date.now(), beforeDomString: beforePageContent, selectorNumResults: selectorNumResults, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }); snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; beforeSnapshotAndSelectorInfo = null; beforePageContent = null; selectorNumResults = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ console.error(e); }`;
         if(i === 0){
             // Substring from beginning of string
             instrumentedCodeString += codeWithLoopInstrumentationAdded.substring(0, endIndex);
@@ -365,7 +366,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
             instrumentedCodeString += codeWithLoopInstrumentationAdded.substring(priorEndIndex, endIndex);
         }
         //instrumentedCodeString += `; snapshotCaptured = false; try { afterPageContent = await page.content(); afterPageScreenshot = await page.screenshot({ fullPage: false, clip: { x: 0, y: 0, width: 500, height: 500 } } ); snapshotCaptured = true; } catch(e){ } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; if(!(lineObj[winID])){ lineObj[winID] = {}; } lineObj[winID].afterDomString = afterPageContent; lineObj[winID].afterScreenshotBuffer = afterPageScreenshot; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; afterPageContent = null; afterPageScreenshot = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ }`;
-        instrumentedCodeString += `; snapshotCaptured = false; try { afterPageContent = await page.evaluate(function(){ return getCurrentSnapshot();}); afterPageScreenshot = await page.screenshot({ fullPage: false, clip: { x: 0, y: 0, width: 500, height: 500 } } ); snapshotCaptured = true; } catch(e){ console.error(e); } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; if(!(lineObj[winID])){ lineObj[winID] = {}; } lineObj[winID].afterDomString = afterPageContent; lineObj[winID].afterScreenshotBuffer = afterPageScreenshot; lineObj[winID].parametersString = parametersString; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; afterPageContent = null; afterPageScreenshot = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ console.error(e); }`;
+        instrumentedCodeString += `; snapshotCaptured = false; try { afterPageContent = await page.evaluate(function(){ return getCurrentSnapshot();}); afterPageScreenshot = await page.screenshot({ fullPage: false, clip: { x: 0, y: 0, width: 500, height: 500 } } ); snapshotCaptured = true; } catch(e){ console.error(e); } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] = lineObj[winID] || {}; lineObj[winID]['after'] = lineObj[winID]['after'] || []; lineObj[winID]['after'].push({ timestamp: Date.now(), afterDomString: afterPageContent, afterScreenshotBuffer: afterPageScreenshot, parametersString: parametersString}); snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; afterPageContent = null; afterPageScreenshot = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ console.error(e); }`;
 
         // If final end index, include rest of string
         if(i === endIndices.length-1){
@@ -450,6 +451,19 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
                         delete winIDObj.afterScreenshotBuffer;
                     }
                 }
+                /*console.log("snapshotLineToDOMSelectorData", snapshotLineToDOMSelectorData);
+                for(let [lineNumberIndex, lineNumberObj] of Object.entries(snapshotLineToDOMSelectorData)){
+                    console.log("line number", lineNumberIndex);
+                    for(let [winIDIndex, winIDObj] of Object.entries(lineNumberObj)){
+                        console.log("winID", winIDIndex);
+                        if(winIDObj.before){
+                            console.log("winIDObj.before.length", winIDObj.before.length);
+                        }
+                        if(winIDObj.after){
+                            console.log("winIDObj.after.length", winIDObj.after.length);
+                        }
+                    }
+                }*/
                 browserWindowFinishAndErrorData.snapshotLineToDOMSelectorData = snapshotLineToDOMSelectorData;
                 browserWindowFinishAndErrorData.lineNumToComponentsList = lineNumToComponentsList;
                 browserWindowFinishAndErrorData.winIDToUserRequestedStopLineNumber = winIDToUserRequestedStopLineNumber;
