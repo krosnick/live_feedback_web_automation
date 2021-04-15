@@ -160,11 +160,110 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         codeWithConsolesReplaced = code;
     }
 
-    //console.log("codeWithConsolesReplaced", codeWithConsolesReplaced);
+    const astForLoops = acorn.parse(codeWithConsolesReplaced, {
+        ecmaVersion: 2020,
+        allowAwaitOutsideFunction: true,
+        locations: true
+    });
+    let loopsToInstrument = [];
+    walk.ancestor(astForLoops, {
+        ForStatement(node, ancestors) {
+            //console.log("loop node", node);
+            // Check to make sure it doesn't have evaluate or evaluateHandle ancestor
+            const hasEvaluateAncestor = isInsideEvaluateOrEvaluateHandle(node, ancestors);
+            if(!hasEvaluateAncestor){
+                // Capture and store info in loopsToInstrument
+                const loopStartLineNumber = node.loc.start.line;
+                const loopStartIndex = node.start;
+                const bodyStartIndex = node.body.start;
+                loopsToInstrument.push({
+                    loopStartLineNumber,
+                    loopStartIndex,
+                    bodyStartIndex
+                });
+            }
+        },
+        ForInStatement(node, ancestors) {
+            //console.log("loop node", node);
+            // Check to make sure it doesn't have evaluate or evaluateHandle ancestor
+            const hasEvaluateAncestor = isInsideEvaluateOrEvaluateHandle(node, ancestors);
+            if(!hasEvaluateAncestor){
+                // Capture and store info in loopsToInstrument
+                const loopStartLineNumber = node.loc.start.line;
+                const loopStartIndex = node.start;
+                const bodyStartIndex = node.body.start;
+                loopsToInstrument.push({
+                    loopStartLineNumber,
+                    loopStartIndex,
+                    bodyStartIndex
+                });
+            }
+        },
+        WhileStatement(node, ancestors) {
+            //console.log("loop node", node);
+            // Check to make sure it doesn't have evaluate or evaluateHandle ancestor
+            const hasEvaluateAncestor = isInsideEvaluateOrEvaluateHandle(node, ancestors);
+            if(!hasEvaluateAncestor){
+                // Capture and store info in loopsToInstrument
+                const loopStartLineNumber = node.loc.start.line;
+                const loopStartIndex = node.start;
+                const bodyStartIndex = node.body.start;
+                loopsToInstrument.push({
+                    loopStartLineNumber,
+                    loopStartIndex,
+                    bodyStartIndex
+                });
+            }
+        }
+    });
+    // Sort from smallest 'start' to largest
+    loopsToInstrument.sort((a, b) => a.start - b.start);
+
+    // Use loopsToInstrument to construct new code string (loopsToInstrument)
+    let codeWithLoopInstrumentationAdded = "";
+    // Take bits of original code string "consoleCallsToReplace".
+    for(let i = 0; i < loopsToInstrument.length; i++){
+        const obj = loopsToInstrument[i];
+        const loopStartLineNumber = obj.loopStartLineNumber;
+        const loopStartIndex = obj.loopStartIndex;
+        const bodyStartIndex = obj.bodyStartIndex;
+        if(i === 0){
+            // Substring from very beginning of string
+            codeWithLoopInstrumentationAdded += codeWithConsolesReplaced.substring(0, loopStartIndex);
+        }
+
+        // Now, insert loop instrumentation index var.
+        // Declaration at front, before the loop statement - let counter_<startIndex> = -1;
+        const loopCounterInitCode = `let counter_${loopStartLineNumber} = -1;`;
+        codeWithLoopInstrumentationAdded += loopCounterInitCode;
+
+        // Add for init,test,update code
+        codeWithLoopInstrumentationAdded += codeWithConsolesReplaced.substring(loopStartIndex, bodyStartIndex+1);
+
+        // and then iteration after the opening bracket counter_<startIndex> += 1;
+        const loopCounterIncrementCode = `counter_${loopStartLineNumber} += 1;`;
+        codeWithLoopInstrumentationAdded += loopCounterIncrementCode;
+        
+        // Now, take rest of string until next loop obj
+        if(i === loopsToInstrument.length - 1){
+            // This is final obj. Take string until very end.
+            codeWithLoopInstrumentationAdded += codeWithConsolesReplaced.substring(bodyStartIndex+1);
+        }else{
+            // Next loop obj
+            const nextStart = loopsToInstrument[i+1].loopStartIndex;
+            codeWithLoopInstrumentationAdded += codeWithConsolesReplaced.substring(bodyStartIndex+1, nextStart);
+        }
+    }
+    if(loopsToInstrument.length === 0){
+        codeWithLoopInstrumentationAdded = codeWithConsolesReplaced;
+    }
+
+
+    //console.log("codeWithLoopInstrumentationAdded", codeWithLoopInstrumentationAdded);
 
     // Process new string and instrument to take snapshots, etc
     // AST processing
-    const acornAST = acorn.parse(codeWithConsolesReplaced, {
+    const acornAST = acorn.parse(codeWithLoopInstrumentationAdded, {
         ecmaVersion: 2020,
         allowAwaitOutsideFunction: true,
         locations: true
@@ -260,21 +359,21 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
         instrumentedCodeString += `; snapshotCaptured = false; try { beforeSnapshotAndSelectorInfo = await page.evaluate(function(selectorData){ var selectorNumResults; if(selectorData){ selectorNumResults = document.querySelectorAll(selectorData.selectorString).length; }; var beforePageContent = getCurrentSnapshot(); return { selectorNumResults, beforePageContent }}, ${JSON.stringify(selectorData)}); selectorNumResults = beforeSnapshotAndSelectorInfo.selectorNumResults; beforePageContent = beforeSnapshotAndSelectorInfo.beforePageContent; snapshotCaptured = true; } catch(e){ console.error(e);} finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, selectorNumResults: selectorNumResults, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; beforeSnapshotAndSelectorInfo = null; beforePageContent = null; selectorNumResults = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ console.error(e); }`;
         if(i === 0){
             // Substring from beginning of string
-            instrumentedCodeString += codeWithConsolesReplaced.substring(0, endIndex);
+            instrumentedCodeString += codeWithLoopInstrumentationAdded.substring(0, endIndex);
         }else{
             const priorEndIndex = endIndices[i-1];
-            instrumentedCodeString += codeWithConsolesReplaced.substring(priorEndIndex, endIndex);
+            instrumentedCodeString += codeWithLoopInstrumentationAdded.substring(priorEndIndex, endIndex);
         }
         //instrumentedCodeString += `; snapshotCaptured = false; try { afterPageContent = await page.content(); afterPageScreenshot = await page.screenshot({ fullPage: false, clip: { x: 0, y: 0, width: 500, height: 500 } } ); snapshotCaptured = true; } catch(e){ } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; if(!(lineObj[winID])){ lineObj[winID] = {}; } lineObj[winID].afterDomString = afterPageContent; lineObj[winID].afterScreenshotBuffer = afterPageScreenshot; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; afterPageContent = null; afterPageScreenshot = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ }`;
         instrumentedCodeString += `; snapshotCaptured = false; try { afterPageContent = await page.evaluate(function(){ return getCurrentSnapshot();}); afterPageScreenshot = await page.screenshot({ fullPage: false, clip: { x: 0, y: 0, width: 500, height: 500 } } ); snapshotCaptured = true; } catch(e){ console.error(e); } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; if(!(lineObj[winID])){ lineObj[winID] = {}; } lineObj[winID].afterDomString = afterPageContent; lineObj[winID].afterScreenshotBuffer = afterPageScreenshot; lineObj[winID].parametersString = parametersString; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; afterPageContent = null; afterPageScreenshot = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ console.error(e); }`;
 
         // If final end index, include rest of string
         if(i === endIndices.length-1){
-            instrumentedCodeString += codeWithConsolesReplaced.substring(endIndex);
+            instrumentedCodeString += codeWithLoopInstrumentationAdded.substring(endIndex);
         }
     }
     if(endIndices.length === 0){
-        instrumentedCodeString = codeWithConsolesReplaced;
+        instrumentedCodeString = codeWithLoopInstrumentationAdded;
     }
 
     //console.log("instrumentedCodeString", instrumentedCodeString);
