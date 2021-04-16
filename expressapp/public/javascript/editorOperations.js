@@ -88,7 +88,9 @@ function editorOnDidChangeContent(e){
             if(parseInt(lineNumberStr) === lowestLineNumber){
                 const lineObj = snapshotLineToDOMSelectorData[lineNumberStr];
                 for(data of Object.values(lineObj)){
-                    delete data["afterDomString"];
+                    for(item of data.after){
+                        delete item["afterDomString"];
+                    }
                     // Tell snapshots view to delete this
                     ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "deleteAfterDomStringForLine", lineNumberStr);
                 }

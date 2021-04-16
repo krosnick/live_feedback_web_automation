@@ -146,8 +146,9 @@ ipcRenderer.on("deleteAllSnapshotsForLine", function(event, lineNumberStr){
 ipcRenderer.on("deleteAfterDomStringForLine", function(event, lineNumberStr){
     const lineObj = snapshotLineToDOMSelectorData[lineNumberStr];
     for(data of Object.values(lineObj)){
-        //delete data["afterDomString"];
-        delete data.after;
+        for(item of data.after){
+            delete item["afterDomString"];
+        }
     }
 });
 ipcRenderer.on("clearAllSnapshots", function(event){
@@ -373,7 +374,7 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
     const winID = parseInt(winIDStr);
 
     const lineObj = snapshotObj[lineNumber][winID];
-    console.log(`Line number ${lineNumber}`, lineObj);
+    //console.log(`Line number ${lineNumber}`, lineObj);
     const lineObjBeforeList = lineObj['before'];
     const lineObjAfterList = lineObj['after'];
     // lineObjBeforeList and lineObjAfterList should be same length
