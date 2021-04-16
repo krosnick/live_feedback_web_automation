@@ -816,6 +816,7 @@ $(function(){
             decorations = monacoEditor.deltaDecorations(decorations, []);
 
             ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "scriptStartedRunning");
+            $(".puppeteerTerminal").empty(); // clear terminal on run
 
             // Need to ask server for border BrowserView IDs
             $.ajax({
