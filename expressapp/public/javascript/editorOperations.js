@@ -880,6 +880,8 @@ $(function(){
             monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList()); // just empty
             decorations = monacoEditor.deltaDecorations(decorations, []);
 
+            ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "scriptStartedRunning");
+
             // Need to ask server for border BrowserView IDs
             $.ajax({
                 method: "POST",

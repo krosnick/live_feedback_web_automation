@@ -161,6 +161,10 @@ ipcRenderer.on("clearAllSnapshots", function(event){
     $(".tooltip").remove();
 });
 
+ipcRenderer.on("scriptStartedRunning", function(event){
+    lineNumToConsoleOutputList = {};
+});
+
 ipcRenderer.on("getSelectorNumResults", function(event, lineNumber, selectorDataItem){
     const relevantClusterElement = $(`.tooltip[lineNumber="${lineNumber}"] .cluster[runInfo="currentRun"]`);
     const winIDToSelectorNumResults = {};
