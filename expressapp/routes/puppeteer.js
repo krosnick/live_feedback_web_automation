@@ -129,7 +129,7 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     let codeWithConsolesReplaced = "";
     // Take bits of original code string "code". For the parts that are in consoleCallsToReplace,
         // replace appropriate parts with updateClientSideTerminal func calls
-    for(i = 0; i < consoleCallsToReplace.length; i++){
+    for(let i = 0; i < consoleCallsToReplace.length; i++){
         const obj = consoleCallsToReplace[i];
         const thisStart = obj.start;
         const thisEnd = obj.end;
@@ -180,7 +180,8 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
                 // Don't take snapshot here, because we're inside of an "evaluate" or "evaluateHandle", so doesn't make sense; or if we're in non-async function
                 if(!hasEvaluateAncestor && !hasNonAsyncFunctionAncestor){
                     statementAndDeclarationData[node.end] = {
-                        lineObj: node.loc.start.line
+                        lineObj: node.loc.start.line,
+                        start: node.start
                     };
                     //console.log("node.loc.start.line", node.loc.start.line);
                     // Will be null if no selector found
@@ -202,7 +203,8 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
             // Don't take snapshot here, because we're inside of an "evaluate" or "evaluateHandle", so doesn't make sense
             if(!hasEvaluateAncestor && !hasNonAsyncFunctionAncestor){
                 statementAndDeclarationData[node.end] = {
-                    lineObj: node.loc.start.line
+                    lineObj: node.loc.start.line,
+                    start: node.start
                 };
                 //console.log("node.loc.start.line", node.loc.start.line);
                 // Will be null if no selector found
@@ -226,7 +228,8 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
                 // Don't take snapshot here, because we're inside of an "evaluate" or "evaluateHandle", so doesn't make sense
                 if(!hasEvaluateAncestor && !hasNonAsyncFunctionAncestor){
                     statementAndDeclarationData[node.end] = {
-                        lineObj: node.loc.start.line
+                        lineObj: node.loc.start.line,
+                        start: node.start
                     };
                     //console.log("node.loc.start.line", node.loc.start.line);
                     // Will be null if no selector found
@@ -250,22 +253,23 @@ router.post('/runPuppeteerCode', async function(req, res, next) {
     // Create "instrumentedCodeString" by splitting "code" at statementAndDeclarationEndIndices
         // and inserting the "capture" commands
     let instrumentedCodeString = "";
-    for(i = 0; i < endIndices.length; i++){
+    for(let i = 0; i < endIndices.length; i++){
         const endIndex = endIndices[i];
         data = statementAndDeclarationData[endIndex];
+        const startIndex = data.start;
         const startLineNumber = data.lineObj;
         const selectorData = data.selectorData;
-        //instrumentedCodeString += `; snapshotCaptured = false; try { beforePageContent = await page.content(); snapshotCaptured = true; } catch(e){ } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; beforePageContent = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ }`;
-        //instrumentedCodeString += `; snapshotCaptured = false; try { beforePageContent = await page.evaluate(function(){ return getCurrentSnapshot();}); snapshotCaptured = true; } catch(e){ console.error(e);} finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; beforePageContent = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ }`;
-        instrumentedCodeString += `; snapshotCaptured = false; try { beforeSnapshotAndSelectorInfo = await page.evaluate(function(selectorData){ var selectorNumResults; if(selectorData){ selectorNumResults = document.querySelectorAll(selectorData.selectorString).length; }; var beforePageContent = getCurrentSnapshot(); return { selectorNumResults, beforePageContent }}, ${JSON.stringify(selectorData)}); selectorNumResults = beforeSnapshotAndSelectorInfo.selectorNumResults; beforePageContent = beforeSnapshotAndSelectorInfo.beforePageContent; snapshotCaptured = true; } catch(e){ console.error(e);} finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, selectorNumResults: selectorNumResults, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; beforeSnapshotAndSelectorInfo = null; beforePageContent = null; selectorNumResults = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ console.error(e); }`;
         if(i === 0){
             // Substring from beginning of string
-            instrumentedCodeString += codeWithConsolesReplaced.substring(0, endIndex);
+            instrumentedCodeString += codeWithConsolesReplaced.substring(0, startIndex);
         }else{
             const priorEndIndex = endIndices[i-1];
-            instrumentedCodeString += codeWithConsolesReplaced.substring(priorEndIndex, endIndex);
+            instrumentedCodeString += codeWithConsolesReplaced.substring(priorEndIndex, startIndex);
         }
-        //instrumentedCodeString += `; snapshotCaptured = false; try { afterPageContent = await page.content(); afterPageScreenshot = await page.screenshot({ fullPage: false, clip: { x: 0, y: 0, width: 500, height: 500 } } ); snapshotCaptured = true; } catch(e){ } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; if(!(lineObj[winID])){ lineObj[winID] = {}; } lineObj[winID].afterDomString = afterPageContent; lineObj[winID].afterScreenshotBuffer = afterPageScreenshot; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; afterPageContent = null; afterPageScreenshot = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ }`;
+        
+        // Now surround this particular code (from startIndex to endIndex) with capture code
+        instrumentedCodeString += `; snapshotCaptured = false; try { beforeSnapshotAndSelectorInfo = await page.evaluate(function(selectorData){ var selectorNumResults; if(selectorData){ selectorNumResults = document.querySelectorAll(selectorData.selectorString).length; }; var beforePageContent = getCurrentSnapshot(); return { selectorNumResults, beforePageContent }}, ${JSON.stringify(selectorData)}); selectorNumResults = beforeSnapshotAndSelectorInfo.selectorNumResults; beforePageContent = beforeSnapshotAndSelectorInfo.beforePageContent; snapshotCaptured = true; } catch(e){ console.error(e);} finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; lineObj[winID] =  { beforeDomString: beforePageContent, selectorNumResults: selectorNumResults, selectorData: ${JSON.stringify(selectorData)}, parametersString: parametersString }; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; beforeSnapshotAndSelectorInfo = null; beforePageContent = null; selectorNumResults = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ console.error(e); }`;
+        instrumentedCodeString += codeWithConsolesReplaced.substring(startIndex, endIndex);
         instrumentedCodeString += `; snapshotCaptured = false; try { afterPageContent = await page.evaluate(function(){ return getCurrentSnapshot();}); afterPageScreenshot = await page.screenshot({ fullPage: false, clip: { x: 0, y: 0, width: 500, height: 500 } } ); snapshotCaptured = true; } catch(e){ console.error(e); } finally { if(snapshotCaptured){ lineObj = snapshotLineToDOMSelectorData[${startLineNumber}] || {}; if(!(lineObj[winID])){ lineObj[winID] = {}; } lineObj[winID].afterDomString = afterPageContent; lineObj[winID].afterScreenshotBuffer = afterPageScreenshot; lineObj[winID].parametersString = parametersString; snapshotLineToDOMSelectorData[${startLineNumber}] = lineObj; afterPageContent = null; afterPageScreenshot = null; } snapshotCaptured = false; } try { if(userRequestedStop){ winIDToUserRequestedStopLineNumber[winID] = ${startLineNumber}; return; } } catch(e){ console.error(e); }`;
 
         // If final end index, include rest of string
