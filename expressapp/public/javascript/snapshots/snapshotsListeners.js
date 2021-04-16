@@ -21,23 +21,24 @@ $(function(){
 
         // Hide snapshots
         const winID = $(e.target).attr("winID");
+        const itemIndex = $(e.target).attr("itemIndex");
         const clusterIndex = $(e.target).closest(".cluster").attr("clusterIndex");
-        $(`.cluster[clusterIndex="${clusterIndex}"] .snapshot[winID="${winID}"]`).css("visibility", "hidden");
-        $(`.cluster[clusterIndex="${clusterIndex}"] .zoomButton[winID="${winID}"]`).css("visibility", "hidden");
-        $(`.cluster[clusterIndex="${clusterIndex}"] .outerSnapshotContainer[winID="${winID}"]`).css("resize", "none");
-        $(`.cluster[clusterIndex="${clusterIndex}"] .outerSnapshotContainer[winID="${winID}"]`).animate({
+        $(`.cluster[clusterIndex="${clusterIndex}"] .snapshot[winID="${winID}"][itemIndex="${itemIndex}"]`).css("visibility", "hidden");
+        $(`.cluster[clusterIndex="${clusterIndex}"] .zoomButton[winID="${winID}"][itemIndex="${itemIndex}"]`).css("visibility", "hidden");
+        $(`.cluster[clusterIndex="${clusterIndex}"] .outerSnapshotContainer[winID="${winID}"][itemIndex="${itemIndex}"]`).css("resize", "none");
+        $(`.cluster[clusterIndex="${clusterIndex}"] .outerSnapshotContainer[winID="${winID}"][itemIndex="${itemIndex}"]`).animate({
             width: "50px"
         }, 500);
-        $(`.cluster[clusterIndex="${clusterIndex}"] .snapshotContainer[winID="${winID}"]`).animate({
+        $(`.cluster[clusterIndex="${clusterIndex}"] .snapshotContainer[winID="${winID}"][itemIndex="${itemIndex}"]`).animate({
             width: "50px"
         }, 500);
-        $(`.cluster[clusterIndex="${clusterIndex}"] .colHeader[winID="${winID}"]`).animate({
+        $(`.cluster[clusterIndex="${clusterIndex}"] .colHeader[winID="${winID}"][itemIndex="${itemIndex}"]`).animate({
             width: "50px"
         }, 500);
-        $(`.cluster[clusterIndex="${clusterIndex}"] .downArrow[winID="${winID}"]`).animate({
+        $(`.cluster[clusterIndex="${clusterIndex}"] .downArrow[winID="${winID}"][itemIndex="${itemIndex}"]`).animate({
             width: "50px"
         }, 500);
-        $(`.cluster[clusterIndex="${clusterIndex}"] .consoleOutput[winID="${winID}"]`).animate({
+        $(`.cluster[clusterIndex="${clusterIndex}"] .consoleOutput[winID="${winID}"][itemIndex="${itemIndex}"]`).animate({
             width: "50px"
         }, 500);
     });
@@ -49,25 +50,26 @@ $(function(){
 
         // Show snapshots
         const winID = $(e.target).attr("winID");
+        const itemIndex = $(e.target).attr("itemIndex");
         const clusterIndex = $(e.target).closest(".cluster").attr("clusterIndex");
-        $(`.cluster[clusterIndex="${clusterIndex}"] .snapshotContainer[winID="${winID}"]`).animate({
+        $(`.cluster[clusterIndex="${clusterIndex}"] .snapshotContainer[winID="${winID}"][itemIndex="${itemIndex}"]`).animate({
             width: "375px"
         }, 500);
-        $(`.cluster[clusterIndex="${clusterIndex}"] .colHeader[winID="${winID}"]`).animate({
+        $(`.cluster[clusterIndex="${clusterIndex}"] .colHeader[winID="${winID}"][itemIndex="${itemIndex}"]`).animate({
             width: "375px"
         }, 500);
-        $(`.cluster[clusterIndex="${clusterIndex}"] .consoleOutput[winID="${winID}"]`).animate({
+        $(`.cluster[clusterIndex="${clusterIndex}"] .consoleOutput[winID="${winID}"][itemIndex="${itemIndex}"]`).animate({
             width: "375px"
         }, 500);
-        $(`.cluster[clusterIndex="${clusterIndex}"] .downArrow[winID="${winID}"]`).animate({
+        $(`.cluster[clusterIndex="${clusterIndex}"] .downArrow[winID="${winID}"][itemIndex="${itemIndex}"]`).animate({
             width: "375px"
         }, 500);
-        $(`.cluster[clusterIndex="${clusterIndex}"] .outerSnapshotContainer[winID="${winID}"]`).animate({
+        $(`.cluster[clusterIndex="${clusterIndex}"] .outerSnapshotContainer[winID="${winID}"][itemIndex="${itemIndex}"]`).animate({
             width: "375px"
         }, 500);
-        $(`.cluster[clusterIndex="${clusterIndex}"] .outerSnapshotContainer[winID="${winID}"]`).css("resize", "both");
-        $(`.cluster[clusterIndex="${clusterIndex}"] .zoomButton[winID="${winID}"]`).css("visibility", "visible");
-        $(`.cluster[clusterIndex="${clusterIndex}"] .snapshot[winID="${winID}"]`).css("visibility", "visible");
+        $(`.cluster[clusterIndex="${clusterIndex}"] .outerSnapshotContainer[winID="${winID}"][itemIndex="${itemIndex}"]`).css("resize", "both");
+        $(`.cluster[clusterIndex="${clusterIndex}"] .zoomButton[winID="${winID}"][itemIndex="${itemIndex}"]`).css("visibility", "visible");
+        $(`.cluster[clusterIndex="${clusterIndex}"] .snapshot[winID="${winID}"][itemIndex="${itemIndex}"]`).css("visibility", "visible");
     });
 
     $("body").on("click", ".zoomIn", function(e){
