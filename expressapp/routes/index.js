@@ -283,22 +283,22 @@ const resetExampleWindows = function(req, startingUrl){
 
 const moveBorderWindowIntoView = function(borderView){
     //console.log("moveBorderWindowIntoView");
-    borderView.setBounds({ x: 780, y: 55, width: 920, height: 875 });
+    borderView.setBounds({ x: 690, y: 55, width: 790, height: 875 });
 };
 
 const moveBorderWindowOutOfView = function(borderView){
     //console.log("moveBorderWindowOutOfView");
-    borderView.setBounds({ x: 780, y: 1000, width: 920, height: 875 });
+    borderView.setBounds({ x: 690, y: 1000, width: 790, height: 875 });
 };
 
 const movePageWindowIntoView = function(pageView){
     //console.log("movePageWindowIntoView");
-    pageView.setBounds({ x: 800, y: 85, width: 860, height: 795 });
+    pageView.setBounds({ x: 710, y: 85, width: 750, height: 825 });
 };
 
 const movePageWindowOutOfView = function(pageView){
     //console.log("movePageWindowOutOfView");
-    pageView.setBounds({ x: 800, y: 1000, width: 860, height: 795 });
+    pageView.setBounds({ x: 710, y: 1000, width: 750, height: 825 });
 };
 
 const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUrl){
@@ -360,7 +360,7 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
             nodeIntegration: false,
             webSecurity: false,
             /*enableRemoteModule: true,*/
-            zoomFactor: .8,
+            /*zoomFactor: .8,*/
             /*enableRemoteModule: false,*/
             /*contextIsolation: true,*/
             contextIsolation: false,
@@ -556,7 +556,7 @@ const setUpHomeScreen = function(req, res){
     // Set up all other BrowserViews
     const windowSelectionView = new BrowserView({webPreferences: {zoomFactor: 1.0, nodeIntegration: true, webSecurity: false} });
     req.app.locals.win.addBrowserView(windowSelectionView);
-    windowSelectionView.setBounds({ x: 780, y: 0, width: 780, height: 100 });
+    windowSelectionView.setBounds({ x: 690, y: 0, width: 680, height: 100 });
     windowSelectionView.webContents.loadURL('http://localhost:3000/windowSelection');
     if(req.app.locals.devMode){
         windowSelectionView.webContents.openDevTools({mode: "detach"});
@@ -566,7 +566,7 @@ const setUpHomeScreen = function(req, res){
 
     const editorBrowserView = new BrowserView({webPreferences: {zoomFactor: 1.0, nodeIntegration: true, webSecurity: false} });
     req.app.locals.win.addBrowserView(editorBrowserView);
-    editorBrowserView.setBounds({ x: 0, y: 0, width: 780, height: 950 });
+    editorBrowserView.setBounds({ x: 0, y: 0, width: 700, height: 950 });
     editorBrowserView.webContents.loadURL('http://localhost:3000/home/');
     if(req.app.locals.devMode){
         editorBrowserView.webContents.openDevTools({mode: "detach"});

@@ -34,6 +34,7 @@ $(function(){
             language: "javascript",
             wordWrap: "on",
             wrappingIndent: "deepIndent",
+            fontSize: "11px",
             scrollbar: {
                 // Render vertical arrows. Defaults to false.
                 verticalHasArrows: true,
@@ -63,6 +64,7 @@ $(function(){
             language: "json",
             wordWrap: "on",
             wrappingIndent: "deepIndent",
+            fontSize: "11px",
             scrollbar: {
                 // Render vertical arrows. Defaults to false.
                 verticalHasArrows: true,

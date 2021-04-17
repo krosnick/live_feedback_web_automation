@@ -1,5 +1,5 @@
 #codeEditor {
-    width: 730px;
+    width: 650px;
     /*height: 540px;*/
     height: 520px;
     margin: 10px !important;
@@ -9,7 +9,7 @@
 }
 
 #paramEditor {
-    width: 730px;
+    width: 650px;
     height: 125px;
     margin: 10px !important;
     border: 1px solid gray;
@@ -18,7 +18,7 @@
 }
 
 .puppeteerTerminal {
-    width: 720px;
+    width: 640px;
     height: 100px;
     overflow-y: auto;
     /*border: 1px solid gray;
@@ -36,7 +36,7 @@
 
 #puppeteerTerminalArea {
     position: relative;
-    width: 720px;
+    width: 640px;
     height: 100px;
     border: 1px solid gray;
     margin: 10px;
@@ -45,6 +45,7 @@
 
 #puppeteerTerminals {
     position: relative;
+    font-size: 11px;
 }
 
 #selectionAndTerminal{
@@ -71,7 +72,7 @@ body {
 }
 
 #fileSelectMenu {
-    max-width: 273px;
+    max-width: 250px;
 }
 
 .fileControls {
@@ -93,7 +94,7 @@ body {
 }
 
 #currentFileName {
-    width: 200px;
+    width: 140px;
 }
 
 .errorText {
@@ -166,5 +167,5 @@ body {
 }
 
 #windowSelectMenu {
-    max-width: 700px;
+    max-width: 620px;
 }

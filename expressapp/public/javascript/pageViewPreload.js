@@ -1,6 +1,8 @@
 // Messaging approach from https://stackoverflow.com/questions/52236641/electron-ipc-and-nodeintegration
-const { ipcRenderer, remote } = require('electron');
+const { ipcRenderer, remote, webFrame } = require('electron');
 const contextMenu = require('electron-context-menu');
+
+webFrame.setZoomFactor(0.6);
 ipcRenderer.on('highlightUIElements', function(event, selector){
     window.postMessage({
         type: 'highlightUIElements',
