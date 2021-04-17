@@ -935,8 +935,13 @@ $(function(){
                         // First, sort
                         errorLineNumbers.sort((a, b) => a - b);
 
-                        // Green decoration from beginning until first line with error
-                        rangeList.push({ range: new monaco.Range(1,1,errorLineNumbers[0]-1,1), options: { isWholeLine: true, linesDecorationsClassName: 'greenLineDecoration' }});
+                        // Green decoration from beginning until first line with error or last line with snapshots - whichever is larger
+                        const firstLineWithError = errorLineNumbers[0];
+                        let lineNumbersWithSnapshots = [];
+                        Object.keys(snapshotLineToDOMSelectorData).forEach(element => lineNumbersWithSnapshots.push(parseInt(element)));
+                        const lastLineWithSnapshot = lineNumbersWithSnapshots[lineNumbersWithSnapshots.length - 1];
+                        rangeList.push({ range: new monaco.Range(1,1,Math.max(firstLineWithError, lastLineWithSnapshot),1), options: { isWholeLine: true, linesDecorationsClassName: 'greenLineDecoration' }});
+                        //rangeList.push({ range: new monaco.Range(1,1,errorLineNumbers[0]-1,1), options: { isWholeLine: true, linesDecorationsClassName: 'greenLineDecoration' }});
 
                         for(let i = 0; i < errorLineNumbers.length; i++){
                             const errorNum = errorLineNumbers[i];
