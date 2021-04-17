@@ -1027,6 +1027,10 @@ $(function(){
 
         // Tell windowSelectionView to click the appropriate button (#showUISnapshots or #hideSnapshots)
         ipcRenderer.sendTo(parseInt(windowSelectionViewID), "showUISnapshots");
+
+        // Tell snapshotsBrowserView to make sure line number is unlocked, and show the current line number
+        const lineNumber = monacoEditor.getSelection().startLineNumber;
+        ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "unlockAndShowLineNumber", lineNumber);
     });
 
     $("body").on("change", "#windowSelectMenu", function(e){
