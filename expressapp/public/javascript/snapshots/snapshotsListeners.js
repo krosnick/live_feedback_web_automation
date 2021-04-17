@@ -95,6 +95,15 @@ $(function(){
             iframeElement.css("transform", `scale(${newScaleNum})`);
         }
     });
+
+    $("body").on("click", "#lockLineNumberButton", function(e){
+        $("#lockLineNumberButton").hide();
+        $("#unLockLineNumberButton").show();
+        $("body").addClass("lineLockedBackground");
+    });
+    $("body").on("click", "#unLockLineNumberButton", function(e){
+        unlockLineNumber();
+    });
 });
 
 ipcRenderer.on("addConsoleOutput", function(event, lineNumber, text){
@@ -117,28 +126,36 @@ ipcRenderer.on("newSnapshots", function(event, snapshotsData, errData){
     $(".tooltip").remove();
 });
 
+ipcRenderer.on("unlockAndShowLineNumber", function(event, lineNumber){
+    // Make sure line number is unlocked, and show specified line number
+    unlockLineNumber();
+
+    // Show for this line
+    showSnapshots(lineNumber);
+});
+
 ipcRenderer.on("showLineNumber", function(event, lineNumber){
-    //console.log("showLineNumber");
     // Only update if different line number
     if(lineNumber !== parseInt($("#lineNumber").text().trim())){
-        $("#lineNumber").text(lineNumber);
-        // Hide all snapshots
-        $(".tooltip").hide();
-        
-        // Show for this line
-        showSnapshots(lineNumber);
+        // Only update if line number not locked
+        if($("#lockLineNumberButton").is(":visible")){
+            // Show for this line
+            showSnapshots(lineNumber);
+        }
     }
 });
 
 ipcRenderer.on("forceShowLineNumber", function(event, lineNumber){
-    //console.log("forceShowLineNumber");
-    $("#lineNumber").text(lineNumber);
-    
-    // Hide all snapshots
-    $(".tooltip").hide();
+    // Make sure line number is unlocked, and show specified line number
+    unlockLineNumber();
 
     // Show for this line
     showSnapshots(lineNumber);
+});
+
+ipcRenderer.on("unlockLineNumber", function(event, lineNumber){
+    // Make sure line number is unlocked, and show specified line number
+    unlockLineNumber();
 });
 
 ipcRenderer.on("deleteAllSnapshotsForLine", function(event, lineNumberStr){
@@ -163,6 +180,9 @@ ipcRenderer.on("clearAllSnapshots", function(event){
 
     // Removing element that contains iframes
     $(".tooltip").remove();
+
+    // Make sure line number is unlocked, and show specified line number
+    unlockLineNumber();
 });
 
 ipcRenderer.on("scriptStartedRunning", function(event){
@@ -185,8 +205,17 @@ ipcRenderer.on("getSelectorNumResults", function(event, lineNumber, selectorData
     ipcRenderer.sendTo(parseInt(editorBrowserViewID), "selectorNumResults", lineNumber, selectorNumResultsObjList, selectorDataItem);
 });
 
+function unlockLineNumber(){
+    $("#unLockLineNumberButton").hide();
+    $("#lockLineNumberButton").show();
+    $("body").removeClass("lineLockedBackground");
+}
+
 // Show snapshots for this line (show if they're rendered already, or create if not)
 function showSnapshots(lineNumber){
+    $("#lineNumber").text(lineNumber);
+    // Hide all snapshots
+    $(".tooltip").hide();
     const snapshotsForThisLine = $(`.tooltip[lineNumber="${lineNumber}"] iframe`);
     if(snapshotsForThisLine.length > 0){
         // Exist already

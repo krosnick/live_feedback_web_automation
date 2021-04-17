@@ -1,8 +1,10 @@
 const { ipcRenderer } = require('electron');
 let oldPageWinID;
 let editorBrowserViewID;
+let snapshotsBrowserViewID;
 $(function(){
     editorBrowserViewID = $("#editorBrowserViewID").attr("editorBrowserViewID");
+    snapshotsBrowserViewID = $("#snapshotsBrowserViewID").attr("snapshotsBrowserViewID");
     $("body").on("change", "#windowSelectMenu", function(e){
         const newPageWinID = $(e.target).val();
         
@@ -106,6 +108,8 @@ $(function(){
         });
         // Update status in editor view
         ipcRenderer.sendTo(parseInt(editorBrowserViewID), "updateHideShowSnapshotsViewStatus", "show");
+        // Unlock line number in snapshots view
+        ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "unlockLineNumber");
 
         // Hide this button and show #hideSnapshots button
         $("#hideSnapshots").show();

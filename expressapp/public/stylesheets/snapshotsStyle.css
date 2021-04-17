@@ -23,7 +23,7 @@ body {
     /*display: none;*/
     /*width: 570px;*/
     width: 100%;
-    height: 420px;
+    height: 600px;
     background-color: white;
     color: black;
     /*border: 1px solid gray;*/
@@ -199,4 +199,31 @@ body {
 
 .consoleOutput {
     height: 32px;
+}
+
+#lockLineNumberButton {
+    font-size: 16px;
+}
+
+#unLockLineNumberButton {
+    font-size: 16px;
+    display: none;
+    background-color: lightyellow;
+}
+
+.lineLockedBackground {
+    background-color: lightgray;
+}
+
+#snapshotLineInfo{
+    background-color: white;
+    width: max-content;
+}
+
+#lineNumber{
+    font-weight: bold;
+    margin-left: 5px;
+    margin-right: 10px;
+    border: 1px solid black;
+    padding: 2px;
 }

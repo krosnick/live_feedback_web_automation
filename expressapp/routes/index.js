@@ -125,7 +125,8 @@ router.get('/border/:id', function(req, res, next) {
 router.get('/windowSelection', function(req, res, next) {
     res.render('layouts/windowSelection', {
         layout: 'windowSelectionLayout',
-        editorBrowserViewID: req.app.locals.editorBrowserViewID
+        editorBrowserViewID: req.app.locals.editorBrowserViewID,
+        snapshotsBrowserViewID: req.app.locals.snapshotsBrowserViewID
     });
 });
 
