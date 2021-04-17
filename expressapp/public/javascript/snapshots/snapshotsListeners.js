@@ -7,12 +7,22 @@ let lastRunErrorData;
 //let lineNumToComponentsList;
 /*const snapshotWidth = 250;
 const snapshotHeight = 125;*/
-const snapshotWidth = 375;
-const snapshotHeight = 187;
+let snapshotWidth;
+let snapshotHeight;
+let snapshotWidthNumOnly;
+let snapshotHeightNumOnly;
 let editorBrowserViewID;
 let lineNumToConsoleOutputList = {};
 
 $(function(){
+    snapshotWidth = getComputedStyle(document.querySelector("body")).getPropertyValue("--snapshot-width");
+    snapshotHeight = getComputedStyle(document.querySelector("body")).getPropertyValue("--snapshot-height");
+    snapshotWidthNumOnly = parseInt(snapshotWidth.substring(0, snapshotWidth.length-2));
+    snapshotHeightNumOnly = parseInt(snapshotHeight.substring(0, snapshotHeight.length-2));
+    /*console.log("snapshotWidth", snapshotWidth);
+    console.log("snapshotHeight", snapshotHeight);
+    console.log("snapshotWidthNumOnly", snapshotWidthNumOnly);
+    console.log("snapshotHeightNumOnly", snapshotHeightNumOnly);*/
     editorBrowserViewID = $("#editorBrowserViewID").attr("editorBrowserViewID");
     $("body").on("click", ".hideRun", function(e){
         // Hide/show appropriate header elements
@@ -53,19 +63,19 @@ $(function(){
         const itemIndex = $(e.target).attr("itemIndex");
         const clusterIndex = $(e.target).closest(".cluster").attr("clusterIndex");
         $(`.cluster[clusterIndex="${clusterIndex}"] .snapshotContainer[winID="${winID}"][itemIndex="${itemIndex}"]`).animate({
-            width: "375px"
+            width: snapshotWidth
         }, 500);
         $(`.cluster[clusterIndex="${clusterIndex}"] .colHeader[winID="${winID}"][itemIndex="${itemIndex}"]`).animate({
-            width: "375px"
+            width: snapshotWidth
         }, 500);
         $(`.cluster[clusterIndex="${clusterIndex}"] .consoleOutput[winID="${winID}"][itemIndex="${itemIndex}"]`).animate({
-            width: "375px"
+            width: snapshotWidth
         }, 500);
         $(`.cluster[clusterIndex="${clusterIndex}"] .downArrow[winID="${winID}"][itemIndex="${itemIndex}"]`).animate({
-            width: "375px"
+            width: snapshotWidth
         }, 500);
         $(`.cluster[clusterIndex="${clusterIndex}"] .outerSnapshotContainer[winID="${winID}"][itemIndex="${itemIndex}"]`).animate({
-            width: "375px"
+            width: snapshotWidth
         }, 500);
         $(`.cluster[clusterIndex="${clusterIndex}"] .outerSnapshotContainer[winID="${winID}"][itemIndex="${itemIndex}"]`).css("resize", "both");
         $(`.cluster[clusterIndex="${clusterIndex}"] .zoomButton[winID="${winID}"][itemIndex="${itemIndex}"]`).css("visibility", "visible");
@@ -571,15 +581,15 @@ function scaleToElement(selectorElement, iframeElement, iframeDocument, transfor
     
     /*const transformOption1 = allowedSnapshotWidth / (3 * currentElementWidth); // want element to take up at most half of viewport width
     const transformOption2 = allowedSnapshotHeight / (3 * currentElementHeight); // want element to take up at most half of viewport height*/
-    const transformOption1 = snapshotWidth / (3 * currentElementWidth); // want element to take up at most 1/3 of viewport width
-    const transformOption2 = snapshotHeight / (3 * currentElementHeight); // want element to take up at most 1/3 of viewport height
+    const transformOption1 = snapshotWidthNumOnly / (3 * currentElementWidth); // want element to take up at most 1/3 of viewport width
+    const transformOption2 = snapshotHeightNumOnly / (3 * currentElementHeight); // want element to take up at most 1/3 of viewport height
 
     const chosenTransformScale = Math.min(transformOption1, transformOption2);
 
     /*const newSnapshotWidth = allowedSnapshotWidth / chosenTransformScale;
     const newSnapshotHeight = allowedSnapshotHeight / chosenTransformScale;*/
-    const newSnapshotWidth = snapshotWidth / chosenTransformScale;
-    const newSnapshotHeight = snapshotHeight / chosenTransformScale;
+    const newSnapshotWidth = snapshotWidthNumOnly / chosenTransformScale;
+    const newSnapshotHeight = snapshotHeightNumOnly / chosenTransformScale;
 
     $(iframeElement).css('width', `${newSnapshotWidth}px`);
     $(iframeElement).css('height', `${newSnapshotHeight}px`);
@@ -665,9 +675,9 @@ function scaleToPageWidth(iframeElement, iframeDocument, transformOriginString){
     const newSnapshotWidth = allowedSnapshotWidth / transformScale;
     const newSnapshotHeight = allowedSnapshotHeight / transformScale;*/
     
-    const transformScale = snapshotWidth / pageWidth;
-    const newSnapshotWidth = snapshotWidth / transformScale;
-    const newSnapshotHeight = snapshotHeight / transformScale;
+    const transformScale = snapshotWidthNumOnly / pageWidth;
+    const newSnapshotWidth = snapshotWidthNumOnly / transformScale;
+    const newSnapshotHeight = snapshotHeightNumOnly / transformScale;
 
     $(iframeElement).css('width', `${newSnapshotWidth}px`);
     $(iframeElement).css('height', `${newSnapshotHeight}px`);

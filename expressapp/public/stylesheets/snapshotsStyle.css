@@ -1,3 +1,8 @@
+:root {
+    --snapshot-width: 425px;
+    --snapshot-height: 300px;
+}
+
 body {
     background-color: white;
 }
@@ -44,12 +49,12 @@ body {
     position: absolute;
     /*position: relative;*/
     display: grid;
-    grid-template-columns: 70px;
-    grid-template-rows: 220px 32px 187px;
+    grid-template-columns: 50px;
+    grid-template-rows: calc(var(--snapshot-height) + 13px) 30px var(--snapshot-height);
     grid-auto-flow: column;
     grid-column-gap: 10px;
     grid-row-gap: 10px;
-    height: 360px;
+    height: calc(var(--snapshot-height) + 13px + 30px var(--snapshot-height));
     top: 80px;
 }
 
@@ -64,7 +69,7 @@ body {
     grid-row-gap: 10px;
     overflow-x: scroll;
     /*right: 0px;*/
-    left: 70px;
+    left: 50px;
     /*width: 520px;*/
     width: calc(100% - 70px);
     /*height: 430px;*/
@@ -80,9 +85,9 @@ body {
     border: 1px solid gray;
     padding: 10px;
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(min-content, 375px));
+    grid-template-columns: repeat(auto-fit, minmax(min-content, var(--snapshot-width)));
     /*grid-template-rows: 20px 125px 20px 125px;*/
-    grid-template-rows: 20px auto 32px 20px auto;
+    grid-template-rows: 20px auto 12px 20px auto;
     /*grid-template-rows: 20px min-content 20px min-content;*/
     grid-auto-flow: column;
     grid-column-gap: 10px;
@@ -93,12 +98,12 @@ body {
 
 .downArrow {
     text-align: center;
-    width: 375px;
+    width: var(--snapshot-width);
 }
 
 .colHeader {
     position: relative;
-    max-width: 375px;
+    max-width: var(--snapshot-width);
     min-width: 50px;
 }
 
@@ -118,8 +123,8 @@ body {
 .outerSnapshotContainer {
     /*max-width: 250px;*/
     /*width: min-content;*/
-    width: 375px;
-    height: 187px;
+    width: var(--snapshot-width);
+    height: var(--snapshot-height);
     position: relative;
     /*overflow: hidden;*/
     overflow: scroll;
@@ -198,7 +203,7 @@ body {
 }
 
 .consoleOutput {
-    height: 32px;
+    height: 12px;
 }
 
 #lockLineNumberButton {
