@@ -319,7 +319,7 @@ const expandSnapshotsView = function(req){
     const newWidth = currentWidth + partialBorderWidth;
     //req.app.locals.snapshotsBrowserView.setBounds({ x: 1330, y: 30, width: 920, height: 905 });
     //req.app.locals.snapshotsBrowserView.setBounds({ x: 1330, y: 30, width: 360, height: 905 });
-    req.app.locals.snapshotsBrowserView.setBounds({ x: 1330 - partialBorderWidth, y: 30, width: newWidth, height: 905 });
+    req.app.locals.snapshotsBrowserView.setBounds({ x: 1330 - partialBorderWidth, y: 0, width: newWidth, height: 935 });
 };
 
 // Show snapshots view just on right
@@ -328,7 +328,7 @@ const moveSnapshotsViewIntoView = function(req){
     const currentWidth = req.app.locals.snapshotsBrowserView.getBounds().width;
     //req.app.locals.snapshotsBrowserView.setBounds({ x: 1330, y: 30, width: 920, height: 905 });
     //req.app.locals.snapshotsBrowserView.setBounds({ x: 1330, y: 30, width: 360, height: 905 });
-    req.app.locals.snapshotsBrowserView.setBounds({ x: 1330, y: 30, width: Math.min(360, Math.max(360, currentWidth)), height: 905 });
+    req.app.locals.snapshotsBrowserView.setBounds({ x: 1330, y: 0, width: Math.min(360, Math.max(360, currentWidth)), height: 935 });
 };
 
 const moveSnapshotsViewOutOfView = function(req){
