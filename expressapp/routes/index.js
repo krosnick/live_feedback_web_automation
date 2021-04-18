@@ -304,12 +304,12 @@ const moveBorderWindowOutOfView = function(borderView){
 
 const movePageWindowIntoView = function(pageView){
     //console.log("movePageWindowIntoView");
-    pageView.setBounds({ x: 710, y: 85, width: 600, height: 825 });
+    pageView.setBounds({ x: 710, y: 85, width: 650, height: 825 });
 };
 
 const movePageWindowOutOfView = function(pageView){
     //console.log("movePageWindowOutOfView");
-    pageView.setBounds({ x: 710, y: 1000, width: 600, height: 825 });
+    pageView.setBounds({ x: 710, y: 1000, width: 650, height: 825 });
 };
 
 const expandSnapshotsView = function(req){
