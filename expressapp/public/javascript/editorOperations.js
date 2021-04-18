@@ -916,9 +916,13 @@ $(function(){
                     
                     //mightBeOutOfSync = true;
 
-                    // Tell snapshots view to show updated snapshots for line number that currently has focus
+                    // Tell snapshots view to show updated snapshots for line number that currently has focus (if this line doesn't have snapshots, choose the next line that does have snapshots)
                     const cursorCurrentLineNumber = monacoEditor.getSelection().startLineNumber;
-                    ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "forceShowLineNumber", cursorCurrentLineNumber);
+                    let lineNumberToShow = cursorCurrentLineNumber;
+                    while(!snapshotLineToDOMSelectorData[lineNumberToShow]){
+                        lineNumberToShow += 1;
+                    }
+                    ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "forceShowLineNumber", lineNumberToShow);
                     // Depending on hide/show snapshots button status, tell server to /showSnapshotView
                     if(showSnapshotsView){
                         // Tell server to show UI snapshots view
