@@ -787,6 +787,7 @@ $(function(){
     });
 
     $("body").on("click", "#runCode", function(e){
+        $(".puppeteerTerminal").empty(); // clear terminal on run
         // First check if the code syntax is valid; if it isn't, then show error in console
             // and do nothing else
         const code = monacoEditor.getValue();
@@ -816,7 +817,6 @@ $(function(){
             decorations = monacoEditor.deltaDecorations(decorations, []);
 
             ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "scriptStartedRunning");
-            $(".puppeteerTerminal").empty(); // clear terminal on run
 
             // Need to ask server for border BrowserView IDs
             $.ajax({
