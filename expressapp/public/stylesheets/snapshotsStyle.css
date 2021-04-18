@@ -222,6 +222,16 @@ body {
     background-color: lightyellow;
 }
 
+#pinSnapshotsButton {
+    font-size: 14px;
+}
+
+#unPinSnapshotsButton {
+    font-size: 14px;
+    display: none;
+    background-color: lightyellow;
+}
+
 .lineLockedBackground {
     background-color: lightgray;
 }

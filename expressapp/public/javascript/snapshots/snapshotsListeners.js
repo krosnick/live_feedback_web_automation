@@ -117,6 +117,15 @@ $(function(){
         unlockLineNumber();
     });
 
+    $("body").on("click", "#pinSnapshotsButton", function(e){
+        $("#pinSnapshotsButton").hide();
+        $("#unPinSnapshotsButton").show();
+    });
+    $("body").on("click", "#unPinSnapshotsButton", function(e){
+        $("#unPinSnapshotsButton").hide();
+        $("#pinSnapshotsButton").show();
+    });
+
     $("body").mouseenter(function(){
         //console.log('mouseenter', Date.now());
         lastMouseEnterTime = Date.now();
@@ -131,11 +140,14 @@ $(function(){
         // Only contract snapshots view if this is a "real" leave, i.e., that a mouseenter didn't just happen too
         if(Date.now() - lastMouseEnterTime > 100){
             //console.log("large time diff")
-            // Make snapshots view contract (to just fit right side of window); send message to server
-            $.ajax({
-                method: "POST",
-                url: "/showSnapshotView"
-            });
+            // Only contract snapshots if snapshots view isn't pinned
+            if($("#pinSnapshotsButton").is(":visible")){
+                // Make snapshots view contract (to just fit right side of window); send message to server
+                $.ajax({
+                    method: "POST",
+                    url: "/showSnapshotView"
+                });
+            }
         }else{
             //console.log("small time diff");
         }
