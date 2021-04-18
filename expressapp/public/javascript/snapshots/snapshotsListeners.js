@@ -284,6 +284,12 @@ function showSnapshots(lineNumber){
         }
         //("widthHeightAllNonZero", widthHeightAllNonZero);
         if(widthHeightAllNonZero){
+            // Flash animation in snapshots view to grab user's attention
+            $("#elementForFlashing").animate({
+                opacity: 0.5
+            }, 500).animate({
+                opacity: 0
+            }, 500);
             // All iframes have non-zero width and height - show them
             $(`.tooltip[lineNumber="${lineNumber}"]`).show();
         }else{
@@ -316,6 +322,13 @@ function getScaleNum(transformString){
 function createSnapshots(lineNumber){
     // If there's a snapshot for this line
     if((snapshotLineToDOMSelectorData && snapshotLineToDOMSelectorData[lineNumber]) || (lastRunSnapshotLineToDOMSelectorData && lastRunSnapshotLineToDOMSelectorData[lineNumber])){
+        // Flash animation in snapshots view to grab user's attention
+        $("#elementForFlashing").animate({
+            opacity: 0.5,
+        }, 500).animate({
+            opacity: 0
+        }, 500);
+
         const newElement = $(`
             <div class="tooltip" role="tooltip" data-show="" lineNumber="${lineNumber}">
                 <div class="labels">
