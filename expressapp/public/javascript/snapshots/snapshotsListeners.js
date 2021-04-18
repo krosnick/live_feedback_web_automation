@@ -15,6 +15,7 @@ let editorBrowserViewID;
 let lineNumToConsoleOutputList = {};
 
 let lastMouseEnterTime = 0;
+let currentlyExpanded = false;
 
 $(function(){
     snapshotWidth = getComputedStyle(document.querySelector("body")).getPropertyValue("--snapshot-width");
@@ -129,11 +130,14 @@ $(function(){
     $("body").mouseenter(function(){
         //console.log('mouseenter', Date.now());
         lastMouseEnterTime = Date.now();
-        // Make snapshots view expand; send message back to server
-        $.ajax({
-            method: "POST",
-            url: "/expandSnapshotView"
-        });
+        if(!currentlyExpanded){
+            currentlyExpanded = true;
+            // Make snapshots view expand; send message back to server
+            $.ajax({
+                method: "POST",
+                url: "/expandSnapshotView"
+            });
+        }
     });
     $("body").mouseleave(function(){
         //console.log('mouseleave', Date.now());
@@ -142,6 +146,7 @@ $(function(){
             //console.log("large time diff")
             // Only contract snapshots if snapshots view isn't pinned
             if($("#pinSnapshotsButton").is(":visible")){
+                currentlyExpanded = false;
                 // Make snapshots view contract (to just fit right side of window); send message to server
                 $.ajax({
                     method: "POST",
