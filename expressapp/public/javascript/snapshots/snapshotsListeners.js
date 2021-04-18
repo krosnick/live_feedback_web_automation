@@ -14,6 +14,8 @@ let snapshotHeightNumOnly;
 let editorBrowserViewID;
 let lineNumToConsoleOutputList = {};
 
+let lastMouseEnterTime = 0;
+
 $(function(){
     snapshotWidth = getComputedStyle(document.querySelector("body")).getPropertyValue("--snapshot-width");
     snapshotHeight = getComputedStyle(document.querySelector("body")).getPropertyValue("--snapshot-height");
@@ -113,6 +115,30 @@ $(function(){
     });
     $("body").on("click", "#unLockLineNumberButton", function(e){
         unlockLineNumber();
+    });
+
+    $("body").mouseenter(function(){
+        //console.log('mouseenter', Date.now());
+        lastMouseEnterTime = Date.now();
+        // Make snapshots view expand; send message back to server
+        $.ajax({
+            method: "POST",
+            url: "/expandSnapshotView"
+        });
+    });
+    $("body").mouseleave(function(){
+        //console.log('mouseleave', Date.now());
+        // Only contract snapshots view if this is a "real" leave, i.e., that a mouseenter didn't just happen too
+        if(Date.now() - lastMouseEnterTime > 100){
+            //console.log("large time diff")
+            // Make snapshots view contract (to just fit right side of window); send message to server
+            $.ajax({
+                method: "POST",
+                url: "/showSnapshotView"
+            });
+        }else{
+            //console.log("small time diff");
+        }
     });
 });
 

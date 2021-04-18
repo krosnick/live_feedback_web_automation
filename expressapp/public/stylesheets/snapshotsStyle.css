@@ -3,9 +3,14 @@
     --snapshot-height: 300px;
 }
 
+html {
+    height: 100%;
+}
+
 body {
     background-color: white;
     border: 1px solid black;
+    height: 100%;
 }
 
 #container {

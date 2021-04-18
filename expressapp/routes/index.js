@@ -137,6 +137,11 @@ router.get('/snapshots', function(req, res, next) {
     });
 });
 
+router.post('/expandSnapshotView', function(req, res, next) {
+    expandSnapshotsView(req);
+    res.end();
+});
+
 router.post('/showSnapshotView', function(req, res, next) {
     /*// Move the rest out of the page and border BrowserViews out of view
     const windowData = Object.values(req.app.locals.windowMetadata);
@@ -199,6 +204,10 @@ router.post('/hideShowWindows', function(req, res, next) {
     req.app.locals.win.addBrowserView(toShowBrowserViewObj.borderView);*/
     movePageWindowIntoView(toShowBrowserViewObj.pageView);
     moveBorderWindowIntoView(toShowBrowserViewObj.borderView);
+
+    // Make sure snapshots view is on top
+    req.app.locals.win.removeBrowserView(req.app.locals.snapshotsBrowserView);
+    req.app.locals.win.addBrowserView(req.app.locals.snapshotsBrowserView);
 
     res.end();
 });
@@ -282,15 +291,15 @@ const resetExampleWindows = function(req, startingUrl){
         });
     }
 };
-
+const borderViewWidth = 640;
 const moveBorderWindowIntoView = function(borderView){
     //console.log("moveBorderWindowIntoView");
-    borderView.setBounds({ x: 690, y: 55, width: 640, height: 875 });
+    borderView.setBounds({ x: 690, y: 55, width: borderViewWidth, height: 875 });
 };
 
 const moveBorderWindowOutOfView = function(borderView){
     //console.log("moveBorderWindowOutOfView");
-    borderView.setBounds({ x: 690, y: 1000, width: 640, height: 875 });
+    borderView.setBounds({ x: 690, y: 1000, width: borderViewWidth, height: 875 });
 };
 
 const movePageWindowIntoView = function(pageView){
@@ -303,12 +312,23 @@ const movePageWindowOutOfView = function(pageView){
     pageView.setBounds({ x: 710, y: 1000, width: 600, height: 825 });
 };
 
+const expandSnapshotsView = function(req){
+    //console.log("getBounds", req.app.locals.snapshotsBrowserView.getBounds());
+    const currentWidth = req.app.locals.snapshotsBrowserView.getBounds().width;
+    const partialBorderWidth = borderViewWidth - 200;
+    const newWidth = currentWidth + partialBorderWidth;
+    //req.app.locals.snapshotsBrowserView.setBounds({ x: 1330, y: 30, width: 920, height: 905 });
+    //req.app.locals.snapshotsBrowserView.setBounds({ x: 1330, y: 30, width: 360, height: 905 });
+    req.app.locals.snapshotsBrowserView.setBounds({ x: 1330 - partialBorderWidth, y: 30, width: newWidth, height: 905 });
+};
+
+// Show snapshots view just on right
 const moveSnapshotsViewIntoView = function(req){
     //console.log("getBounds", req.app.locals.snapshotsBrowserView.getBounds());
     const currentWidth = req.app.locals.snapshotsBrowserView.getBounds().width;
     //req.app.locals.snapshotsBrowserView.setBounds({ x: 1330, y: 30, width: 920, height: 905 });
     //req.app.locals.snapshotsBrowserView.setBounds({ x: 1330, y: 30, width: 360, height: 905 });
-    req.app.locals.snapshotsBrowserView.setBounds({ x: 1330, y: 30, width: Math.max(360, currentWidth), height: 905 });
+    req.app.locals.snapshotsBrowserView.setBounds({ x: 1330, y: 30, width: Math.min(360, Math.max(360, currentWidth)), height: 905 });
 };
 
 const moveSnapshotsViewOutOfView = function(req){
@@ -520,6 +540,9 @@ const createExampleWindow = function(req, windowIndexInApp, paramSet, startingUr
     //pageView.webContents.on('dom-ready', () => {
     //pageView.webContents.on('new-window', () => {
     
+    // Make sure snapshots view is on top
+    req.app.locals.win.removeBrowserView(req.app.locals.snapshotsBrowserView);
+    req.app.locals.win.addBrowserView(req.app.locals.snapshotsBrowserView);
 
     // Store metadata in this global object
     req.app.locals.windowMetadata[pageView.webContents.id] = {
