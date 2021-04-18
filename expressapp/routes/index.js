@@ -605,7 +605,8 @@ const setUpHomeScreen = function(req, res){
     snapshotsBrowserView.setAutoResize({ width: true, height: false, horizontal: false, vertical: false });
     req.app.locals.snapshotsBrowserView = snapshotsBrowserView;
     // Set offscreen for now
-    moveSnapshotsViewOutOfView(req);
+    //moveSnapshotsViewOutOfView(req);
+    moveSnapshotsViewIntoView(req);
     //snapshotsBrowserView.setBounds({ x: 780, y: 1000, width: 920, height: 905 });
     //snapshotsBrowserView.setBounds({ x: 800, y: 0, width: 860, height: 820 });
     snapshotsBrowserView.webContents.loadURL('http://localhost:3000/snapshots');

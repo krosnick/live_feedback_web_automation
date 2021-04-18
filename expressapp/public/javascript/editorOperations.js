@@ -17,7 +17,7 @@ const puppeteerKeyboardMethods = ["down", "press", "sendCharacter", "type", "up"
 //let activeViewLine;
 let snapshotsBrowserViewID;
 let windowSelectionViewID;
-let mightBeOutOfSync = false;
+//let mightBeOutOfSync = false;
 let showSnapshotsView = true; // default
 
 function sendUpdatedCodeToServer(){
@@ -424,7 +424,7 @@ function editorOnDidChangeCursorPosition(e){
     const lineNumber = e.position.lineNumber;
     
     ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "showLineNumber", lineNumber);
-    if(mightBeOutOfSync){
+    /*if(mightBeOutOfSync){
         mightBeOutOfSync = false;
         
         // Tell snapshots view to update snapshots shown (since snapshots might be different now for the currently selected line number)
@@ -438,7 +438,7 @@ function editorOnDidChangeCursorPosition(e){
                 url: "/showSnapshotView"
             });
         }
-    }
+    }*/
 
     // Assuming at most 1 selector per line
     let currentSelector = null;
@@ -466,7 +466,7 @@ function editorOnDidChangeCursorPosition(e){
         }
     }
 
-    $(".tooltip").remove();
+    /*$(".tooltip").remove();
     // Show these hide/show UI snapshot buttons as long as snapshots exist somewhere (i.e., that snapshotLineToDOMSelectorData isn't empty)
     if(snapshotLineToDOMSelectorData){
         // For this line number, show "show UI snapshot" or "hide UI snapshot"
@@ -514,7 +514,7 @@ function editorOnDidChangeCursorPosition(e){
         Popper.createPopper(tooltip, element, {
             placement: 'right'
         });
-    }
+    }*/
 }
 
 const generateModelMarkerList = function(){
@@ -914,8 +914,19 @@ $(function(){
                     }
                     monaco.editor.setModelMarkers(monacoEditor.getModel(), 'test', generateModelMarkerList());
                     
-                    mightBeOutOfSync = true;
+                    //mightBeOutOfSync = true;
 
+                    // Tell snapshots view to show updated snapshots for line number that currently has focus
+                    const cursorCurrentLineNumber = monacoEditor.getSelection().startLineNumber;
+                    ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "forceShowLineNumber", cursorCurrentLineNumber);
+                    // Depending on hide/show snapshots button status, tell server to /showSnapshotView
+                    if(showSnapshotsView){
+                        // Tell server to show UI snapshots view
+                        $.ajax({
+                            method: "POST",
+                            url: "/showSnapshotView"
+                        });
+                    }
                     updateUIForEndingCodeRun();
 
                     // Send code and params to server now, in case any code/param edits happened while script was running (that we didn't save)
