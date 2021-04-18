@@ -341,21 +341,6 @@ function createSnapshots(lineNumber){
             </div>
         `).appendTo("#container");
 
-        // Create a cluster for last run (start with all winIDs minimized)
-        // (Maybe even have the cluster itself minimized?)
-        if(lastRunSnapshotLineToDOMSelectorData && lastRunSnapshotLineToDOMSelectorData[lineNumber]){
-            let cluster = Object.keys(lastRunSnapshotLineToDOMSelectorData[lineNumber]);
-            const firstWinID = cluster[0];
-            const beforeObj = lastRunSnapshotLineToDOMSelectorData[lineNumber][firstWinID]['before'];
-            let selector;
-            if(beforeObj && beforeObj[0] && beforeObj[0].selectorData){
-                selector = beforeObj[0].selectorData.selectorString;
-            }else{
-                selector = null;
-            }
-            createCluster(cluster, "Last run", newElement, lastRunSnapshotLineToDOMSelectorData, lineNumber, lastRunErrorData, selector);
-        }
-
         if(snapshotLineToDOMSelectorData && snapshotLineToDOMSelectorData[lineNumber]){
             let cluster = Object.keys(snapshotLineToDOMSelectorData[lineNumber]);
             const firstWinID = cluster[0];
@@ -440,6 +425,21 @@ function createSnapshots(lineNumber){
                 }
                 createCluster(cluster, index, newElement, snapshotLineToDOMSelectorData, lineNumber, errorData, selector);
             }*/
+        }
+
+        // Create a cluster for last run (start with all winIDs minimized)
+        // (Maybe even have the cluster itself minimized?)
+        if(lastRunSnapshotLineToDOMSelectorData && lastRunSnapshotLineToDOMSelectorData[lineNumber]){
+            let cluster = Object.keys(lastRunSnapshotLineToDOMSelectorData[lineNumber]);
+            const firstWinID = cluster[0];
+            const beforeObj = lastRunSnapshotLineToDOMSelectorData[lineNumber][firstWinID]['before'];
+            let selector;
+            if(beforeObj && beforeObj[0] && beforeObj[0].selectorData){
+                selector = beforeObj[0].selectorData.selectorString;
+            }else{
+                selector = null;
+            }
+            createCluster(cluster, "Last run", newElement, lastRunSnapshotLineToDOMSelectorData, lineNumber, lastRunErrorData, selector);
         }
     }
 }
