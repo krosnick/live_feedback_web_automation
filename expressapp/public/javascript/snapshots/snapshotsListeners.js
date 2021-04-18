@@ -266,6 +266,8 @@ function unlockLineNumber(){
 
 // Show snapshots for this line (show if they're rendered already, or create if not)
 function showSnapshots(lineNumber){
+    // Hide 'no snapshots' text first
+    $("#noSnapshots").hide();
     $("#lineNumber").text(lineNumber);
     // Hide all snapshots
     $(".tooltip").hide();
@@ -441,6 +443,9 @@ function createSnapshots(lineNumber){
             }
             createCluster(cluster, "Last run", newElement, lastRunSnapshotLineToDOMSelectorData, lineNumber, lastRunErrorData, selector);
         }
+    }else{
+        // Show "No snapshots" text
+        $("#noSnapshots").show();
     }
 }
 

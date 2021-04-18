@@ -262,3 +262,7 @@ body {
 #lineNumberContainer {
     position: relative;
 }
+
+#noSnapshots {
+    display: none;
+}
