@@ -142,7 +142,7 @@ $(function(){
     $("body").mouseleave(function(){
         //console.log('mouseleave', Date.now());
         // Only contract snapshots view if this is a "real" leave, i.e., that a mouseenter didn't just happen too
-        if(Date.now() - lastMouseEnterTime > 100){
+        if(Date.now() - lastMouseEnterTime > 50){
             //console.log("large time diff")
             // Only contract snapshots if snapshots view isn't pinned
             if($("#pinSnapshotsButton").is(":visible")){
