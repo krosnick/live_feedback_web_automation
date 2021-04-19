@@ -159,6 +159,11 @@ $(function(){
     });
 });
 
+ipcRenderer.on("unpin", function(event){
+    $("#unPinSnapshotsButton").hide();
+    $("#pinSnapshotsButton").show();
+});
+
 ipcRenderer.on("addConsoleOutput", function(event, lineNumber, text){
     //console.log("addConsoleOutput");
     lineNumToConsoleOutputList[lineNumber] = lineNumToConsoleOutputList[lineNumber] || [];

@@ -798,10 +798,18 @@ $(function(){
         if(codeValidityResult === "valid"){
             updateUIForStartingCodeRun();
             
-            // Tell server to show border and page views (don't want snapshots view showing)
+            // Tell snapshots view to update pin/unpin button
+            ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "unpin");
+            // Tell server to make sure snapshots view is unpinned
             $.ajax({
                 method: "POST",
-                url: "/showPageView"
+                url: "/showSnapshotView"
+            }).done(function() {
+                // Tell server to show border and page views (don't want snapshots view showing)
+                $.ajax({
+                    method: "POST",
+                    url: "/showPageView"
+                });
             });
 
             // Store existing data as "last run"
