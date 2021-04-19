@@ -928,9 +928,35 @@ $(function(){
 
                     // Tell snapshots view to show updated snapshots for line number that currently has focus (if this line doesn't have snapshots, choose the next line that does have snapshots)
                     const cursorCurrentLineNumber = monacoEditor.getSelection().startLineNumber;
-                    let lineNumberToShow = cursorCurrentLineNumber;
-                    while(!snapshotLineToDOMSelectorData[lineNumberToShow]){
-                        lineNumberToShow += 1;
+                    let lineNumberToShow = null;
+                    // If this line doesn't have a snapshot, try looking for the next line with a snapshot, or prior line with a snapshot
+                    if(snapshotLineToDOMSelectorData && !snapshotLineToDOMSelectorData[cursorCurrentLineNumber]){
+                        const lineNumStrings = Object.keys(snapshotLineToDOMSelectorData);
+                        let lineNumbers = [];
+                        lineNumStrings.forEach(element => lineNumbers.push(parseInt(element)));
+                        lineNumbers.sort((a, b) => a - b);
+                        // Loop through to find line right after cursorCurrentLineNumber
+                        for(let i = 0; i < lineNumbers.length; i++){
+                            if(lineNumbers[i] < cursorCurrentLineNumber){
+                                // Have found the spot where cursorCurrentLineNumber would've been
+                                // Let's see if there's a next line
+                                if(i < lineNumbers.length-1){
+                                    // Means there is a next line number with snapshot: lineNumbers[i+1]
+                                    lineNumberToShow = lineNumbers[i+1];
+                                }else{
+                                    // There isn't a next line number, so let's use this lesser line number
+                                    lineNumberToShow = lineNumbers[i];
+                                }
+                            }
+                        }
+                        if(lineNumberToShow === null){
+                            // lineNumberToShow never set in loop, which means all the line numbers were greater than cursorCurrentLineNumber
+                            // Should use first in lineNumbers
+                            lineNumberToShow = lineNumbers[0];
+                        }
+                    }else{
+                        // snapshotLineToDOMSelectorData[lineNumberToShow] exists, or snapshotLineToDOMSelectorData doesn't exist at all
+                        lineNumberToShow = cursorCurrentLineNumber;
                     }
 
                     let currentSelector = null;
