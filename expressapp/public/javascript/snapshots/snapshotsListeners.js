@@ -179,31 +179,34 @@ ipcRenderer.on("newSnapshots", function(event, snapshotsData, errData){
     $(".tooltip").remove();
 });
 
-ipcRenderer.on("unlockAndShowLineNumber", function(event, lineNumber){
+ipcRenderer.on("unlockAndShowLineNumber", function(event, lineNumber, selector){
     // Make sure line number is unlocked, and show specified line number
     unlockLineNumber();
 
     // Show for this line
-    showSnapshots(lineNumber);
+    showSnapshots(lineNumber, selector);
 });
 
-ipcRenderer.on("showLineNumber", function(event, lineNumber){
+ipcRenderer.on("showLineNumber", function(event, lineNumber, selector){
     // Only update if different line number
     if(lineNumber !== parseInt($("#lineNumber").text().trim())){
         // Only update if line number not locked
         if($("#lockLineNumberButton").is(":visible")){
             // Show for this line
-            showSnapshots(lineNumber);
+            showSnapshots(lineNumber, selector);
         }
+    }else{
+        // Still need to update selector highlighting
+        updateCurrenSelectorHighlightingInIframes(selector)
     }
 });
 
-ipcRenderer.on("forceShowLineNumber", function(event, lineNumber){
+ipcRenderer.on("forceShowLineNumber", function(event, lineNumber, selector){
     // Make sure line number is unlocked, and show specified line number
     unlockLineNumber();
 
     // Show for this line
-    showSnapshots(lineNumber);
+    showSnapshots(lineNumber, selector);
 });
 
 ipcRenderer.on("unlockLineNumber", function(event, lineNumber){
@@ -265,7 +268,7 @@ function unlockLineNumber(){
 }
 
 // Show snapshots for this line (show if they're rendered already, or create if not)
-function showSnapshots(lineNumber){
+function showSnapshots(lineNumber, selector){
     // Hide 'no snapshots' text first
     $("#noSnapshots").hide();
     $("#lineNumber").text(lineNumber);
@@ -294,14 +297,16 @@ function showSnapshots(lineNumber){
             }, 500);
             // All iframes have non-zero width and height - show them
             $(`.tooltip[lineNumber="${lineNumber}"]`).show();
+
+            updateCurrenSelectorHighlightingInIframes(selector);
         }else{
             // At least one iframe has width or height of zero; re-render all
             //console.log("Have to re-render all iframes for this line");
-            createSnapshots(lineNumber);
+            createSnapshots(lineNumber, selector);
         }
     }else{
         // Don't exist yet - create them
-        createSnapshots(lineNumber);
+        createSnapshots(lineNumber, selector);
     }
 }
 
@@ -321,7 +326,7 @@ function getScaleNum(transformString){
     }
 }
 
-function createSnapshots(lineNumber){
+function createSnapshots(lineNumber, currentSelector){
     // If there's a snapshot for this line
     if((snapshotLineToDOMSelectorData && snapshotLineToDOMSelectorData[lineNumber]) || (lastRunSnapshotLineToDOMSelectorData && lastRunSnapshotLineToDOMSelectorData[lineNumber])){
         // Flash animation in snapshots view to grab user's attention
@@ -353,7 +358,7 @@ function createSnapshots(lineNumber){
             }else{
                 selector = null;
             }
-            createCluster(cluster, "Current run", newElement, snapshotLineToDOMSelectorData, lineNumber, errorData, selector);
+            createCluster(cluster, "Current run", newElement, snapshotLineToDOMSelectorData, lineNumber, errorData, selector, currentSelector);
             /*let clusterList = [];
             const winIDsForThisLine = Object.keys(snapshotLineToDOMSelectorData[lineNumber]);
             if(lineNumToComponentsList && lineNumToComponentsList[lineNumber]){
@@ -441,7 +446,7 @@ function createSnapshots(lineNumber){
             }else{
                 selector = null;
             }
-            createCluster(cluster, "Last run", newElement, lastRunSnapshotLineToDOMSelectorData, lineNumber, lastRunErrorData, selector);
+            createCluster(cluster, "Last run", newElement, lastRunSnapshotLineToDOMSelectorData, lineNumber, lastRunErrorData, selector, currentSelector);
         }
     }else{
         // Show "No snapshots" text
@@ -449,7 +454,7 @@ function createSnapshots(lineNumber){
     }
 }
 
-function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber, errorObj, selector){
+function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber, errorObj, selector, currentSelector){
     newElement.find(".snapshots").append(`<div class="clusterLabel">Label: ${indexOrName}</div>`);
     /*const clusterElement = $(`
         <div class="cluster" clusterIndex="${indexOrName}">
@@ -588,7 +593,7 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
             const iframeContentDocumentBefore = iframeElementBefore.contentDocument;
             rrwebSnapshot["rebuild"](beforeSnapshot, iframeContentDocumentBefore);
 
-            scaleIframe(iframeElementBefore, beforeItemSnapshotObj, `left top`, selector);
+            scaleIframe(iframeElementBefore, beforeItemSnapshotObj, `left top`, selector, currentSelector);
         }
 
         if(afterSnapshot && afterSnapshot.childNodes.length >= 2){
@@ -597,32 +602,45 @@ function createCluster(cluster, indexOrName, newElement, snapshotObj, lineNumber
             const iframeContentDocumentAfter = iframeElementAfter.contentDocument;
             rrwebSnapshot["rebuild"](afterSnapshot, iframeContentDocumentAfter);
 
-            scaleIframe(iframeElementAfter, afterItemSnapshotObj, `left top`, selector);
+            scaleIframe(iframeElementAfter, afterItemSnapshotObj, `left top`, selector, currentSelector);
         }
     //}
     }
 }
 
-function scaleIframe(iframeElement, lineObj, transformOriginString, selector){
+function scaleIframe(iframeElement, lineObj, transformOriginString, selector, currentSelector){
     if(iframeElement.contentWindow){
         const iframeDocument = iframeElement.contentWindow.document;
+        let selectorString = "";
+        let currentSelectorString = "";
         if(selector){
-            //const selector = lineObj.selectorData.selectorString;
-            const selectorElement = iframeDocument.querySelector(selector);
-            if(selectorElement){
-                addCursorAndBorder(iframeElement, selector);
+            if(iframeDocument.querySelector(selector)){
+                selectorString = selector;
             }
-            /*// Zoom to selector element if it is present in DOM
-            if(selectorElement){
-                scaleToElement(selectorElement, iframeElement, iframeDocument, transformOriginString);
-                //addCursorAndBorder(iframeElement, lineObj.selectorData.method, lineObj.selectorData.selectorString);
-                addCursorAndBorder(iframeElement, currentSelector);
-                return;
-            }else{
-                // TODO - Check if this is a keyboard command and if the prior command had a selector it was operating on
-
-            }*/
         }
+        if(currentSelector){
+            if(iframeDocument.querySelector(currentSelector)){
+                currentSelectorString = currentSelector;
+            }
+        }
+        addCursorAndBorder(iframeElement, selectorString, currentSelectorString);
+        // if(selector){
+        //     //const selector = lineObj.selectorData.selectorString;
+        //     const selectorElement = iframeDocument.querySelector(selector);
+        //     if(selectorElement){
+        //         addCursorAndBorder(iframeElement, selector, currentSelector);
+        //     }
+        //     // Zoom to selector element if it is present in DOM
+        //     if(selectorElement){
+        //         scaleToElement(selectorElement, iframeElement, iframeDocument, transformOriginString);
+        //         //addCursorAndBorder(iframeElement, lineObj.selectorData.method, lineObj.selectorData.selectorString);
+        //         addCursorAndBorder(iframeElement, currentSelector);
+        //         return;
+        //     }else{
+        //         // TODO - Check if this is a keyboard command and if the prior command had a selector it was operating on
+
+        //     }
+        // }
         // Otherwise, scale to page width
         scaleToPageWidth(iframeElement, iframeDocument, transformOriginString);
     }
@@ -666,17 +684,12 @@ function scaleToElement(selectorElement, iframeElement, iframeDocument, transfor
 }
 
 //function addCursorAndBorder(iframeElement, methodType, selector){
-function addCursorAndBorder(iframeElement, selector){
-    const iframeContentDocument = iframeElement.contentDocument;
-    
-    const targetSelector = selector;
-    //const eventType = methodType;
-
-    if(targetSelector){
+function addCursorAndBorder(iframeElement, selector, currentSelector){
+    if(selector){
         const iframeDocBody = iframeElement.contentWindow.document.body;
         //console.log("iframeDocBody", iframeDocBody);
         //const element = iframeDocBody.querySelector(targetSelector);
-        const elements = iframeDocBody.querySelectorAll(targetSelector);
+        const elements = iframeDocBody.querySelectorAll(selector);
         //console.log("addCursorAndBorder elements", elements);
         //console.log("targetSelector", targetSelector);
         for(let element of elements){
@@ -719,6 +732,41 @@ function addCursorAndBorder(iframeElement, selector){
             background-color: lightsalmon;
         }
     </style>`;*/
+    updateCurrenSelectorHighlightingInSingleIframe(currentSelector, iframeElement);
+}
+
+function updateCurrenSelectorHighlightingInSingleIframe(currentSelector, iframeElement){
+    const iframeDocBody = iframeElement.contentWindow.document.body;
+
+    // Remove currentSelectorHighlighting class from all elements that currently have it
+    const currentlyHighlightedElements = iframeDocBody.querySelectorAll(".currentSelectorHighlighting");
+    for(let element of currentlyHighlightedElements){
+        element.classList.remove("currentSelectorHighlighting");
+    }
+
+    if(currentSelector){
+        const iframeContentDocument = iframeElement.contentDocument;
+        iframeContentDocument.body.innerHTML = iframeContentDocument.body.innerHTML +
+        `<style>
+            .currentSelectorHighlighting {
+                border: 5px solid blue !important;
+                border-radius: 10px !important;
+            }
+        </style>`;
+        
+        const elements = iframeDocBody.querySelectorAll(currentSelector);
+        for(let element of elements){
+            element.classList.add("currentSelectorHighlighting");
+        }
+    }
+}
+
+function updateCurrenSelectorHighlightingInIframes(currentSelector){
+    const iframes = $("iframe");
+    for(let i = 0; i < iframes.length; i++){
+        const iframeElement = iframes[i];
+        updateCurrenSelectorHighlightingInSingleIframe(currentSelector, iframeElement);
+    }
 }
 
 function scaleToPageWidth(iframeElement, iframeDocument, transformOriginString){

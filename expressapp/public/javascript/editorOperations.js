@@ -420,10 +420,8 @@ function findSelector(lineNumber, searchClientSideJS){
 }
 
 function editorOnDidChangeCursorPosition(e){
-    //console.log("editorOnDidChangeCursorPosition");
     const lineNumber = e.position.lineNumber;
-    
-    ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "showLineNumber", lineNumber);
+    //console.log("editorOnDidChangeCursorPosition");
     /*if(mightBeOutOfSync){
         mightBeOutOfSync = false;
         
@@ -454,6 +452,7 @@ function editorOnDidChangeCursorPosition(e){
     }
 
     console.log("winIDList", winIDList);
+    // Highlighting and unhighlighting in page views
     if(currentSelector){
         // For each winID, tell BrowserViews to highlight currentSelector on their page
         for(let winID of Object.keys(winIDList)){
@@ -466,6 +465,9 @@ function editorOnDidChangeCursorPosition(e){
         }
     }
 
+    // Highlighting and unhighlighting in snapshots
+    ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "showLineNumber", lineNumber, currentSelector);
+    
     /*$(".tooltip").remove();
     // Show these hide/show UI snapshot buttons as long as snapshots exist somewhere (i.e., that snapshotLineToDOMSelectorData isn't empty)
     if(snapshotLineToDOMSelectorData){
@@ -922,7 +924,19 @@ $(function(){
                     while(!snapshotLineToDOMSelectorData[lineNumberToShow]){
                         lineNumberToShow += 1;
                     }
-                    ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "forceShowLineNumber", lineNumberToShow);
+
+                    let currentSelector = null;
+                    const codeValidityResult = checkValidity(monacoEditor.getValue());
+                    //console.log("codeValidityResult", codeValidityResult);
+                    // If syntax error, don't try checking for selectors
+                    if(codeValidityResult === "valid"){
+                        const selectorDataItem = findSelector(lineNumberToShow, true);
+                        //console.log("selectorDataItem", selectorDataItem);
+                        if(selectorDataItem){
+                            currentSelector = selectorDataItem.selectorString;
+                        }
+                    }
+                    ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "forceShowLineNumber", lineNumberToShow, currentSelector);
                     // Depending on hide/show snapshots button status, tell server to /showSnapshotView
                     if(showSnapshotsView){
                         // Tell server to show UI snapshots view
@@ -981,7 +995,18 @@ $(function(){
 
         // Tell snapshotsBrowserView to make sure line number is unlocked, and show the current line number
         const lineNumber = monacoEditor.getSelection().startLineNumber;
-        ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "unlockAndShowLineNumber", lineNumber);
+        let currentSelector = null;
+        const codeValidityResult = checkValidity(monacoEditor.getValue());
+        //console.log("codeValidityResult", codeValidityResult);
+        // If syntax error, don't try checking for selectors
+        if(codeValidityResult === "valid"){
+            const selectorDataItem = findSelector(lineNumber, true);
+            //console.log("selectorDataItem", selectorDataItem);
+            if(selectorDataItem){
+                currentSelector = selectorDataItem.selectorString;
+            }
+        }
+        ipcRenderer.sendTo(parseInt(snapshotsBrowserViewID), "unlockAndShowLineNumber", lineNumber, currentSelector);
     });
 
     $("body").on("change", "#windowSelectMenu", function(e){
