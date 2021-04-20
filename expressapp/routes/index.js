@@ -1,5 +1,5 @@
 var express = require('express');
-const {  BrowserView, session } = require('electron');
+const {  BrowserView, session, screen } = require('electron');
 var router = express.Router();
 const { v1: uuidv1 } = require('uuid');
 const _ = require('lodash');
@@ -140,6 +140,36 @@ router.get('/snapshots', function(req, res, next) {
 router.post('/expandSnapshotView', function(req, res, next) {
     expandSnapshotsView(req);
     res.end();
+});
+
+router.post('/reduceSnapshotViewIfCursorLeft', function(req, res, next) {
+    const cursorPosition = screen.getCursorScreenPoint();
+    //console.log("cursorPosition", cursorPosition)
+    const snapshotsViewBounds = req.app.locals.snapshotsBrowserView.getBounds();
+    //console.log("snapshotsViewBounds", snapshotsViewBounds);
+    const winPosition = req.app.locals.win.getPosition();
+    //console.log("winPosition", winPosition);
+    
+    const xRelativePosition = cursorPosition.x - winPosition[0];
+    const yRelativePosition = cursorPosition.y - winPosition[1];
+
+    const browserViewLeft = snapshotsViewBounds.x;
+    const browserViewRight = snapshotsViewBounds.x + snapshotsViewBounds.width;
+    const browserViewTop = snapshotsViewBounds.y;
+    const browserViewBottom = snapshotsViewBounds.y + snapshotsViewBounds.height;
+
+    /*console.log("xRelativePosition", xRelativePosition);
+    console.log("yRelativePosition", yRelativePosition);*/
+
+    if(xRelativePosition < browserViewLeft || xRelativePosition > browserViewRight || yRelativePosition < browserViewTop || yRelativePosition > browserViewBottom){
+        console.log("reducing");
+        // Reduce snapshot view
+        moveSnapshotsViewIntoView(req);
+        res.send({reduced: true});
+    }else{
+        console.log("keeping");
+        res.send({reduced: false});
+    }
 });
 
 router.post('/showSnapshotView', function(req, res, next) {

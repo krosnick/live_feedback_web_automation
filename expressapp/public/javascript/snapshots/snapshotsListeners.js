@@ -16,6 +16,7 @@ let lineNumToConsoleOutputList = {};
 
 let lastMouseEnterTime = 0;
 let currentlyExpanded = false;
+let mouseLeaveTimeout;
 
 $(function(){
     snapshotWidth = getComputedStyle(document.querySelector("body")).getPropertyValue("--snapshot-width");
@@ -128,7 +129,8 @@ $(function(){
     });
 
     $("body").mouseenter(function(){
-        //console.log('mouseenter', Date.now());
+        //console.log('mouseenter');
+        clearTimeout(mouseLeaveTimeout);
         lastMouseEnterTime = Date.now();
         if(!currentlyExpanded){
             currentlyExpanded = true;
@@ -140,19 +142,37 @@ $(function(){
         }
     });
     $("body").mouseleave(function(){
+        //console.log("mouseleave");
         //console.log('mouseleave', Date.now());
         // Only contract snapshots view if this is a "real" leave, i.e., that a mouseenter didn't just happen too
         if(Date.now() - lastMouseEnterTime > 50){
-            //console.log("large time diff")
-            // Only contract snapshots if snapshots view isn't pinned
-            if($("#pinSnapshotsButton").is(":visible")){
-                currentlyExpanded = false;
-                // Make snapshots view contract (to just fit right side of window); send message to server
-                $.ajax({
-                    method: "POST",
-                    url: "/showSnapshotView"
-                });
-            }
+            clearTimeout(mouseLeaveTimeout);
+            mouseLeaveTimeout = setTimeout(function(){
+                //console.log("large time diff")
+                // Only contract snapshots if snapshots view isn't pinned
+                if($("#pinSnapshotsButton").is(":visible")){
+                    /*// Make snapshots view contract (to just fit right side of window); send message to server
+                    $.ajax({
+                        method: "POST",
+                        url: "/showSnapshotView"
+                    });*/
+                    // Only contract if cursor isn't within bounds of BrowserView,
+                    // so need to check BrowserView bounds and cursor position on server
+                    // Dev tools should be included in BrowserView dimensions so will solve our problem with
+                    // region contracting when user leaves body and goes into dev tools
+
+                    $.ajax({
+                        method: "POST",
+                        url: "/reduceSnapshotViewIfCursorLeft"
+                    }).done(function(result) {
+                        // TODO - Based on response, update currentlyExpanded appropriately
+                        //console.log("result", result);
+                        if(result.reduced){
+                            currentlyExpanded = false;
+                        }
+                    });
+                }
+            }, 500);
         }else{
             //console.log("small time diff");
         }
