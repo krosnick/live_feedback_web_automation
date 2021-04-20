@@ -799,7 +799,7 @@ const addTargetPages = async function(req, startingUrl){
             // This is going to run code on only one of the pages (not multiple if they exist)
             //webviewTarget = target;
             const targetPage = await target.page();
-            targetPage.setDefaultTimeout(10000); // it's 30000ms by default
+            //targetPage.setDefaultTimeout(10000); // it's 30000ms by default
             targetPagesList.push(targetPage);
             //break;
         }
