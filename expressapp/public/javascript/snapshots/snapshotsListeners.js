@@ -157,6 +157,27 @@ $(function(){
             //console.log("small time diff");
         }
     });
+
+    $("body").on('keypress',function(e) {
+        if(e.which == 13) {
+            const inputValue = parseInt($("#lineNumInputField").val());
+            //console.log("inputValue", inputValue);
+            if(Number.isInteger(inputValue)){
+                // Update snapshot line to this
+                // Don't worry about selector on this line, just show snapshot
+                // Only update if different line number
+                if(inputValue !== parseInt($("#lineNumber").text().trim())){
+                    // Only update if line number not locked
+                    if($("#lockLineNumberButton").is(":visible")){
+                        // Show for this line
+                        showSnapshots(inputValue, null);
+                    }
+                }
+                // Set input to empty
+                $("#lineNumInputField").val("");
+            }
+        }
+    });
 });
 
 ipcRenderer.on("unpin", function(event){

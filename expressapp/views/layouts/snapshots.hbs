@@ -1,9 +1,15 @@
 <div id="snapshotLineInfo">
     <span id="lineNumberContainer">
-        <div id="elementForFlashing"></div>
+        <!--<div id="elementForFlashing"></div>-->
         <span>Snapshots for line number: </span>
         <span id="lineNumber"></span>
+        <span>
+            <label for="lineNumInputField">Set line number:</label>
+            <input id="lineNumInputField" type="number" name="lineNumInputField" min="1" required>
+            <span class="validity"></span>
+        </span>
     </span>
+    <br>
     <button id="lockLineNumberButton" class="clickableButton"><b>Lock</b> line number</button>
     <button id="unLockLineNumberButton" class="clickableButton"><b>Unlock</b> line number</button>
     <button id="pinSnapshotsButton" class="clickableButton"><b>Pin</b> snapshots</button>
