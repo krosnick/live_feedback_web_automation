@@ -263,6 +263,10 @@ body {
     position: relative;
 }
 
+#currentLineNumber {
+    position: relative;
+}
+
 #noSnapshots {
     display: none;
 }
