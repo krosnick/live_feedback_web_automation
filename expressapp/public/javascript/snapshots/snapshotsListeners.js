@@ -765,24 +765,26 @@ function updateCurrenSelectorHighlightingInSingleIframe(currentSelector, iframeE
     const iframeDocBody = iframeElement.contentWindow.document.body;
 
     // Remove currentSelectorHighlighting class from all elements that currently have it
-    const currentlyHighlightedElements = iframeDocBody.querySelectorAll(".currentSelectorHighlighting");
-    for(let element of currentlyHighlightedElements){
-        element.classList.remove("currentSelectorHighlighting");
-    }
+    if(iframeDocBody){
+        const currentlyHighlightedElements = iframeDocBody.querySelectorAll(".currentSelectorHighlighting");
+        for(let element of currentlyHighlightedElements){
+            element.classList.remove("currentSelectorHighlighting");
+        }
 
-    if(currentSelector){
-        const iframeContentDocument = iframeElement.contentDocument;
-        iframeContentDocument.body.innerHTML = iframeContentDocument.body.innerHTML +
-        `<style>
-            .currentSelectorHighlighting {
-                border: 5px solid blue !important;
-                border-radius: 10px !important;
+        if(currentSelector){
+            const iframeContentDocument = iframeElement.contentDocument;
+            iframeContentDocument.body.innerHTML = iframeContentDocument.body.innerHTML +
+            `<style>
+                .currentSelectorHighlighting {
+                    border: 5px solid blue !important;
+                    border-radius: 10px !important;
+                }
+            </style>`;
+            
+            const elements = iframeDocBody.querySelectorAll(currentSelector);
+            for(let element of elements){
+                element.classList.add("currentSelectorHighlighting");
             }
-        </style>`;
-        
-        const elements = iframeDocBody.querySelectorAll(currentSelector);
-        for(let element of elements){
-            element.classList.add("currentSelectorHighlighting");
         }
     }
 }
