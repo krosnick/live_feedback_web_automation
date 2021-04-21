@@ -739,23 +739,34 @@ function scaleToElement(selectorElement, iframeElement, iframeDocument, transfor
 function addCursorAndBorder(iframeElement, selector, currentSelector){
     if(selector){
         const iframeDocBody = iframeElement.contentWindow.document.body;
-        //console.log("iframeDocBody", iframeDocBody);
-        //const element = iframeDocBody.querySelector(targetSelector);
-        const elements = iframeDocBody.querySelectorAll(selector);
-        //console.log("addCursorAndBorder elements", elements);
-        //console.log("targetSelector", targetSelector);
-        for(let element of elements){
-            // Apply border only if this is an interactive widget,
-                // e.g., <button>, <input>, <a>, <select>, <option>, <textarea>
-            //if(element.tagName === "BUTTON" || element.tagName === "INPUT" || element.tagName === "A" || element.tagName === "SELECT" || element.tagName === "OPTION" || element.tagName === "TEXTAREA"){
+        const iframeContentDocument = iframeElement.contentDocument;
+        iframeContentDocument.body.innerHTML = iframeContentDocument.body.innerHTML +
+        `<style>
+            .originalSelectorHighlighting {
+                border: 5px solid #08ae0d;
+                border-radius: 10px;
+            }
+        </style>`;
+
+        try{
+            //console.log("iframeDocBody", iframeDocBody);
+            //const element = iframeDocBody.querySelector(targetSelector);
+            const elements = iframeDocBody.querySelectorAll(selector);
+            //console.log("addCursorAndBorder elements", elements);
+            //console.log("targetSelector", targetSelector);
+            for(let element of elements){
+                element.classList.add("originalSelectorHighlighting");
+                // Apply border only if this is an interactive widget,
+                    // e.g., <button>, <input>, <a>, <select>, <option>, <textarea>
+                //if(element.tagName === "BUTTON" || element.tagName === "INPUT" || element.tagName === "A" || element.tagName === "SELECT" || element.tagName === "OPTION" || element.tagName === "TEXTAREA"){
                 // If a radio button or checkbox, let's add the border and mouse icon to its parent since checkboxes and radio buttons are small, won't be able to see border/mouse icon
                 if(element.tagName === "INPUT" && (element.type === "checkbox" || element.type === "radio")){
                     borderElement = element.parentNode;
                 }else{
                     borderElement = element;
                 }
-                borderElement.style.border = "5px solid #08ae0d";
-                borderElement.style.borderRadius = "10px";
+                /*borderElement.style.border = "5px solid #08ae0d";
+                borderElement.style.borderRadius = "10px";*/
 
                 // Append mouse icon img if element is semantically "clickable",
                     // e.g., button, link, radio button, checkbox, but NOT textfield etc
@@ -775,7 +786,10 @@ function addCursorAndBorder(iframeElement, selector, currentSelector){
                     //imageElement.style.left = "50%";
                     //imageElement.style.top = "50%";
                 }
-            //}
+                //}
+            }
+        }catch(e){
+            // Means selector isn't valid; just do nothing
         }
     }
     /*iframeContentDocument.body.innerHTML = iframeContentDocument.body.innerHTML +
