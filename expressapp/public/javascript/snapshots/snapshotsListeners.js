@@ -297,12 +297,18 @@ ipcRenderer.on("getSelectorNumResults", function(event, lineNumber, selectorData
     relevantClusterElement.find("iframe").each(function( index, element ) {
         const winID = $(element).attr("winID");
         const itemIndex = $(element).attr("itemIndex");
-        const selectorNumResults = element.contentWindow.document.querySelectorAll(selectorDataItem.selectorString).length;
-        selectorNumResultsObjList.push({
-            winID,
-            itemIndex,
-            selectorNumResults
-        });
+        try{
+            if(selectorDataItem.selectorString){
+                const selectorNumResults = element.contentWindow.document.querySelectorAll(selectorDataItem.selectorString).length;
+                selectorNumResultsObjList.push({
+                    winID,
+                    itemIndex,
+                    selectorNumResults
+                });
+            }
+        }catch(e){
+            // Means selector isn't valid; just do nothing
+        }
     });
     ipcRenderer.sendTo(parseInt(editorBrowserViewID), "selectorNumResults", lineNumber, selectorNumResultsObjList, selectorDataItem);
 });
@@ -801,9 +807,13 @@ function updateCurrenSelectorHighlightingInSingleIframe(currentSelector, iframeE
                 }
             </style>`;
             
-            const elements = iframeDocBody.querySelectorAll(currentSelector);
-            for(let element of elements){
-                element.classList.add("currentSelectorHighlighting");
+            try{
+                const elements = iframeDocBody.querySelectorAll(currentSelector);
+                for(let element of elements){
+                    element.classList.add("currentSelectorHighlighting");
+                }
+            }catch(e){
+                // Means selector isn't valid; just do nothing
             }
         }
     }
